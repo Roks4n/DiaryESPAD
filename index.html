@@ -10,6 +10,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     
+    <!-- Яндекс OAuth SDK -->
+    <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -35,8 +38,8 @@
         }
         
         .login-container {
-            max-width: 400px;
-            margin: 100px auto;
+            max-width: 450px;
+            margin: 50px auto;
             background: white;
             padding: 40px;
             border-radius: 15px;
@@ -107,10 +110,98 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.3s ease;
+            margin-bottom: 10px;
         }
         
         .login-btn:hover {
             transform: translateY(-2px);
+        }
+        
+        .social-login {
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        .social-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #6c757d;
+        }
+        
+        .social-divider::before,
+        .social-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+        
+        .social-divider span {
+            padding: 0 15px;
+            font-size: 0.9rem;
+        }
+        
+        .social-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .social-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .social-btn:active {
+            transform: translateY(0);
+        }
+        
+        .social-btn-google {
+            background: white;
+            color: #757575;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .social-btn-google:hover {
+            background: #f8f9fa;
+            border-color: #d0d0d0;
+        }
+        
+        .social-btn-yandex {
+            background: #FFCC00;
+            color: #000;
+            border: 2px solid #FFCC00;
+        }
+        
+        .social-btn-yandex:hover {
+            background: #ffd633;
+            border-color: #ffd633;
+        }
+        
+        .social-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .login-message {
@@ -199,6 +290,16 @@
             border-radius: 20px;
             font-weight: 600;
             backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
         }
         
         .logout-btn {
@@ -496,6 +597,10 @@
                 position: static;
                 justify-content: center;
                 margin-top: 15px;
+            }
+            
+            .social-buttons {
+                flex-direction: column;
             }
         }
         
@@ -883,6 +988,52 @@
             font-size: 0.9rem;
             margin-bottom: 10px;
         }
+        
+        .test-account-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .test-account-info h4 {
+            color: #0056b3;
+            margin-bottom: 10px;
+        }
+        
+        .test-account-info p {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .provider-icon {
+            font-size: 1.2rem;
+        }
+        
+        .auth-provider-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .auth-provider-info h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .auth-provider-steps {
+            list-style-type: decimal;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .auth-provider-steps li {
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -900,11 +1051,27 @@
         <div class="login-tabs">
             <button class="login-tab active" data-tab="login">Вход</button>
             <button class="login-tab" data-tab="register">Регистрация</button>
-            <button class="login-tab" data-tab="firebase">Настройка Firebase</button>
+            <button class="login-tab" data-tab="firebase">Настройка</button>
         </div>
         
         <!-- Форма входа -->
         <div class="login-form active" id="loginForm">
+            <div class="social-buttons">
+                <button class="social-btn social-btn-google" id="googleLoginBtn">
+                    <div class="social-icon">G</div>
+                    Войти через Google
+                </button>
+                
+                <button class="social-btn social-btn-yandex" id="yandexLoginBtn">
+                    <div class="social-icon">Я</div>
+                    Войти через Яндекс
+                </button>
+            </div>
+            
+            <div class="social-divider">
+                <span>или</span>
+            </div>
+            
             <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
             <input type="password" id="loginPassword" class="login-input" placeholder="Пароль" required>
             <button class="login-btn" id="loginBtn">Войти</button>
@@ -913,6 +1080,22 @@
         
         <!-- Форма регистрации -->
         <div class="login-form" id="registerForm">
+            <div class="social-buttons">
+                <button class="social-btn social-btn-google" id="googleRegisterBtn">
+                    <div class="social-icon">G</div>
+                    Зарегистрироваться через Google
+                </button>
+                
+                <button class="social-btn social-btn-yandex" id="yandexRegisterBtn">
+                    <div class="social-icon">Я</div>
+                    Зарегистрироваться через Яндекс
+                </button>
+            </div>
+            
+            <div class="social-divider">
+                <span>или</span>
+            </div>
+            
             <input type="email" id="registerEmail" class="login-input" placeholder="Email" required>
             <input type="password" id="registerPassword" class="login-input" placeholder="Пароль (мин. 6 символов)" required>
             <input type="text" id="registerUsername" class="login-input" placeholder="Имя пользователя" required>
@@ -928,8 +1111,6 @@
                 <ol class="firebase-steps">
                     <li>Перейдите на <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
                     <li>Создайте новый проект</li>
-                    <li>В разделе Authentication включите Email/Password вход</li>
-                    <li>В разделе Realtime Database создайте базу данных</li>
                     <li>В настройках проекта найдите конфигурацию и вставьте её ниже</li>
                 </ol>
             </div>
@@ -969,8 +1150,28 @@
                 <input type="text" id="appId" class="config-input" placeholder="1:1234567890:web:abc123def456">
             </div>
             
+            <div class="auth-provider-info">
+                <h4>Настройка провайдеров аутентификации</h4>
+                <p>Для работы авторизации через Google и Яндекс необходимо настроить провайдеров:</p>
+                <ol class="auth-provider-steps">
+                    <li>В Firebase Console перейдите в раздел "Authentication"</li>
+                    <li>На вкладке "Sign-in method" нажмите "Google" и включите его</li>
+                    <li>Укажите публичное название и email поддержки</li>
+                    <li>Сохраните настройки</li>
+                    <li><strong>Для Яндекс</strong>: Выберите "Настроить домен" в настройках проекта Firebase</li>
+                </ol>
+            </div>
+            
             <button class="login-btn" id="saveFirebaseConfigBtn">Сохранить настройки</button>
             <div class="login-message" id="firebaseMessage"></div>
+            
+            <div class="test-account-info">
+                <h4>Тестовый аккаунт Firebase</h4>
+                <p>Для быстрого тестирования можно использовать:</p>
+                <p><strong>Email:</strong> test@example.com</p>
+                <p><strong>Пароль:</strong> test123456</p>
+                <p><small>Или создайте свой аккаунт через форму регистрации</small></p>
+            </div>
         </div>
     </div>
     
@@ -978,7 +1179,10 @@
     <div class="container" id="mainContainer">
         <header>
             <div class="user-info">
-                <div class="username-display" id="currentUsername"></div>
+                <div class="username-display" id="currentUsername">
+                    <img src="" alt="Аватар" class="user-avatar" id="userAvatar" style="display: none;">
+                    <span id="displayName"></span>
+                </div>
                 <button class="logout-btn" id="logoutBtn">Выйти</button>
             </div>
             <h1>Трекер лабораторных работ</h1>
@@ -1069,19 +1273,6 @@
         </div>
     </div>
     
-    <div class="modal" id="deleteEducationModal">
-        <div class="modal-content">
-            <h2>Удаление образования</h2>
-            <div id="deleteEducationContent">
-                <!-- Контент будет добавлен через JS -->
-            </div>
-            <div class="modal-buttons">
-                <button type="button" class="cancel-btn" id="cancelDeleteBtn">Отмена</button>
-                <button type="button" class="confirm-delete-btn" id="confirmDeleteBtn">Удалить</button>
-            </div>
-        </div>
-    </div>
-    
     <div class="modal" id="manageLabsModal">
         <div class="modal-content">
             <h2>
@@ -1133,7 +1324,7 @@
     </div>
 
     <script>
-        // Firebase конфигурация (заполняется пользователем)
+        // Firebase конфигурация
         let firebaseConfig = null;
         let firebaseApp = null;
         let database = null;
@@ -1142,7 +1333,7 @@
         let isOnline = false;
         let pendingSync = false;
         
-        // Структура данных
+        // Данные приложения
         let data = {
             educations: [
                 { id: 1, name: "Бакалавриат" }
@@ -1162,6 +1353,12 @@
             document.getElementById('saveFirebaseConfigBtn').addEventListener('click', saveFirebaseConfig);
             document.getElementById('logoutBtn').addEventListener('click', logoutUser);
             document.getElementById('manualSyncBtn').addEventListener('click', manualSync);
+            
+            // Обработчики социальных кнопок
+            document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('googleRegisterBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('yandexLoginBtn').addEventListener('click', loginWithYandex);
+            document.getElementById('yandexRegisterBtn').addEventListener('click', loginWithYandex);
             
             // Обработчик нажатия Enter в формах
             document.getElementById('loginPassword').addEventListener('keypress', function(e) {
@@ -1321,24 +1518,98 @@
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     // Пользователь авторизован
-                    currentUser = user;
-                    currentUserId = user.uid;
-                    
-                    // Загружаем данные пользователя
-                    loadUserData();
-                    
-                    // Показываем основной интерфейс
-                    showMainInterface();
-                    
-                    // Показываем имя пользователя
-                    const displayName = user.displayName || user.email.split('@')[0];
-                    document.getElementById('currentUsername').textContent = displayName;
-                    document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${displayName}!`;
+                    handleUserLogin(user);
                 } else {
                     // Пользователь не авторизован
                     showLoginInterface();
                 }
             });
+        }
+
+        // Обработка входа пользователя
+        function handleUserLogin(user) {
+            currentUser = user;
+            currentUserId = user.uid;
+            
+            // Обновляем отображение информации о пользователе
+            updateUserDisplay(user);
+            
+            // Загружаем данные пользователя
+            loadUserData();
+            
+            // Показываем основной интерфейс
+            showMainInterface();
+        }
+
+        // Обновление отображения информации о пользователе
+        function updateUserDisplay(user) {
+            const displayName = user.displayName || user.email.split('@')[0];
+            const photoURL = user.photoURL;
+            
+            document.getElementById('displayName').textContent = displayName;
+            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${displayName}!`;
+            
+            // Отображаем аватар, если есть
+            const avatarElement = document.getElementById('userAvatar');
+            if (photoURL) {
+                avatarElement.src = photoURL;
+                avatarElement.style.display = 'block';
+            } else {
+                avatarElement.style.display = 'none';
+            }
+        }
+
+        // Вход через Google
+        function loginWithGoogle() {
+            if (!firebaseApp) {
+                showLoginMessage('Сначала настройте Firebase', 'error');
+                return;
+            }
+            
+            showLoginMessage('Подключение к Google...', 'info');
+            
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Запрашиваем дополнительные разрешения
+            provider.addScope('profile');
+            provider.addScope('email');
+            
+            firebase.auth().signInWithPopup(provider)
+                .then((result) => {
+                    showLoginMessage('Вход через Google успешен!', 'success');
+                })
+                .catch((error) => {
+                    console.error('Ошибка входа через Google:', error);
+                    showLoginMessage(getFirebaseErrorMessage(error), 'error');
+                });
+        }
+
+        // Вход через Яндекс
+        function loginWithYandex() {
+            if (!firebaseApp) {
+                showLoginMessage('Сначала настройте Firebase', 'error');
+                return;
+            }
+            
+            showLoginMessage('Подключение к Яндекс...', 'info');
+            
+            // Создаем кастомного провайдера для Яндекс
+            const provider = new firebase.auth.OAuthProvider('yandex.com');
+            
+            firebase.auth().signInWithPopup(provider)
+                .then((result) => {
+                    showLoginMessage('Вход через Яндекс успешен!', 'success');
+                })
+                .catch((error) => {
+                    console.error('Ошибка входа через Яндекс:', error);
+                    
+                    // Если Яндекс OAuth не настроен, показываем альтернативу
+                    if (error.code === 'auth/operation-not-allowed') {
+                        showLoginMessage('Яндекс OAuth не настроен в Firebase. Используйте email/пароль или Google.', 'error');
+                    } else {
+                        showLoginMessage(getFirebaseErrorMessage(error), 'error');
+                    }
+                });
         }
 
         // Регистрация с email и паролем
@@ -1364,10 +1635,8 @@
             
             showRegisterMessage('Регистрация...', 'info');
             
-            // Создаем пользователя
             firebase.auth().createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Обновляем отображаемое имя
                     return userCredential.user.updateProfile({
                         displayName: username
                     });
@@ -1392,11 +1661,6 @@
                     document.getElementById('registerEmail').value = '';
                     document.getElementById('registerPassword').value = '';
                     document.getElementById('registerUsername').value = '';
-                    
-                    // Переключаемся на вкладку входа
-                    setTimeout(() => {
-                        document.querySelector('.login-tab[data-tab="login"]').click();
-                    }, 1500);
                 })
                 .catch((error) => {
                     console.error('Ошибка регистрации:', error);
@@ -1478,6 +1742,14 @@
                     return 'Пароль слишком слабый';
                 case 'auth/network-request-failed':
                     return 'Ошибка сети. Проверьте подключение к интернету';
+                case 'auth/popup-blocked':
+                    return 'Всплывающее окно было заблокировано браузером';
+                case 'auth/popup-closed-by-user':
+                    return 'Вход отменен пользователем';
+                case 'auth/operation-not-allowed':
+                    return 'Этот метод входа не разрешен. Обратитесь к администратору';
+                case 'auth/account-exists-with-different-credential':
+                    return 'Аккаунт с таким email уже существует с другим методом входа';
                 default:
                     return 'Ошибка: ' + error.message;
             }
@@ -1557,7 +1829,6 @@
                     console.error('Ошибка загрузки данных:', error);
                     setSyncStatus('offline', 'Ошибка загрузки данных');
                     
-                    // Показываем сообщение об ошибке
                     alert('Не удалось загрузить данные. Работаем в офлайн режиме.');
                 });
         }
@@ -1565,7 +1836,6 @@
         // Сохранение данных пользователя в Firebase
         function saveUserData() {
             if (!currentUserId || !database) {
-                // Сохраняем локально, если Firebase не настроен
                 localStorage.setItem('labTrackerLocalData', JSON.stringify(data));
                 return;
             }
@@ -1700,18 +1970,13 @@
                 button.dataset.educationId = education.id;
                 
                 button.addEventListener('click', function() {
-                    // Убираем активный класс у всех кнопок
                     document.querySelectorAll('.education-btn').forEach(btn => {
                         btn.classList.remove('active');
                     });
                     
-                    // Добавляем активный класс текущей кнопке
                     this.classList.add('active');
-                    
-                    // Меняем текущее образование
                     data.currentEducationId = parseInt(this.dataset.educationId);
                     
-                    // Перерисовываем таблицу
                     renderSubjectsTable();
                     updateStats();
                 });
@@ -1720,7 +1985,6 @@
                 educationSelector.appendChild(buttonContainer);
             });
             
-            // Добавляем кнопку для нового образования
             const addEducationBtn = document.createElement('button');
             addEducationBtn.className = 'education-btn add-education';
             addEducationBtn.textContent = '+ Новое образование';
@@ -1735,7 +1999,6 @@
             const subjectsBody = document.getElementById('subjectsBody');
             subjectsBody.innerHTML = '';
             
-            // Фильтруем предметы по текущему образованию
             const currentSubjects = data.subjects.filter(subject => 
                 subject.educationId === data.currentEducationId
             );
@@ -1794,7 +2057,6 @@
                 subjectsBody.appendChild(row);
             });
             
-            // Добавляем обработчики для кнопок действий
             document.querySelectorAll('.action-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const subjectId = parseInt(this.dataset.id);
@@ -1846,7 +2108,6 @@
                 case 'increment-lab':
                     if (data.subjects[subjectIndex].totalLabs < 50) {
                         data.subjects[subjectIndex].totalLabs++;
-                        // Добавляем новую лабораторную работу
                         if (!data.subjects[subjectIndex].labs) {
                             data.subjects[subjectIndex].labs = [];
                         }
@@ -1880,30 +2141,22 @@
             const subject = data.subjects.find(s => s.id === subjectId);
             if (!subject) return;
             
-            // Обновляем заголовок
             document.getElementById('subjectTitle').textContent = subject.name;
             
-            // Получаем название текущего образования
             const education = data.educations.find(e => e.id === subject.educationId);
             document.getElementById('educationTitle').textContent = education ? `Образование: ${education.name}` : '';
             
-            // Обновляем информацию о предмете
             document.getElementById('currentSubjectName').textContent = subject.name;
             document.getElementById('totalLabsCount').textContent = subject.totalLabs;
             document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
             document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
             
-            // Обновляем средний балл
             const averageGrade = calculateAverageGrade(subject);
             document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
             
-            // Обновляем статистику оценок
             updateGradeStats(subject);
-            
-            // Рендерим сетку лабораторных работ
             renderLabsGrid(subject);
             
-            // Показываем модальное окно
             document.getElementById('manageLabsModal').style.display = 'flex';
         }
 
@@ -1920,7 +2173,6 @@
             const labsGrid = document.getElementById('labsGrid');
             labsGrid.innerHTML = '';
             
-            // Инициализируем массив labs, если его нет
             if (!subject.labs || subject.labs.length === 0) {
                 subject.labs = [];
                 for (let i = 1; i <= subject.totalLabs; i++) {
@@ -1937,7 +2189,6 @@
                 const labItem = document.createElement('div');
                 labItem.className = 'lab-item';
                 
-                // Определяем класс статуса
                 let statusClass = 'lab-not-done';
                 let statusText = 'Не выполнена';
                 
@@ -1962,14 +2213,12 @@
                     ` : ''}
                 `;
                 
-                // Обработчик клика по лабораторной работе
                 labItem.addEventListener('click', function(e) {
                     if (!e.target.classList.contains('grade-selector')) {
                         toggleLabStatus(lab.number, subject);
                     }
                 });
                 
-                // Обработчик изменения оценки
                 const gradeSelector = labItem.querySelector('.grade-selector');
                 if (gradeSelector) {
                     gradeSelector.addEventListener('change', function(e) {
@@ -2113,11 +2362,9 @@
                 return;
             }
             
-            // Генерируем новый ID
             const newId = data.subjects.length > 0 ? 
                 Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
             
-            // Создаем массив лабораторных работ
             const labs = [];
             for (let i = 1; i <= totalLabs; i++) {
                 labs.push({
@@ -2128,7 +2375,6 @@
                 });
             }
             
-            // Добавляем новый предмет
             data.subjects.push({
                 id: newId,
                 educationId: data.currentEducationId,
@@ -2139,11 +2385,9 @@
                 labs: labs
             });
             
-            // Закрываем модальное окно и очищаем форму
             document.getElementById('addSubjectModal').style.display = 'none';
             document.getElementById('subjectForm').reset();
             
-            // Перерисовываем таблицу
             renderSubjectsTable();
             updateStats();
             saveUserData();
@@ -2158,21 +2402,17 @@
                 return;
             }
             
-            // Генерируем новый ID
             const newId = data.educations.length > 0 ? 
                 Math.max(...data.educations.map(e => e.id)) + 1 : 1;
             
-            // Добавляем новое образование
             data.educations.push({
                 id: newId,
                 name: educationName
             });
             
-            // Закрываем модальное окно и очищаем форму
             document.getElementById('addEducationModal').style.display = 'none';
             document.getElementById('educationForm').reset();
             
-            // Обновляем переключатель образований
             initEducationSelector();
             saveUserData();
         }
@@ -2181,7 +2421,6 @@
         function updateStats() {
             const stats = document.getElementById('stats');
             
-            // Фильтруем предметы по текущему образованию
             const currentSubjects = data.subjects.filter(subject => 
                 subject.educationId === data.currentEducationId
             );
@@ -2276,7 +2515,7 @@
             document.getElementById('manageEducationsModal').style.display = 'flex';
         }
 
-        // Глобальные переменные для доступа из обработчиков событий
+        // Глобальные переменные
         window.currentSubjectId = null;
         window.initEducationSelector = initEducationSelector;
         window.renderSubjectsTable = renderSubjectsTable;
