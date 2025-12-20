@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трекер лабораторных работ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: none;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .login-title {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .login-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .login-message {
+            margin-top: 15px;
+            color: #dc3545;
+            min-height: 20px;
+        }
+        
+        .users-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .users-list-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .user-item {
+            padding: 10px;
+            background: #f8f9fa;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-item:hover {
+            background: #e9ecef;
+        }
+        
+        .user-name {
+            font-weight: 600;
+        }
+        
+        .user-delete {
+            color: #dc3545;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+        
+        .user-delete:hover {
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .username-display {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .education-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .education-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #e9ecef;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .education-btn.active {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .education-btn:hover:not(.active) {
+            background: #dee2e6;
+        }
+        
+        .delete-education-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        
+        .delete-education-btn:hover {
+            opacity: 1;
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        .add-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: auto;
+            transition: background 0.3s ease;
+        }
+        
+        .add-btn:hover {
+            background: #218838;
+        }
+        
+        .table-container {
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        thead {
+            background: #f8f9fa;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+        }
+        
+        tr.completed {
+            background-color: #f8f9fa;
+        }
+        
+        tr.completed td {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+        
+        .subject-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .lab-count {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-done {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background: #e9ecef;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .lab-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .lab-btn:hover {
+            background: #545b62;
+        }
+        
+        .done-btn {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .done-btn:hover {
+            background: #138496;
+        }
+        
+        .passed-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .passed-btn:hover {
+            background: #218838;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .add-btn {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .user-info {
+                position: static;
+                justify-content: center;
+                margin-top: 15px;
+            }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .save-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .cancel-btn {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .education-btn.add-education {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .delete-confirmation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .delete-confirmation p {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+        
+        .delete-confirmation-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .confirm-delete-btn {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .cancel-delete-btn {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .education-management {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .education-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .education-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .education-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .education-subjects-count {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+        
+        .no-education-message {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .welcome-message {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Экран входа/регистрации -->
+    <div class="login-container" id="loginContainer">
+        <h2 class="login-title">Трекер лабораторных работ</h2>
+        <input type="text" id="usernameInput" class="login-input" placeholder="Введите имя пользователя" maxlength="20">
+        <button class="login-btn" id="loginBtn">Войти / Зарегистрироваться</button>
+        <div class="login-message" id="loginMessage"></div>
+        
+        <div class="users-list">
+            <div class="users-list-title">Существующие пользователи:</div>
+            <div id="usersList">
+                <!-- Список пользователей будет загружен через JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Основной интерфейс -->
+    <div class="container" id="mainContainer">
+        <header>
+            <div class="user-info">
+                <div class="username-display" id="currentUsername"></div>
+                <button class="logout-btn" id="logoutBtn">Выйти</button>
+            </div>
+            <h1>Трекер лабораторных работ</h1>
+            <p class="subtitle">Отслеживайте выполнение лабораторных работ по всем предметам</p>
+            <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
+        </header>
+        
+        <div class="controls">
+            <div class="education-selector" id="educationSelector">
+                <!-- Образования будут добавлены через JS -->
+            </div>
+            <button class="add-btn" id="addSubjectBtn">Добавить предмет</button>
+            <button class="add-btn" id="manageEducationsBtn" style="background: #17a2b8;">Управление образованиями</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="subjectsTable">
+                <thead>
+                    <tr>
+                        <th width="25%">Предмет</th>
+                        <th width="15%">Всего ЛР</th>
+                        <th width="15%">Выполнено</th>
+                        <th width="15%">Сдано</th>
+                        <th width="20%">Прогресс</th>
+                        <th width="10%">Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="subjectsBody">
+                    <!-- Данные будут добавлены через JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="stats" id="stats">
+            <!-- Статистика будет обновляться через JS -->
+        </div>
+    </div>
+    
+    <!-- Модальные окна -->
+    <div class="modal" id="addSubjectModal">
+        <div class="modal-content">
+            <h2>Добавить новый предмет</h2>
+            <form id="subjectForm">
+                <div class="form-group">
+                    <label for="subjectName">Название предмета</label>
+                    <input type="text" id="subjectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="totalLabs">Количество лабораторных работ</label>
+                    <input type="number" id="totalLabs" min="1" max="50" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancelBtn">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="modal" id="addEducationModal">
+        <div class="modal-content">
+            <h2>Добавить новое образование</h2>
+            <form id="educationForm">
+                <div class="form-group">
+                    <label for="educationName">Название образования</label>
+                    <input type="text" id="educationName" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancelEducationBtn">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="modal" id="manageEducationsModal">
+        <div class="modal-content">
+            <h2>Управление образованиями</h2>
+            
+            <div class="education-management" id="educationsList">
+                <!-- Список образований будет добавлен через JS -->
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="add-btn" id="addNewEducationBtn" style="width: 100%;">Добавить новое образование</button>
+                <button class="cancel-btn" id="closeManageModalBtn" style="width: 100%;">Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="deleteEducationModal">
+        <div class="modal-content">
+            <h2>Удаление образования</h2>
+            <div id="deleteEducationContent">
+                <!-- Контент будет добавлен через JS -->
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="cancelDeleteBtn">Отмена</button>
+                <button type="button" class="confirm-delete-btn" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="deleteUserModal">
+        <div class="modal-content">
+            <h2>Удаление пользователя</h2>
+            <div id="deleteUserContent">
+                <!-- Контент будет добавлен через JS -->
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="cancelDeleteUserBtn">Отмена</button>
+                <button type="button" class="confirm-delete-btn" id="confirmDeleteUserBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Структура данных для всех пользователей
+        let allUsersData = {};
+        let currentUser = null;
+        let educationToDeleteId = null;
+        let userToDelete = null;
+
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllUsersData();
+            renderUsersList();
+            
+            // Фокус на поле ввода при загрузке
+            document.getElementById('usernameInput').focus();
+            
+            // Обработчик входа
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                loginUser();
+            });
+            
+            // Обработчик нажатия Enter в поле ввода
+            document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loginUser();
+                }
+            });
+            
+            // Обработчик выхода
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                logoutUser();
+            });
+            
+            // Инициализация обработчиков для модальных окон (будут назначены после входа)
+            initializeModalHandlers();
+            
+            // Обработчики для удаления пользователя
+            document.getElementById('cancelDeleteUserBtn').addEventListener('click', function() {
+                document.getElementById('deleteUserModal').style.display = 'none';
+                userToDelete = null;
+            });
+            
+            document.getElementById('confirmDeleteUserBtn').addEventListener('click', function() {
+                if (userToDelete !== null) {
+                    deleteUser(userToDelete);
+                }
+            });
+        });
+
+        // Загрузка данных всех пользователей
+        function loadAllUsersData() {
+            const savedData = localStorage.getItem('labTrackerAllUsersData');
+            if (savedData) {
+                allUsersData = JSON.parse(savedData);
+            }
+        }
+
+        // Сохранение данных всех пользователей
+        function saveAllUsersData() {
+            localStorage.setItem('labTrackerAllUsersData', JSON.stringify(allUsersData));
+        }
+
+        // Рендеринг списка пользователей
+        function renderUsersList() {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+            
+            const users = Object.keys(allUsersData);
+            
+            if (users.length === 0) {
+                usersList.innerHTML = '<div style="color: #666; font-style: italic;">Пока нет пользователей</div>';
+                return;
+            }
+            
+            users.forEach(username => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.innerHTML = `
+                    <span class="user-name">${username}</span>
+                    <button class="user-delete" data-username="${username}">✕</button>
+                `;
+                
+                // Обработчик клика по пользователю
+                userItem.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('user-delete')) {
+                        document.getElementById('usernameInput').value = username;
+                    }
+                });
+                
+                // Обработчик удаления пользователя
+                const deleteBtn = userItem.querySelector('.user-delete');
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const usernameToDelete = this.dataset.username;
+                    openDeleteUserModal(usernameToDelete);
+                });
+                
+                usersList.appendChild(userItem);
+            });
+        }
+
+        // Открытие модального окна удаления пользователя
+        function openDeleteUserModal(username) {
+            userToDelete = username;
+            
+            const deleteContent = document.getElementById('deleteUserContent');
+            deleteContent.innerHTML = `
+                <p>Вы уверены, что хотите удалить пользователя <strong>"${username}"</strong>?</p>
+                <div class="delete-confirmation">
+                    <p><strong>Внимание!</strong> Все данные этого пользователя будут безвозвратно удалены.</p>
+                    <p>Это действие нельзя отменить.</p>
+                </div>
+            `;
+            
+            document.getElementById('deleteUserModal').style.display = 'flex';
+        }
+
+        // Удаление пользователя
+        function deleteUser(username) {
+            // Удаляем пользователя из данных
+            delete allUsersData[username];
+            
+            // Сохраняем изменения
+            saveAllUsersData();
+            
+            // Обновляем список пользователей
+            renderUsersList();
+            
+            // Если удаленный пользователь был текущим, выходим
+            if (currentUser === username) {
+                logoutUser();
+            }
+            
+            // Закрываем модальное окно
+            document.getElementById('deleteUserModal').style.display = 'none';
+            userToDelete = null;
+            
+            alert(`Пользователь "${username}" успешно удален.`);
+        }
+
+        // Вход пользователя
+        function loginUser() {
+            const usernameInput = document.getElementById('usernameInput');
+            const username = usernameInput.value.trim();
+            
+            if (!username) {
+                showLoginMessage('Введите имя пользователя');
+                return;
+            }
+            
+            if (username.length < 2) {
+                showLoginMessage('Имя пользователя должно содержать минимум 2 символа');
+                return;
+            }
+            
+            if (username.length > 20) {
+                showLoginMessage('Имя пользователя не должно превышать 20 символов');
+                return;
+            }
+            
+            // Проверяем, существует ли пользователь
+            if (!allUsersData[username]) {
+                // Создаем нового пользователя с начальными данными
+                allUsersData[username] = {
+                    educations: [
+                        { id: 1, name: "Бакалавриат" },
+                        { id: 2, name: "Магистратура" }
+                    ],
+                    currentEducationId: 1,
+                    subjects: [
+                        { 
+                            id: 1, 
+                            educationId: 1,
+                            name: "Высшая математика", 
+                            totalLabs: 10, 
+                            doneLabs: 8, 
+                            passedLabs: 6 
+                        },
+                        { 
+                            id: 2, 
+                            educationId: 1,
+                            name: "Программирование", 
+                            totalLabs: 12, 
+                            doneLabs: 12, 
+                            passedLabs: 10 
+                        },
+                        { 
+                            id: 3, 
+                            educationId: 1,
+                            name: "Физика", 
+                            totalLabs: 8, 
+                            doneLabs: 5, 
+                            passedLabs: 3 
+                        }
+                    ]
+                };
+                saveAllUsersData();
+            }
+            
+            // Устанавливаем текущего пользователя
+            currentUser = username;
+            
+            // Загружаем данные пользователя
+            loadUserData();
+            
+            // Переключаемся на основной интерфейс
+            showMainInterface();
+            
+            // Показываем приветствие
+            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${username}!`;
+        }
+
+        // Показать сообщение на экране входа
+        function showLoginMessage(message) {
+            const messageElement = document.getElementById('loginMessage');
+            messageElement.textContent = message;
+            setTimeout(() => {
+                messageElement.textContent = '';
+            }, 3000);
+        }
+
+        // Показать основной интерфейс
+        function showMainInterface() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('currentUsername').textContent = currentUser;
+        }
+
+        // Показать экран входа
+        function showLoginInterface() {
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('usernameInput').focus();
+            renderUsersList();
+        }
+
+        // Выход пользователя
+        function logoutUser() {
+            // Сохраняем данные текущего пользователя
+            saveUserData();
+            
+            // Сбрасываем текущего пользователя
+            currentUser = null;
+            
+            // Показываем экран входа
+            showLoginInterface();
+        }
+
+        // Загрузка данных текущего пользователя
+        function loadUserData() {
+            if (currentUser && allUsersData[currentUser]) {
+                window.data = JSON.parse(JSON.stringify(allUsersData[currentUser]));
+            }
+        }
+
+        // Сохранение данных текущего пользователя
+        function saveUserData() {
+            if (currentUser && window.data) {
+                allUsersData[currentUser] = JSON.parse(JSON.stringify(window.data));
+                saveAllUsersData();
+            }
+        }
+
+        // Инициализация обработчиков модальных окон
+        function initializeModalHandlers() {
+            // Обработчики для кнопок
+            document.getElementById('addSubjectBtn')?.addEventListener('click', function() {
+                document.getElementById('addSubjectModal').style.display = 'flex';
+            });
+            
+            document.getElementById('cancelBtn')?.addEventListener('click', function() {
+                document.getElementById('addSubjectModal').style.display = 'none';
+                document.getElementById('subjectForm').reset();
+            });
+            
+            document.getElementById('subjectForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewSubject();
+            });
+            
+            // Кнопка управления образованиями
+            document.getElementById('manageEducationsBtn')?.addEventListener('click', function() {
+                openManageEducationsModal();
+            });
+            
+            // Кнопка закрытия модального окна управления образованиями
+            document.getElementById('closeManageModalBtn')?.addEventListener('click', function() {
+                document.getElementById('manageEducationsModal').style.display = 'none';
+            });
+            
+            // Кнопка добавления нового образования из модального окна управления
+            document.getElementById('addNewEducationBtn')?.addEventListener('click', function() {
+                document.getElementById('manageEducationsModal').style.display = 'none';
+                document.getElementById('addEducationModal').style.display = 'flex';
+            });
+            
+            document.getElementById('cancelEducationBtn')?.addEventListener('click', function() {
+                document.getElementById('addEducationModal').style.display = 'none';
+                document.getElementById('educationForm').reset();
+            });
+            
+            document.getElementById('educationForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewEducation();
+            });
+            
+            // Обработчики для модального окна удаления образования
+            document.getElementById('cancelDeleteBtn')?.addEventListener('click', function() {
+                document.getElementById('deleteEducationModal').style.display = 'none';
+                educationToDeleteId = null;
+            });
+            
+            document.getElementById('confirmDeleteBtn')?.addEventListener('click', function() {
+                if (educationToDeleteId !== null) {
+                    deleteEducation(educationToDeleteId);
+                }
+            });
+        }
+
+        // Открытие модального окна управления образованиями
+        function openManageEducationsModal() {
+            const educationsList = document.getElementById('educationsList');
+            educationsList.innerHTML = '';
+            
+            if (window.data.educations.length === 0) {
+                educationsList.innerHTML = `
+                    <div class="no-education-message">
+                        Нет добавленных образований. Добавьте первое образование.
+                    </div>
+                `;
+            } else {
+                window.data.educations.forEach(education => {
+                    // Подсчет количества предметов для этого образования
+                    const subjectCount = window.data.subjects.filter(subject => 
+                        subject.educationId === education.id
+                    ).length;
+                    
+                    const educationItem = document.createElement('div');
+                    educationItem.className = 'education-item';
+                    educationItem.innerHTML = `
+                        <div class="education-info">
+                            <div class="education-name">${education.name}</div>
+                            <div class="education-subjects-count">Предметов: ${subjectCount}</div>
+                        </div>
+                        <div>
+                            <button class="delete-education-btn delete-in-manage" data-id="${education.id}">✕</button>
+                        </div>
+                    `;
+                    
+                    educationsList.appendChild(educationItem);
+                });
+                
+                // Добавляем обработчики для кнопок удаления
+                document.querySelectorAll('.delete-in-manage').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const educationId = parseInt(this.dataset.id);
+                        openDeleteEducationModal(educationId);
+                    });
+                });
+            }
+            
+            document.getElementById('manageEducationsModal').style.display = 'flex';
+        }
+
+        // Открытие модального окна подтверждения удаления образования
+        function openDeleteEducationModal(educationId) {
+            educationToDeleteId = educationId;
+            
+            const education = window.data.educations.find(e => e.id === educationId);
+            if (!education) return;
+            
+            // Подсчет количества предметов для этого образования
+            const subjectCount = window.data.subjects.filter(subject => 
+                subject.educationId === educationId
+            ).length;
+            
+            const deleteContent = document.getElementById('deleteEducationContent');
+            
+            if (subjectCount > 0) {
+                deleteContent.innerHTML = `
+                    <p>Вы уверены, что хотите удалить образование <strong>"${education.name}"</strong>?</p>
+                    <div class="delete-confirmation">
+                        <p><strong>Внимание!</strong> В этом образовании есть ${subjectCount} предметов. Все они также будут удалены.</p>
+                        <p>Это действие нельзя отменить.</p>
+                    </div>
+                `;
+            } else {
+                deleteContent.innerHTML = `
+                    <p>Вы уверены, что хотите удалить образование <strong>"${education.name}"</strong>?</p>
+                    <p>В этом образовании нет предметов.</p>
+                `;
+            }
+            
+            document.getElementById('deleteEducationModal').style.display = 'flex';
+            document.getElementById('manageEducationsModal').style.display = 'none';
+        }
+
+        // Удаление образования
+        function deleteEducation(educationId) {
+            // Проверяем, не пытаемся ли удалить последнее образование
+            if (window.data.educations.length <= 1) {
+                alert('Нельзя удалить последнее образование. Добавьте новое образование перед удалением этого.');
+                document.getElementById('deleteEducationModal').style.display = 'none';
+                educationToDeleteId = null;
+                return;
+            }
+            
+            // Удаляем образование
+            const educationIndex = window.data.educations.findIndex(e => e.id === educationId);
+            if (educationIndex !== -1) {
+                window.data.educations.splice(educationIndex, 1);
+            }
+            
+            // Удаляем все предметы этого образования
+            window.data.subjects = window.data.subjects.filter(subject => subject.educationId !== educationId);
+            
+            // Если текущее образование было удалено, переключаемся на первое доступное
+            if (window.data.currentEducationId === educationId) {
+                window.data.currentEducationId = window.data.educations[0].id;
+            }
+            
+            // Обновляем интерфейс
+            initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
+            saveUserData();
+            
+            // Закрываем модальное окно
+            document.getElementById('deleteEducationModal').style.display = 'none';
+            educationToDeleteId = null;
+            
+            // Показываем сообщение об успешном удалении
+            alert('Образование успешно удалено.');
+        }
+
+        // Инициализация переключателя образований
+        function initEducationSelector() {
+            const educationSelector = document.getElementById('educationSelector');
+            educationSelector.innerHTML = '';
+            
+            window.data.educations.forEach(education => {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.position = 'relative';
+                buttonContainer.style.display = 'inline-block';
+                
+                const button = document.createElement('button');
+                button.className = `education-btn ${education.id === window.data.currentEducationId ? 'active' : ''}`;
+                button.textContent = education.name;
+                button.dataset.educationId = education.id;
+                
+                // Добавляем кнопку удаления только если образование не активно
+                if (education.id !== window.data.currentEducationId) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-education-btn';
+                    deleteBtn.innerHTML = '✕';
+                    deleteBtn.title = 'Удалить образование';
+                    deleteBtn.dataset.educationId = education.id;
+                    
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.stopPropagation(); // Предотвращаем переключение образования
+                        const educationId = parseInt(this.dataset.educationId);
+                        openDeleteEducationModal(educationId);
+                    });
+                    
+                    button.appendChild(deleteBtn);
+                }
+                
+                button.addEventListener('click', function(e) {
+                    // Игнорируем клик, если он был на кнопке удаления
+                    if (e.target.classList.contains('delete-education-btn')) {
+                        return;
+                    }
+                    
+                    // Убираем активный класс у всех кнопок
+                    document.querySelectorAll('.education-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Добавляем активный класс текущей кнопке
+                    this.classList.add('active');
+                    
+                    // Меняем текущее образование
+                    window.data.currentEducationId = parseInt(this.dataset.educationId);
+                    
+                    // Перерисовываем таблицу
+                    renderSubjectsTable();
+                    updateStats();
+                });
+                
+                buttonContainer.appendChild(button);
+                educationSelector.appendChild(buttonContainer);
+            });
+            
+            // Добавляем кнопку для нового образования
+            const addEducationBtn = document.createElement('button');
+            addEducationBtn.className = 'education-btn add-education';
+            addEducationBtn.textContent = '+ Новое образование';
+            addEducationBtn.addEventListener('click', function() {
+                document.getElementById('addEducationModal').style.display = 'flex';
+            });
+            educationSelector.appendChild(addEducationBtn);
+        }
+
+        // Рендеринг таблицы с предметами
+        function renderSubjectsTable() {
+            const subjectsBody = document.getElementById('subjectsBody');
+            subjectsBody.innerHTML = '';
+            
+            // Фильтруем предметы по текущему образованию
+            const currentSubjects = window.data.subjects.filter(subject => 
+                subject.educationId === window.data.currentEducationId
+            );
+            
+            if (currentSubjects.length === 0) {
+                subjectsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">
+                            Нет предметов для этого образования. Добавьте первый предмет.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Сортируем предметы: сначала незавершенные, потом завершенные
+            currentSubjects.sort((a, b) => {
+                const aCompleted = (a.doneLabs === a.totalLabs && a.passedLabs === a.totalLabs);
+                const bCompleted = (b.doneLabs === b.totalLabs && b.passedLabs === b.totalLabs);
+                return aCompleted - bCompleted;
+            });
+            
+            currentSubjects.forEach(subject => {
+                const isCompleted = subject.doneLabs === subject.totalLabs && 
+                                   subject.passedLabs === subject.totalLabs;
+                
+                const progressPercentage = Math.round((subject.passedLabs / subject.totalLabs) * 100);
+                
+                const row = document.createElement('tr');
+                row.className = isCompleted ? 'completed' : '';
+                row.innerHTML = `
+                    <td>
+                        <div class="subject-name">${subject.name}</div>
+                    </td>
+                    <td>
+                        <span class="lab-count">${subject.totalLabs}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${subject.doneLabs === subject.totalLabs ? 'status-done' : 'status-pending'}">
+                            ${subject.doneLabs} из ${subject.totalLabs}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${subject.passedLabs === subject.totalLabs ? 'status-passed' : 'status-pending'}">
+                            ${subject.passedLabs} из ${subject.totalLabs}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progressPercentage}%"></div>
+                        </div>
+                        <div style="margin-top: 5px; font-size: 0.9rem; color: #495057;">
+                            ${progressPercentage}%
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn lab-btn" data-id="${subject.id}" data-action="increment-lab">+ЛР</button>
+                            <button class="action-btn done-btn" data-id="${subject.id}" data-action="increment-done">Вып.</button>
+                            <button class="action-btn passed-btn" data-id="${subject.id}" data-action="increment-passed">Сдано</button>
+                            <button class="action-btn delete-btn" data-id="${subject.id}" data-action="delete">✕</button>
+                        </div>
+                    </td>
+                `;
+                
+                subjectsBody.appendChild(row);
+            });
+            
+            // Добавляем обработчики для кнопок действий
+            document.querySelectorAll('.action-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const subjectId = parseInt(this.dataset.id);
+                    const action = this.dataset.action;
+                    
+                    handleSubjectAction(subjectId, action);
+                });
+            });
+        }
+
+        // Обработка действий с предметами
+        function handleSubjectAction(subjectId, action) {
+            const subjectIndex = window.data.subjects.findIndex(s => s.id === subjectId);
+            
+            if (subjectIndex === -1) return;
+            
+            switch(action) {
+                case 'increment-lab':
+                    if (window.data.subjects[subjectIndex].totalLabs < 50) {
+                        window.data.subjects[subjectIndex].totalLabs++;
+                    }
+                    break;
+                    
+                case 'increment-done':
+                    if (window.data.subjects[subjectIndex].doneLabs < window.data.subjects[subjectIndex].totalLabs) {
+                        window.data.subjects[subjectIndex].doneLabs++;
+                    }
+                    break;
+                    
+                case 'increment-passed':
+                    if (window.data.subjects[subjectIndex].passedLabs < window.data.subjects[subjectIndex].doneLabs) {
+                        window.data.subjects[subjectIndex].passedLabs++;
+                    }
+                    break;
+                    
+                case 'delete':
+                    if (confirm('Удалить этот предмет?')) {
+                        window.data.subjects.splice(subjectIndex, 1);
+                    }
+                    break;
+            }
+            
+            renderSubjectsTable();
+            updateStats();
+            saveUserData();
+        }
+
+        // Добавление нового предмета
+        function addNewSubject() {
+            const subjectName = document.getElementById('subjectName').value;
+            const totalLabs = parseInt(document.getElementById('totalLabs').value);
+            
+            if (!subjectName || !totalLabs || totalLabs < 1) {
+                alert('Пожалуйста, заполните все поля корректно');
+                return;
+            }
+            
+            // Генерируем новый ID
+            const newId = window.data.subjects.length > 0 ? 
+                Math.max(...window.data.subjects.map(s => s.id)) + 1 : 1;
+            
+            // Добавляем новый предмет
+            window.data.subjects.push({
+                id: newId,
+                educationId: window.data.currentEducationId,
+                name: subjectName,
+                totalLabs: totalLabs,
+                doneLabs: 0,
+                passedLabs: 0
+            });
+            
+            // Закрываем модальное окно и очищаем форму
+            document.getElementById('addSubjectModal').style.display = 'none';
+            document.getElementById('subjectForm').reset();
+            
+            // Перерисовываем таблицу
+            renderSubjectsTable();
+            updateStats();
+            saveUserData();
+        }
+
+        // Добавление нового образования
+        function addNewEducation() {
+            const educationName = document.getElementById('educationName').value;
+            
+            if (!educationName) {
+                alert('Пожалуйста, введите название образования');
+                return;
+            }
+            
+            // Генерируем новый ID
+            const newId = window.data.educations.length > 0 ? 
+                Math.max(...window.data.educations.map(e => e.id)) + 1 : 1;
+            
+            // Добавляем новое образование
+            window.data.educations.push({
+                id: newId,
+                name: educationName
+            });
+            
+            // Закрываем модальное окно и очищаем форму
+            document.getElementById('addEducationModal').style.display = 'none';
+            document.getElementById('educationForm').reset();
+            
+            // Обновляем переключатель образований
+            initEducationSelector();
+            saveUserData();
+        }
+
+        // Обновление статистики
+        function updateStats() {
+            const stats = document.getElementById('stats');
+            
+            // Фильтруем предметы по текущему образованию
+            const currentSubjects = window.data.subjects.filter(subject => 
+                subject.educationId === window.data.currentEducationId
+            );
+            
+            if (currentSubjects.length === 0) {
+                stats.innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Предметов</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">0%</div>
+                        <div class="stat-label">Общий прогресс</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Завершено предметов</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Рассчитываем статистику
+            const totalSubjects = currentSubjects.length;
+            const completedSubjects = currentSubjects.filter(subject => 
+                subject.doneLabs === subject.totalLabs && subject.passedLabs === subject.totalLabs
+            ).length;
+            
+            const totalLabs = currentSubjects.reduce((sum, subject) => sum + subject.totalLabs, 0);
+            const passedLabs = currentSubjects.reduce((sum, subject) => sum + subject.passedLabs, 0);
+            const overallProgress = Math.round((passedLabs / totalLabs) * 100);
+            
+            stats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${totalSubjects}</div>
+                    <div class="stat-label">Предметов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${overallProgress}%</div>
+                    <div class="stat-label">Общий прогресс</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${completedSubjects}</div>
+                    <div class="stat-label">Завершено предметов</div>
+                </div>
+            `;
+        }
+
+        // При входе пользователя инициализируем интерфейс
+        window.initEducationSelector = initEducationSelector;
+        window.renderSubjectsTable = renderSubjectsTable;
+        window.updateStats = updateStats;
+    </script>
+</body>
+</html>
