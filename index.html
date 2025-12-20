@@ -5,13 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трекер лабораторных работ</title>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
-    <!-- Яндекс OAuth SDK -->
-    <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
+    <!-- Firebase SDK с fallback -->
+    <script>
+        // Проверяем доступность Firebase CDN
+        function loadFirebase() {
+            const firebaseScript = document.createElement('script');
+            firebaseScript.src = 'https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js';
+            firebaseScript.onload = function() {
+                // Загружаем остальные модули Firebase
+                const authScript = document.createElement('script');
+                authScript.src = 'https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js';
+                document.head.appendChild(authScript);
+                
+                const databaseScript = document.createElement('script');
+                databaseScript.src = 'https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js';
+                document.head.appendChild(databaseScript);
+                
+                authScript.onload = function() {
+                    // Инициализируем приложение после загрузки Firebase
+                    if (typeof initApp === 'function') {
+                        setTimeout(initApp, 100);
+                    }
+                };
+            };
+            
+            firebaseScript.onerror = function() {
+                // Если Firebase не загрузился, используем локальную версию
+                console.warn('Firebase CDN недоступен, используем локальную версию');
+                loadLocalFirebase();
+            };
+            
+            document.head.appendChild(firebaseScript);
+        }
+        
+        function loadLocalFirebase() {
+            // Здесь можно подключить локальные версии библиотек
+            // или показать сообщение об использовании офлайн-режима
+            console.log('Используем офлайн-режим без Firebase');
+            document.getElementById('offlineModeInfo').style.display = 'block';
+        }
+        
+        // Загружаем Firebase при старте
+        window.addEventListener('DOMContentLoaded', loadFirebase);
+    </script>
     
     <style>
         * {
@@ -185,15 +221,15 @@
             border-color: #d0d0d0;
         }
         
-        .social-btn-yandex {
-            background: #FFCC00;
-            color: #000;
-            border: 2px solid #FFCC00;
+        .social-btn-email {
+            background: #28a745;
+            color: white;
+            border: 2px solid #28a745;
         }
         
-        .social-btn-yandex:hover {
-            background: #ffd633;
-            border-color: #ffd633;
+        .social-btn-email:hover {
+            background: #218838;
+            border-color: #1e7e34;
         }
         
         .social-icon {
@@ -202,6 +238,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: bold;
         }
         
         .login-message {
@@ -213,6 +250,21 @@
         
         .login-success {
             color: #28a745;
+        }
+        
+        .offline-mode-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+            display: none;
+        }
+        
+        .offline-mode-info h4 {
+            margin-bottom: 10px;
+            color: #856404;
         }
         
         .sync-status {
@@ -300,6 +352,8 @@
             height: 24px;
             border-radius: 50%;
             object-fit: cover;
+            background: white;
+            padding: 2px;
         }
         
         .logout-btn {
@@ -1034,9 +1088,32 @@
         .auth-provider-steps li {
             margin-bottom: 8px;
         }
+        
+        .local-mode-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .local-mode-btn:hover {
+            background: #545b62;
+        }
     </style>
 </head>
 <body>
+    <!-- Информация об офлайн-режиме -->
+    <div class="offline-mode-info" id="offlineModeInfo">
+        <h4>⚠️ Офлайн-режим</h4>
+        <p>Firebase недоступен. Используется локальное хранение данных.</p>
+        <p>Данные будут сохранены только в этом браузере.</p>
+        <button class="local-mode-btn" onclick="enableLocalMode()">Продолжить в локальном режиме</button>
+    </div>
+    
     <!-- Индикатор синхронизации -->
     <div class="sync-status" id="syncStatus" style="display: none;">
         <div class="sync-icon sync-offline" id="syncIcon"></div>
@@ -1062,19 +1139,18 @@
                     Войти через Google
                 </button>
                 
-                <button class="social-btn social-btn-yandex" id="yandexLoginBtn">
-                    <div class="social-icon">Я</div>
-                    Войти через Яндекс
+                <button class="social-btn social-btn-email" id="emailLoginBtn">
+                    <div class="social-icon">@</div>
+                    Войти по email
                 </button>
             </div>
             
             <div class="social-divider">
-                <span>или</span>
+                <span>или используйте локальный аккаунт</span>
             </div>
             
-            <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
-            <input type="password" id="loginPassword" class="login-input" placeholder="Пароль" required>
-            <button class="login-btn" id="loginBtn">Войти</button>
+            <input type="text" id="localUsername" class="login-input" placeholder="Имя пользователя" required>
+            <button class="login-btn" id="localLoginBtn">Войти в локальный режим</button>
             <div class="login-message" id="loginMessage"></div>
         </div>
         
@@ -1086,33 +1162,32 @@
                     Зарегистрироваться через Google
                 </button>
                 
-                <button class="social-btn social-btn-yandex" id="yandexRegisterBtn">
-                    <div class="social-icon">Я</div>
-                    Зарегистрироваться через Яндекс
+                <button class="social-btn social-btn-email" id="emailRegisterBtn">
+                    <div class="social-icon">@</div>
+                    Зарегистрироваться по email
                 </button>
             </div>
             
             <div class="social-divider">
-                <span>или</span>
+                <span>или создайте локальный аккаунт</span>
             </div>
             
-            <input type="email" id="registerEmail" class="login-input" placeholder="Email" required>
-            <input type="password" id="registerPassword" class="login-input" placeholder="Пароль (мин. 6 символов)" required>
-            <input type="text" id="registerUsername" class="login-input" placeholder="Имя пользователя" required>
-            <button class="login-btn" id="registerBtn">Зарегистрироваться</button>
+            <input type="text" id="localRegisterUsername" class="login-input" placeholder="Имя пользователя" required>
+            <button class="login-btn" id="localRegisterBtn">Создать локальный аккаунт</button>
             <div class="login-message" id="registerMessage"></div>
         </div>
         
         <!-- Форма настройки Firebase -->
         <div class="login-form" id="firebaseForm">
             <div class="firebase-info">
-                <h3>Настройка Firebase</h3>
-                <p>Для работы с облачным хранением данных необходимо настроить Firebase:</p>
+                <h3>Настройка Firebase (опционально)</h3>
+                <p>Для облачного хранения данных и синхронизации между устройствами:</p>
                 <ol class="firebase-steps">
                     <li>Перейдите на <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
                     <li>Создайте новый проект</li>
                     <li>В настройках проекта найдите конфигурацию и вставьте её ниже</li>
                 </ol>
+                <p><strong>Без Firebase:</strong> Данные будут храниться только в этом браузере</p>
             </div>
             
             <div class="form-group">
@@ -1150,28 +1225,9 @@
                 <input type="text" id="appId" class="config-input" placeholder="1:1234567890:web:abc123def456">
             </div>
             
-            <div class="auth-provider-info">
-                <h4>Настройка провайдеров аутентификации</h4>
-                <p>Для работы авторизации через Google и Яндекс необходимо настроить провайдеров:</p>
-                <ol class="auth-provider-steps">
-                    <li>В Firebase Console перейдите в раздел "Authentication"</li>
-                    <li>На вкладке "Sign-in method" нажмите "Google" и включите его</li>
-                    <li>Укажите публичное название и email поддержки</li>
-                    <li>Сохраните настройки</li>
-                    <li><strong>Для Яндекс</strong>: Выберите "Настроить домен" в настройках проекта Firebase</li>
-                </ol>
-            </div>
-            
-            <button class="login-btn" id="saveFirebaseConfigBtn">Сохранить настройки</button>
+            <button class="login-btn" id="saveFirebaseConfigBtn">Сохранить настройки Firebase</button>
+            <button class="local-mode-btn" onclick="skipFirebaseSetup()">Пропустить, использовать локальный режим</button>
             <div class="login-message" id="firebaseMessage"></div>
-            
-            <div class="test-account-info">
-                <h4>Тестовый аккаунт Firebase</h4>
-                <p>Для быстрого тестирования можно использовать:</p>
-                <p><strong>Email:</strong> test@example.com</p>
-                <p><strong>Пароль:</strong> test123456</p>
-                <p><small>Или создайте свой аккаунт через форму регистрации</small></p>
-            </div>
         </div>
     </div>
     
@@ -1182,11 +1238,12 @@
                 <div class="username-display" id="currentUsername">
                     <img src="" alt="Аватар" class="user-avatar" id="userAvatar" style="display: none;">
                     <span id="displayName"></span>
+                    <span id="userBadge" style="font-size: 0.8rem; opacity: 0.8;"></span>
                 </div>
                 <button class="logout-btn" id="logoutBtn">Выйти</button>
             </div>
             <h1>Трекер лабораторных работ</h1>
-            <p class="subtitle">Данные сохраняются в облаке Firebase</p>
+            <p class="subtitle" id="storageMode">Локальное хранение данных</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
         
@@ -1324,14 +1381,16 @@
     </div>
 
     <script>
-        // Firebase конфигурация
+        // Глобальные переменные
         let firebaseConfig = null;
         let firebaseApp = null;
         let database = null;
         let currentUser = null;
         let currentUserId = null;
-        let isOnline = false;
+        let isOnline = navigator.onLine;
         let pendingSync = false;
+        let useLocalMode = false;
+        let authMethod = 'local'; // 'local', 'firebase_email', 'firebase_google'
         
         // Данные приложения
         let data = {
@@ -1343,30 +1402,26 @@
         };
 
         // Инициализация приложения
-        document.addEventListener('DOMContentLoaded', function() {
+        function initApp() {
+            console.log('Firebase загружен, инициализируем приложение');
+            
             loadFirebaseConfig();
             initializeLoginTabs();
             
             // Инициализация обработчиков форм
-            document.getElementById('loginBtn').addEventListener('click', loginWithEmail);
-            document.getElementById('registerBtn').addEventListener('click', registerWithEmail);
+            document.getElementById('localLoginBtn').addEventListener('click', loginLocal);
+            document.getElementById('localRegisterBtn').addEventListener('click', registerLocal);
+            document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('googleRegisterBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('emailLoginBtn').addEventListener('click', showEmailLogin);
+            document.getElementById('emailRegisterBtn').addEventListener('click', showEmailRegister);
             document.getElementById('saveFirebaseConfigBtn').addEventListener('click', saveFirebaseConfig);
             document.getElementById('logoutBtn').addEventListener('click', logoutUser);
             document.getElementById('manualSyncBtn').addEventListener('click', manualSync);
             
-            // Обработчики социальных кнопок
-            document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
-            document.getElementById('googleRegisterBtn').addEventListener('click', loginWithGoogle);
-            document.getElementById('yandexLoginBtn').addEventListener('click', loginWithYandex);
-            document.getElementById('yandexRegisterBtn').addEventListener('click', loginWithYandex);
-            
             // Обработчик нажатия Enter в формах
-            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') loginWithEmail();
-            });
-            
-            document.getElementById('registerPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') registerWithEmail();
+            document.getElementById('localUsername').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginLocal();
             });
             
             // Инициализация обработчиков модальных окон
@@ -1374,7 +1429,48 @@
             
             // Проверка авторизации при загрузке
             checkAuthState();
-        });
+            
+            // Слушатель изменения состояния сети
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            
+            updateOnlineStatus();
+        }
+
+        // Обновление статуса сети
+        function updateOnlineStatus() {
+            isOnline = navigator.onLine;
+            const syncStatus = document.getElementById('syncStatus');
+            
+            if (useLocalMode) {
+                syncStatus.style.display = 'none';
+                return;
+            }
+            
+            if (isOnline) {
+                document.getElementById('syncIcon').className = 'sync-icon sync-online';
+                document.getElementById('syncText').textContent = 'Онлайн';
+                syncStatus.style.display = 'flex';
+            } else {
+                document.getElementById('syncIcon').className = 'sync-icon sync-offline';
+                document.getElementById('syncText').textContent = 'Офлайн';
+                syncStatus.style.display = 'flex';
+            }
+        }
+
+        // Включение локального режима
+        function enableLocalMode() {
+            useLocalMode = true;
+            document.getElementById('offlineModeInfo').style.display = 'none';
+            showLoginInterface();
+        }
+
+        // Пропуск настройки Firebase
+        function skipFirebaseSetup() {
+            useLocalMode = true;
+            document.querySelector('.login-tab[data-tab="login"]').click();
+            showLoginMessage('Используется локальный режим', 'success');
+        }
 
         // Инициализация вкладок входа
         function initializeLoginTabs() {
@@ -1396,6 +1492,112 @@
             });
         }
 
+        // Показать форму входа по email
+        function showEmailLogin() {
+            if (!firebaseApp) {
+                showLoginMessage('Firebase не настроен. Используйте локальный режим.', 'error');
+                return;
+            }
+            
+            document.getElementById('loginForm').innerHTML = `
+                <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
+                <input type="password" id="loginPassword" class="login-input" placeholder="Пароль" required>
+                <button class="login-btn" id="emailLoginSubmitBtn">Войти</button>
+                <button class="local-mode-btn" onclick="showLocalLogin()">Вернуться к локальному входу</button>
+                <div class="login-message" id="loginMessage"></div>
+            `;
+            
+            document.getElementById('emailLoginSubmitBtn').addEventListener('click', loginWithEmail);
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginWithEmail();
+            });
+        }
+
+        // Показать форму регистрации по email
+        function showEmailRegister() {
+            if (!firebaseApp) {
+                showRegisterMessage('Firebase не настроен. Используйте локальный режим.', 'error');
+                return;
+            }
+            
+            document.getElementById('registerForm').innerHTML = `
+                <input type="email" id="registerEmail" class="login-input" placeholder="Email" required>
+                <input type="password" id="registerPassword" class="login-input" placeholder="Пароль (мин. 6 символов)" required>
+                <input type="text" id="registerUsername" class="login-input" placeholder="Имя пользователя" required>
+                <button class="login-btn" id="emailRegisterSubmitBtn">Зарегистрироваться</button>
+                <button class="local-mode-btn" onclick="showLocalRegister()">Вернуться к локальной регистрации</button>
+                <div class="login-message" id="registerMessage"></div>
+            `;
+            
+            document.getElementById('emailRegisterSubmitBtn').addEventListener('click', registerWithEmail);
+            document.getElementById('registerPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') registerWithEmail();
+            });
+        }
+
+        // Показать локальную форму входа
+        function showLocalLogin() {
+            document.getElementById('loginForm').innerHTML = `
+                <div class="social-buttons">
+                    <button class="social-btn social-btn-google" id="googleLoginBtn">
+                        <div class="social-icon">G</div>
+                        Войти через Google
+                    </button>
+                    
+                    <button class="social-btn social-btn-email" id="emailLoginBtn">
+                        <div class="social-icon">@</div>
+                        Войти по email
+                    </button>
+                </div>
+                
+                <div class="social-divider">
+                    <span>или используйте локальный аккаунт</span>
+                </div>
+                
+                <input type="text" id="localUsername" class="login-input" placeholder="Имя пользователя" required>
+                <button class="login-btn" id="localLoginBtn">Войти в локальный режим</button>
+                <div class="login-message" id="loginMessage"></div>
+            `;
+            
+            // Повторно назначаем обработчики
+            document.getElementById('localLoginBtn').addEventListener('click', loginLocal);
+            document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('emailLoginBtn').addEventListener('click', showEmailLogin);
+            document.getElementById('localUsername').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginLocal();
+            });
+        }
+
+        // Показать локальную форму регистрации
+        function showLocalRegister() {
+            document.getElementById('registerForm').innerHTML = `
+                <div class="social-buttons">
+                    <button class="social-btn social-btn-google" id="googleRegisterBtn">
+                        <div class="social-icon">G</div>
+                        Зарегистрироваться через Google
+                    </button>
+                    
+                    <button class="social-btn social-btn-email" id="emailRegisterBtn">
+                        <div class="social-icon">@</div>
+                        Зарегистрироваться по email
+                    </button>
+                </div>
+                
+                <div class="social-divider">
+                    <span>или создайте локальный аккаунт</span>
+                </div>
+                
+                <input type="text" id="localRegisterUsername" class="login-input" placeholder="Имя пользователя" required>
+                <button class="login-btn" id="localRegisterBtn">Создать локальный аккаунт</button>
+                <div class="login-message" id="registerMessage"></div>
+            `;
+            
+            // Повторно назначаем обработчики
+            document.getElementById('localRegisterBtn').addEventListener('click', registerLocal);
+            document.getElementById('googleRegisterBtn').addEventListener('click', loginWithGoogle);
+            document.getElementById('emailRegisterBtn').addEventListener('click', showEmailRegister);
+        }
+
         // Загрузка конфигурации Firebase из localStorage
         function loadFirebaseConfig() {
             const savedConfig = localStorage.getItem('firebaseConfig');
@@ -1413,6 +1615,9 @@
                 
                 // Инициализируем Firebase
                 initializeFirebase();
+            } else {
+                // Если нет конфигурации, используем локальный режим
+                useLocalMode = true;
             }
         }
 
@@ -1440,6 +1645,7 @@
             // Инициализируем Firebase
             if (initializeFirebase()) {
                 showFirebaseMessage('Конфигурация Firebase успешно сохранена!', 'success');
+                useLocalMode = false;
                 
                 // Переключаемся на вкладку входа
                 document.querySelector('.login-tab[data-tab="login"]').click();
@@ -1452,51 +1658,14 @@
                 // Инициализируем Firebase с конфигурацией
                 firebaseApp = firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
-                
-                // Настраиваем слушатели подключения
-                setupConnectionListeners();
+                useLocalMode = false;
                 
                 return true;
             } catch (error) {
                 console.error('Ошибка инициализации Firebase:', error);
-                showFirebaseMessage('Ошибка инициализации Firebase. Проверьте конфигурацию.', 'error');
+                showFirebaseMessage('Ошибка инициализации Firebase. Используется локальный режим.', 'error');
+                useLocalMode = true;
                 return false;
-            }
-        }
-
-        // Настройка слушателей подключения
-        function setupConnectionListeners() {
-            const connectedRef = database.ref(".info/connected");
-            
-            connectedRef.on("value", function(snap) {
-                if (snap.val() === true) {
-                    setOnlineStatus(true);
-                } else {
-                    setOnlineStatus(false);
-                }
-            });
-        }
-
-        // Установка статуса подключения
-        function setOnlineStatus(online) {
-            isOnline = online;
-            const syncStatus = document.getElementById('syncStatus');
-            const syncIcon = document.getElementById('syncIcon');
-            const syncText = document.getElementById('syncText');
-            
-            if (online) {
-                syncIcon.className = 'sync-icon sync-online';
-                syncText.textContent = 'Онлайн';
-                syncStatus.style.display = 'flex';
-                
-                // Если есть ожидающая синхронизация, выполняем её
-                if (pendingSync) {
-                    syncData();
-                }
-            } else {
-                syncIcon.className = 'sync-icon sync-offline';
-                syncText.textContent = 'Офлайн';
-                syncStatus.style.display = 'flex';
             }
         }
 
@@ -1513,23 +1682,31 @@
 
         // Проверка состояния авторизации
         function checkAuthState() {
+            if (useLocalMode) {
+                // Проверяем локальную авторизацию
+                const localUser = localStorage.getItem('currentLocalUser');
+                if (localUser) {
+                    handleLocalUserLogin(localUser);
+                }
+                return;
+            }
+            
             if (!firebaseApp) return;
             
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
-                    // Пользователь авторизован
-                    handleUserLogin(user);
-                } else {
-                    // Пользователь не авторизован
-                    showLoginInterface();
+                    // Пользователь авторизован в Firebase
+                    handleFirebaseUserLogin(user);
                 }
             });
         }
 
-        // Обработка входа пользователя
-        function handleUserLogin(user) {
+        // Обработка входа пользователя Firebase
+        function handleFirebaseUserLogin(user) {
             currentUser = user;
             currentUserId = user.uid;
+            authMethod = user.providerData && user.providerData[0] ? 
+                        user.providerData[0].providerId : 'firebase_email';
             
             // Обновляем отображение информации о пользователе
             updateUserDisplay(user);
@@ -1541,28 +1718,59 @@
             showMainInterface();
         }
 
+        // Обработка входа локального пользователя
+        function handleLocalUserLogin(username) {
+            currentUser = { displayName: username, photoURL: null };
+            currentUserId = 'local_' + username;
+            authMethod = 'local';
+            
+            // Обновляем отображение информации о пользователе
+            updateUserDisplay(currentUser);
+            
+            // Загружаем данные пользователя
+            loadUserData();
+            
+            // Показываем основной интерфейс
+            showMainInterface();
+        }
+
         // Обновление отображения информации о пользователе
         function updateUserDisplay(user) {
-            const displayName = user.displayName || user.email.split('@')[0];
-            const photoURL = user.photoURL;
+            const displayName = user.displayName || user.email || 'Пользователь';
             
             document.getElementById('displayName').textContent = displayName;
             document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${displayName}!`;
             
+            // Обновляем бейдж метода авторизации
+            const badge = document.getElementById('userBadge');
+            if (authMethod === 'local') {
+                badge.textContent = 'Локальный';
+                document.getElementById('storageMode').textContent = 'Локальное хранение данных';
+            } else if (authMethod.includes('google')) {
+                badge.textContent = 'Google';
+                document.getElementById('storageMode').textContent = 'Облачное хранение (Firebase)';
+            } else {
+                badge.textContent = 'Email';
+                document.getElementById('storageMode').textContent = 'Облачное хранение (Firebase)';
+            }
+            
             // Отображаем аватар, если есть
             const avatarElement = document.getElementById('userAvatar');
-            if (photoURL) {
-                avatarElement.src = photoURL;
+            if (user.photoURL) {
+                avatarElement.src = user.photoURL;
                 avatarElement.style.display = 'block';
             } else {
-                avatarElement.style.display = 'none';
+                // Создаем инициалы для аватара
+                const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                avatarElement.style.display = 'block';
             }
         }
 
         // Вход через Google
         function loginWithGoogle() {
-            if (!firebaseApp) {
-                showLoginMessage('Сначала настройте Firebase', 'error');
+            if (!firebaseApp || useLocalMode) {
+                showLoginMessage('Firebase не настроен. Используйте локальный режим.', 'error');
                 return;
             }
             
@@ -1570,7 +1778,6 @@
             
             const provider = new firebase.auth.GoogleAuthProvider();
             
-            // Запрашиваем дополнительные разрешения
             provider.addScope('profile');
             provider.addScope('email');
             
@@ -1584,38 +1791,10 @@
                 });
         }
 
-        // Вход через Яндекс
-        function loginWithYandex() {
-            if (!firebaseApp) {
-                showLoginMessage('Сначала настройте Firebase', 'error');
-                return;
-            }
-            
-            showLoginMessage('Подключение к Яндекс...', 'info');
-            
-            // Создаем кастомного провайдера для Яндекс
-            const provider = new firebase.auth.OAuthProvider('yandex.com');
-            
-            firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                    showLoginMessage('Вход через Яндекс успешен!', 'success');
-                })
-                .catch((error) => {
-                    console.error('Ошибка входа через Яндекс:', error);
-                    
-                    // Если Яндекс OAuth не настроен, показываем альтернативу
-                    if (error.code === 'auth/operation-not-allowed') {
-                        showLoginMessage('Яндекс OAuth не настроен в Firebase. Используйте email/пароль или Google.', 'error');
-                    } else {
-                        showLoginMessage(getFirebaseErrorMessage(error), 'error');
-                    }
-                });
-        }
-
         // Регистрация с email и паролем
         function registerWithEmail() {
-            if (!firebaseApp) {
-                showRegisterMessage('Сначала настройте Firebase', 'error');
+            if (!firebaseApp || useLocalMode) {
+                showRegisterMessage('Firebase не настроен. Используйте локальный режим.', 'error');
                 return;
             }
             
@@ -1670,8 +1849,8 @@
 
         // Вход с email и паролем
         function loginWithEmail() {
-            if (!firebaseApp) {
-                showLoginMessage('Сначала настройте Firebase', 'error');
+            if (!firebaseApp || useLocalMode) {
+                showLoginMessage('Firebase не настроен. Используйте локальный режим.', 'error');
                 return;
             }
             
@@ -1697,6 +1876,54 @@
                     console.error('Ошибка входа:', error);
                     showLoginMessage(getFirebaseErrorMessage(error), 'error');
                 });
+        }
+
+        // Локальный вход
+        function loginLocal() {
+            const username = document.getElementById('localUsername').value.trim();
+            
+            if (!username) {
+                showLoginMessage('Введите имя пользователя', 'error');
+                return;
+            }
+            
+            if (username.length < 2) {
+                showLoginMessage('Имя пользователя должно содержать минимум 2 символа', 'error');
+                return;
+            }
+            
+            // Сохраняем текущего пользователя
+            localStorage.setItem('currentLocalUser', username);
+            
+            // Обрабатываем вход
+            handleLocalUserLogin(username);
+            
+            // Очищаем форму
+            document.getElementById('localUsername').value = '';
+        }
+
+        // Локальная регистрация
+        function registerLocal() {
+            const username = document.getElementById('localRegisterUsername').value.trim();
+            
+            if (!username) {
+                showRegisterMessage('Введите имя пользователя', 'error');
+                return;
+            }
+            
+            if (username.length < 2) {
+                showRegisterMessage('Имя пользователя должно содержать минимум 2 символа', 'error');
+                return;
+            }
+            
+            // Сохраняем текущего пользователя
+            localStorage.setItem('currentLocalUser', username);
+            
+            // Обрабатываем вход
+            handleLocalUserLogin(username);
+            
+            // Очищаем форму
+            document.getElementById('localRegisterUsername').value = '';
         }
 
         // Показать сообщение в форме входа
@@ -1748,8 +1975,6 @@
                     return 'Вход отменен пользователем';
                 case 'auth/operation-not-allowed':
                     return 'Этот метод входа не разрешен. Обратитесь к администратору';
-                case 'auth/account-exists-with-different-credential':
-                    return 'Аккаунт с таким email уже существует с другим методом входа';
                 default:
                     return 'Ошибка: ' + error.message;
             }
@@ -1757,111 +1982,146 @@
 
         // Выход пользователя
         function logoutUser() {
-            if (firebaseApp) {
-                // Сначала сохраняем данные
-                saveUserData();
-                
+            if (!useLocalMode && firebaseApp) {
                 // Выходим из Firebase
                 firebase.auth().signOut()
-                    .then(() => {
-                        currentUser = null;
-                        currentUserId = null;
-                        showLoginInterface();
-                    })
                     .catch((error) => {
                         console.error('Ошибка выхода:', error);
                     });
-            } else {
-                showLoginInterface();
             }
+            
+            // Очищаем локальные данные
+            localStorage.removeItem('currentLocalUser');
+            currentUser = null;
+            currentUserId = null;
+            
+            showLoginInterface();
         }
 
         // Показать основной интерфейс
         function showMainInterface() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
+            updateOnlineStatus();
         }
 
         // Показать экран входа
         function showLoginInterface() {
             document.getElementById('mainContainer').style.display = 'none';
             document.getElementById('loginContainer').style.display = 'block';
+            updateOnlineStatus();
         }
 
-        // Загрузка данных пользователя из Firebase
+        // Загрузка данных пользователя
         function loadUserData() {
-            if (!currentUserId || !database) return;
-            
-            // Показываем индикатор загрузки
-            setSyncStatus('syncing', 'Загрузка данных...');
-            
-            database.ref('users/' + currentUserId).once('value')
-                .then((snapshot) => {
-                    const userData = snapshot.val();
-                    
-                    if (userData) {
-                        // Загружаем данные из Firebase
-                        data = userData;
+            if (useLocalMode) {
+                // Загружаем локальные данные
+                const userDataKey = 'labTrackerData_' + currentUserId;
+                const savedData = localStorage.getItem(userDataKey);
+                
+                if (savedData) {
+                    data = JSON.parse(savedData);
+                } else {
+                    // Создаем начальные данные
+                    data = {
+                        educations: [
+                            { id: 1, name: "Бакалавриат" }
+                        ],
+                        currentEducationId: 1,
+                        subjects: []
+                    };
+                    saveUserData();
+                }
+                
+                // Инициализируем интерфейс
+                initEducationSelector();
+                renderSubjectsTable();
+                updateStats();
+                
+            } else if (currentUserId && database) {
+                // Загружаем данные из Firebase
+                setSyncStatus('syncing', 'Загрузка данных...');
+                
+                database.ref('users/' + currentUserId).once('value')
+                    .then((snapshot) => {
+                        const userData = snapshot.val();
                         
-                        // Инициализируем интерфейс
+                        if (userData) {
+                            data = userData;
+                            setSyncStatus('online', 'Данные загружены');
+                        } else {
+                            // Данных нет, создаем начальные
+                            data = {
+                                educations: [
+                                    { id: 1, name: "Бакалавриат" }
+                                ],
+                                currentEducationId: 1,
+                                subjects: []
+                            };
+                            saveUserData();
+                            setSyncStatus('online', 'Созданы начальные данные');
+                        }
+                        
                         initEducationSelector();
                         renderSubjectsTable();
                         updateStats();
+                    })
+                    .catch((error) => {
+                        console.error('Ошибка загрузки данных:', error);
+                        setSyncStatus('offline', 'Ошибка загрузки данных');
                         
-                        setSyncStatus('online', 'Данные загружены');
-                    } else {
-                        // Данных нет, создаем начальные
-                        data = {
-                            educations: [
-                                { id: 1, name: "Бакалавриат" }
-                            ],
-                            currentEducationId: 1,
-                            subjects: []
-                        };
-                        
-                        // Сохраняем начальные данные
-                        saveUserData();
-                        
-                        setSyncStatus('online', 'Созданы начальные данные');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Ошибка загрузки данных:', error);
-                    setSyncStatus('offline', 'Ошибка загрузки данных');
-                    
-                    alert('Не удалось загрузить данные. Работаем в офлайн режиме.');
-                });
+                        // Пробуем загрузить локальную копию
+                        const backupKey = 'firebase_backup_' + currentUserId;
+                        const backupData = localStorage.getItem(backupKey);
+                        if (backupData) {
+                            data = JSON.parse(backupData);
+                            initEducationSelector();
+                            renderSubjectsTable();
+                            updateStats();
+                        }
+                    });
+            }
         }
 
-        // Сохранение данных пользователя в Firebase
+        // Сохранение данных пользователя
         function saveUserData() {
-            if (!currentUserId || !database) {
-                localStorage.setItem('labTrackerLocalData', JSON.stringify(data));
-                return;
-            }
-            
-            if (!isOnline) {
-                pendingSync = true;
-                setSyncStatus('offline', 'Ожидание синхронизации');
-                return;
-            }
-            
-            setSyncStatus('syncing', 'Сохранение данных...');
-            
-            database.ref('users/' + currentUserId).set(data)
-                .then(() => {
-                    pendingSync = false;
-                    setSyncStatus('online', 'Данные сохранены');
-                })
-                .catch((error) => {
-                    console.error('Ошибка сохранения данных:', error);
+            if (useLocalMode) {
+                // Сохраняем локально
+                const userDataKey = 'labTrackerData_' + currentUserId;
+                localStorage.setItem(userDataKey, JSON.stringify(data));
+            } else if (currentUserId && database) {
+                if (!isOnline) {
                     pendingSync = true;
-                    setSyncStatus('offline', 'Ошибка сохранения');
-                });
+                    setSyncStatus('offline', 'Ожидание синхронизации');
+                    
+                    // Сохраняем локальную копию
+                    const backupKey = 'firebase_backup_' + currentUserId;
+                    localStorage.setItem(backupKey, JSON.stringify(data));
+                    return;
+                }
+                
+                setSyncStatus('syncing', 'Сохранение данных...');
+                
+                database.ref('users/' + currentUserId).set(data)
+                    .then(() => {
+                        pendingSync = false;
+                        setSyncStatus('online', 'Данные сохранены');
+                    })
+                    .catch((error) => {
+                        console.error('Ошибка сохранения данных:', error);
+                        pendingSync = true;
+                        setSyncStatus('offline', 'Ошибка сохранения');
+                    });
+            }
         }
 
         // Ручная синхронизация
         function manualSync() {
+            if (useLocalMode) {
+                alert('В локальном режиме синхронизация не доступна');
+                return;
+            }
+            
             if (isOnline) {
                 saveUserData();
             } else {
@@ -1871,6 +2131,8 @@
 
         // Установка статуса синхронизации
         function setSyncStatus(status, text) {
+            if (useLocalMode) return;
+            
             const syncStatus = document.getElementById('syncStatus');
             const syncIcon = document.getElementById('syncIcon');
             const syncText = document.getElementById('syncText');
@@ -1893,7 +2155,7 @@
             }
         }
 
-        // Инициализация обработчиков модальных окон
+        // Инициализация обработчиков модальных окон (остальные функции без изменений)
         function initializeModalHandlers() {
             // Обработчики для кнопок
             document.getElementById('addSubjectBtn')?.addEventListener('click', function() {
@@ -2140,6 +2402,8 @@
         function openManageLabsModal(subjectId) {
             const subject = data.subjects.find(s => s.id === subjectId);
             if (!subject) return;
+            
+            window.currentSubjectId = subjectId;
             
             document.getElementById('subjectTitle').textContent = subject.name;
             
@@ -2520,6 +2784,10 @@
         window.initEducationSelector = initEducationSelector;
         window.renderSubjectsTable = renderSubjectsTable;
         window.updateStats = updateStats;
+        window.enableLocalMode = enableLocalMode;
+        window.skipFirebaseSetup = skipFirebaseSetup;
+        window.showLocalLogin = showLocalLogin;
+        window.showLocalRegister = showLocalRegister;
     </script>
 </body>
 </html>
