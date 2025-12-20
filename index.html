@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трекер лабораторных работ</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -44,6 +50,37 @@
             font-size: 2rem;
         }
         
+        .login-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+        
+        .login-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .login-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .login-form {
+            display: none;
+        }
+        
+        .login-form.active {
+            display: block;
+        }
+        
         .login-input {
             width: 100%;
             padding: 15px;
@@ -80,57 +117,63 @@
             margin-top: 15px;
             color: #dc3545;
             min-height: 20px;
-        }
-        
-        .users-list {
-            margin-top: 20px;
-            text-align: left;
-        }
-        
-        .users-list-title {
             font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 10px;
         }
         
-        .user-item {
-            padding: 10px;
-            background: #f8f9fa;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.3s ease;
+        .login-success {
+            color: #28a745;
+        }
+        
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
         }
         
-        .user-item:hover {
-            background: #e9ecef;
-        }
-        
-        .user-name {
-            font-weight: 600;
-        }
-        
-        .user-delete {
-            color: #dc3545;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 5px;
+        .sync-icon {
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s ease;
+            animation: pulse 2s infinite;
         }
         
-        .user-delete:hover {
-            background: rgba(220, 53, 69, 0.1);
+        .sync-online {
+            background: #28a745;
+        }
+        
+        .sync-offline {
+            background: #dc3545;
+        }
+        
+        .sync-syncing {
+            background: #ffc107;
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .sync-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 10px;
         }
         
         header {
@@ -806,21 +849,128 @@
             color: #6c757d;
             margin-top: 5px;
         }
+        
+        .firebase-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .firebase-info h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .firebase-steps {
+            list-style-type: decimal;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .firebase-steps li {
+            margin-bottom: 8px;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
+    <!-- Индикатор синхронизации -->
+    <div class="sync-status" id="syncStatus" style="display: none;">
+        <div class="sync-icon sync-offline" id="syncIcon"></div>
+        <span id="syncText">Офлайн</span>
+        <button class="sync-btn" id="manualSyncBtn">Синхронизировать</button>
+    </div>
+    
     <!-- Экран входа/регистрации -->
     <div class="login-container" id="loginContainer">
         <h2 class="login-title">Трекер лабораторных работ</h2>
-        <input type="text" id="usernameInput" class="login-input" placeholder="Введите имя пользователя" maxlength="20">
-        <button class="login-btn" id="loginBtn">Войти / Зарегистрироваться</button>
-        <div class="login-message" id="loginMessage"></div>
         
-        <div class="users-list">
-            <div class="users-list-title">Существующие пользователи:</div>
-            <div id="usersList">
-                <!-- Список пользователей будет загружен через JS -->
+        <div class="login-tabs">
+            <button class="login-tab active" data-tab="login">Вход</button>
+            <button class="login-tab" data-tab="register">Регистрация</button>
+            <button class="login-tab" data-tab="firebase">Настройка Firebase</button>
+        </div>
+        
+        <!-- Форма входа -->
+        <div class="login-form active" id="loginForm">
+            <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
+            <input type="password" id="loginPassword" class="login-input" placeholder="Пароль" required>
+            <button class="login-btn" id="loginBtn">Войти</button>
+            <div class="login-message" id="loginMessage"></div>
+        </div>
+        
+        <!-- Форма регистрации -->
+        <div class="login-form" id="registerForm">
+            <input type="email" id="registerEmail" class="login-input" placeholder="Email" required>
+            <input type="password" id="registerPassword" class="login-input" placeholder="Пароль (мин. 6 символов)" required>
+            <input type="text" id="registerUsername" class="login-input" placeholder="Имя пользователя" required>
+            <button class="login-btn" id="registerBtn">Зарегистрироваться</button>
+            <div class="login-message" id="registerMessage"></div>
+        </div>
+        
+        <!-- Форма настройки Firebase -->
+        <div class="login-form" id="firebaseForm">
+            <div class="firebase-info">
+                <h3>Настройка Firebase</h3>
+                <p>Для работы с облачным хранением данных необходимо настроить Firebase:</p>
+                <ol class="firebase-steps">
+                    <li>Перейдите на <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
+                    <li>Создайте новый проект</li>
+                    <li>В разделе Authentication включите Email/Password вход</li>
+                    <li>В разделе Realtime Database создайте базу данных</li>
+                    <li>В настройках проекта найдите конфигурацию и вставьте её ниже</li>
+                </ol>
             </div>
+            
+            <div class="form-group">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" class="config-input" placeholder="AIzaSy...">
+            </div>
+            
+            <div class="form-group">
+                <label for="authDomain">Auth Domain:</label>
+                <input type="text" id="authDomain" class="config-input" placeholder="ваш-проект.firebaseapp.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="databaseURL">Database URL:</label>
+                <input type="text" id="databaseURL" class="config-input" placeholder="https://ваш-проект.firebaseio.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="projectId">Project ID:</label>
+                <input type="text" id="projectId" class="config-input" placeholder="ваш-проект">
+            </div>
+            
+            <div class="form-group">
+                <label for="storageBucket">Storage Bucket:</label>
+                <input type="text" id="storageBucket" class="config-input" placeholder="ваш-проект.appspot.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="messagingSenderId">Messaging Sender ID:</label>
+                <input type="text" id="messagingSenderId" class="config-input" placeholder="1234567890">
+            </div>
+            
+            <div class="form-group">
+                <label for="appId">App ID:</label>
+                <input type="text" id="appId" class="config-input" placeholder="1:1234567890:web:abc123def456">
+            </div>
+            
+            <button class="login-btn" id="saveFirebaseConfigBtn">Сохранить настройки</button>
+            <div class="login-message" id="firebaseMessage"></div>
         </div>
     </div>
     
@@ -832,7 +982,7 @@
                 <button class="logout-btn" id="logoutBtn">Выйти</button>
             </div>
             <h1>Трекер лабораторных работ</h1>
-            <p class="subtitle">Отслеживайте выполнение лабораторных работ по всем предметам</p>
+            <p class="subtitle">Данные сохраняются в облаке Firebase</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
         
@@ -932,19 +1082,6 @@
         </div>
     </div>
     
-    <div class="modal" id="deleteUserModal">
-        <div class="modal-content">
-            <h2>Удаление пользователя</h2>
-            <div id="deleteUserContent">
-                <!-- Контент будет добавлен через JS -->
-            </div>
-            <div class="modal-buttons">
-                <button type="button" class="cancel-btn" id="cancelDeleteUserBtn">Отмена</button>
-                <button type="button" class="confirm-delete-btn" id="confirmDeleteUserBtn">Удалить</button>
-            </div>
-        </div>
-    </div>
-    
     <div class="modal" id="manageLabsModal">
         <div class="modal-content">
             <h2>
@@ -996,300 +1133,493 @@
     </div>
 
     <script>
-        // Структура данных для всех пользователей
-        let allUsersData = {};
+        // Firebase конфигурация (заполняется пользователем)
+        let firebaseConfig = null;
+        let firebaseApp = null;
+        let database = null;
         let currentUser = null;
-        let educationToDeleteId = null;
-        let userToDelete = null;
-        let currentSubjectId = null; // Для управления конкретным предметом
+        let currentUserId = null;
+        let isOnline = false;
+        let pendingSync = false;
+        
+        // Структура данных
+        let data = {
+            educations: [
+                { id: 1, name: "Бакалавриат" }
+            ],
+            currentEducationId: 1,
+            subjects: []
+        };
 
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
-            loadAllUsersData();
-            renderUsersList();
+            loadFirebaseConfig();
+            initializeLoginTabs();
             
-            // Фокус на поле ввода при загрузке
-            document.getElementById('usernameInput').focus();
+            // Инициализация обработчиков форм
+            document.getElementById('loginBtn').addEventListener('click', loginWithEmail);
+            document.getElementById('registerBtn').addEventListener('click', registerWithEmail);
+            document.getElementById('saveFirebaseConfigBtn').addEventListener('click', saveFirebaseConfig);
+            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+            document.getElementById('manualSyncBtn').addEventListener('click', manualSync);
             
-            // Обработчик входа
-            document.getElementById('loginBtn').addEventListener('click', function() {
-                loginUser();
+            // Обработчик нажатия Enter в формах
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginWithEmail();
             });
             
-            // Обработчик нажатия Enter в поле ввода
-            document.getElementById('usernameInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    loginUser();
-                }
+            document.getElementById('registerPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') registerWithEmail();
             });
             
-            // Обработчик выхода
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                logoutUser();
-            });
-            
-            // Инициализация обработчиков для модальных окон
+            // Инициализация обработчиков модальных окон
             initializeModalHandlers();
             
-            // Обработчики для удаления пользователя
-            document.getElementById('cancelDeleteUserBtn').addEventListener('click', function() {
-                document.getElementById('deleteUserModal').style.display = 'none';
-                userToDelete = null;
-            });
-            
-            document.getElementById('confirmDeleteUserBtn').addEventListener('click', function() {
-                if (userToDelete !== null) {
-                    deleteUser(userToDelete);
-                }
-            });
-            
-            // Обработчики для управления лабораторными работами
-            document.getElementById('closeLabsModalBtn').addEventListener('click', function() {
-                closeManageLabsModal();
-            });
-            
-            document.getElementById('markAllDoneBtn').addEventListener('click', function() {
-                markAllLabsAsDone();
-            });
-            
-            document.getElementById('markAllPassedBtn').addEventListener('click', function() {
-                markAllLabsAsPassed();
-            });
-            
-            document.getElementById('clearAllBtn').addEventListener('click', function() {
-                clearAllLabMarks();
-            });
+            // Проверка авторизации при загрузке
+            checkAuthState();
         });
 
-        // Загрузка данных всех пользователей
-        function loadAllUsersData() {
-            const savedData = localStorage.getItem('labTrackerAllUsersData');
-            if (savedData) {
-                allUsersData = JSON.parse(savedData);
-            }
-        }
-
-        // Сохранение данных всех пользователей
-        function saveAllUsersData() {
-            localStorage.setItem('labTrackerAllUsersData', JSON.stringify(allUsersData));
-        }
-
-        // Рендеринг списка пользователей
-        function renderUsersList() {
-            const usersList = document.getElementById('usersList');
-            usersList.innerHTML = '';
+        // Инициализация вкладок входа
+        function initializeLoginTabs() {
+            const tabs = document.querySelectorAll('.login-tab');
+            const forms = document.querySelectorAll('.login-form');
             
-            const users = Object.keys(allUsersData);
-            
-            if (users.length === 0) {
-                usersList.innerHTML = '<div style="color: #666; font-style: italic;">Пока нет пользователей</div>';
-                return;
-            }
-            
-            users.forEach(username => {
-                const userItem = document.createElement('div');
-                userItem.className = 'user-item';
-                userItem.innerHTML = `
-                    <span class="user-name">${username}</span>
-                    <button class="user-delete" data-username="${username}">✕</button>
-                `;
-                
-                // Обработчик клика по пользователю
-                userItem.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('user-delete')) {
-                        document.getElementById('usernameInput').value = username;
-                    }
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    // Убираем активный класс у всех вкладок и форм
+                    tabs.forEach(t => t.classList.remove('active'));
+                    forms.forEach(f => f.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущей вкладке и форме
+                    this.classList.add('active');
+                    document.getElementById(`${tabName}Form`).classList.add('active');
                 });
-                
-                // Обработчик удаления пользователя
-                const deleteBtn = userItem.querySelector('.user-delete');
-                deleteBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const usernameToDelete = this.dataset.username;
-                    openDeleteUserModal(usernameToDelete);
-                });
-                
-                usersList.appendChild(userItem);
             });
         }
 
-        // Открытие модального окна удаления пользователя
-        function openDeleteUserModal(username) {
-            userToDelete = username;
-            
-            const deleteContent = document.getElementById('deleteUserContent');
-            deleteContent.innerHTML = `
-                <p>Вы уверены, что хотите удалить пользователя <strong>"${username}"</strong>?</p>
-                <div class="delete-confirmation">
-                    <p><strong>Внимание!</strong> Все данные этого пользователя будут безвозвратно удалены.</p>
-                    <p>Это действие нельзя отменить.</p>
-                </div>
-            `;
-            
-            document.getElementById('deleteUserModal').style.display = 'flex';
-        }
-
-        // Удаление пользователя
-        function deleteUser(username) {
-            // Удаляем пользователя из данных
-            delete allUsersData[username];
-            
-            // Сохраняем изменения
-            saveAllUsersData();
-            
-            // Обновляем список пользователей
-            renderUsersList();
-            
-            // Если удаленный пользователь был текущим, выходим
-            if (currentUser === username) {
-                logoutUser();
-            }
-            
-            // Закрываем модальное окно
-            document.getElementById('deleteUserModal').style.display = 'none';
-            userToDelete = null;
-            
-            alert(`Пользователь "${username}" успешно удален.`);
-        }
-
-        // Вход пользователя
-        function loginUser() {
-            const usernameInput = document.getElementById('usernameInput');
-            const username = usernameInput.value.trim();
-            
-            if (!username) {
-                showLoginMessage('Введите имя пользователя');
-                return;
-            }
-            
-            if (username.length < 2) {
-                showLoginMessage('Имя пользователя должно содержать минимум 2 символа');
-                return;
-            }
-            
-            if (username.length > 20) {
-                showLoginMessage('Имя пользователя не должно превышать 20 символов');
-                return;
-            }
-            
-            // Проверяем, существует ли пользователь
-            if (!allUsersData[username]) {
-                // Создаем нового пользователя с начальными данными
-                allUsersData[username] = {
-                    educations: [
-                        { id: 1, name: "Бакалавриат" }
-                    ],
-                    currentEducationId: 1,
-                    subjects: [
-                        { 
-                            id: 1, 
-                            educationId: 1,
-                            name: "Пример предмета", 
-                            totalLabs: 5, 
-                            doneLabs: 0, 
-                            passedLabs: 0,
-                            labs: [] // Массив для хранения данных о каждой лабораторной работе
-                        }
-                    ]
-                };
+        // Загрузка конфигурации Firebase из localStorage
+        function loadFirebaseConfig() {
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (savedConfig) {
+                firebaseConfig = JSON.parse(savedConfig);
                 
-                // Инициализируем массив лабораторных работ для примера
-                for (let i = 1; i <= 5; i++) {
-                    allUsersData[username].subjects[0].labs.push({
-                        number: i,
-                        done: false,
-                        passed: false,
-                        grade: null
-                    });
+                // Заполняем поля формы
+                document.getElementById('apiKey').value = firebaseConfig.apiKey || '';
+                document.getElementById('authDomain').value = firebaseConfig.authDomain || '';
+                document.getElementById('databaseURL').value = firebaseConfig.databaseURL || '';
+                document.getElementById('projectId').value = firebaseConfig.projectId || '';
+                document.getElementById('storageBucket').value = firebaseConfig.storageBucket || '';
+                document.getElementById('messagingSenderId').value = firebaseConfig.messagingSenderId || '';
+                document.getElementById('appId').value = firebaseConfig.appId || '';
+                
+                // Инициализируем Firebase
+                initializeFirebase();
+            }
+        }
+
+        // Сохранение конфигурации Firebase
+        function saveFirebaseConfig() {
+            firebaseConfig = {
+                apiKey: document.getElementById('apiKey').value.trim(),
+                authDomain: document.getElementById('authDomain').value.trim(),
+                databaseURL: document.getElementById('databaseURL').value.trim(),
+                projectId: document.getElementById('projectId').value.trim(),
+                storageBucket: document.getElementById('storageBucket').value.trim(),
+                messagingSenderId: document.getElementById('messagingSenderId').value.trim(),
+                appId: document.getElementById('appId').value.trim()
+            };
+            
+            // Проверяем, что все поля заполнены
+            if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.databaseURL) {
+                showFirebaseMessage('Заполните все обязательные поля конфигурации', 'error');
+                return;
+            }
+            
+            // Сохраняем в localStorage
+            localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+            
+            // Инициализируем Firebase
+            if (initializeFirebase()) {
+                showFirebaseMessage('Конфигурация Firebase успешно сохранена!', 'success');
+                
+                // Переключаемся на вкладку входа
+                document.querySelector('.login-tab[data-tab="login"]').click();
+            }
+        }
+
+        // Инициализация Firebase
+        function initializeFirebase() {
+            try {
+                // Инициализируем Firebase с конфигурацией
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                
+                // Настраиваем слушатели подключения
+                setupConnectionListeners();
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка инициализации Firebase:', error);
+                showFirebaseMessage('Ошибка инициализации Firebase. Проверьте конфигурацию.', 'error');
+                return false;
+            }
+        }
+
+        // Настройка слушателей подключения
+        function setupConnectionListeners() {
+            const connectedRef = database.ref(".info/connected");
+            
+            connectedRef.on("value", function(snap) {
+                if (snap.val() === true) {
+                    setOnlineStatus(true);
+                } else {
+                    setOnlineStatus(false);
                 }
-                
-                saveAllUsersData();
-            } else {
-                // Для существующих пользователей, у которых нет структуры labs, добавляем ее
-                const userData = allUsersData[username];
-                userData.subjects.forEach(subject => {
-                    if (!subject.labs) {
-                        subject.labs = [];
-                        for (let i = 1; i <= subject.totalLabs; i++) {
-                            subject.labs.push({
-                                number: i,
-                                done: i <= subject.doneLabs,
-                                passed: i <= subject.passedLabs,
-                                grade: i <= subject.passedLabs ? 5 : null
-                            });
-                        }
-                    }
-                });
-                saveAllUsersData();
-            }
-            
-            // Устанавливаем текущего пользователя
-            currentUser = username;
-            
-            // Загружаем данные пользователя
-            loadUserData();
-            
-            // Переключаемся на основной интерфейс
-            showMainInterface();
-            
-            // Показываем приветствие
-            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${username}!`;
-            
-            // Инициализируем интерфейс
-            initEducationSelector();
-            renderSubjectsTable();
-            updateStats();
+            });
         }
 
-        // Показать сообщение на экране входа
-        function showLoginMessage(message) {
-            const messageElement = document.getElementById('loginMessage');
+        // Установка статуса подключения
+        function setOnlineStatus(online) {
+            isOnline = online;
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            if (online) {
+                syncIcon.className = 'sync-icon sync-online';
+                syncText.textContent = 'Онлайн';
+                syncStatus.style.display = 'flex';
+                
+                // Если есть ожидающая синхронизация, выполняем её
+                if (pendingSync) {
+                    syncData();
+                }
+            } else {
+                syncIcon.className = 'sync-icon sync-offline';
+                syncText.textContent = 'Офлайн';
+                syncStatus.style.display = 'flex';
+            }
+        }
+
+        // Показать сообщение в форме Firebase
+        function showFirebaseMessage(message, type) {
+            const messageElement = document.getElementById('firebaseMessage');
             messageElement.textContent = message;
+            messageElement.className = `login-message ${type === 'success' ? 'login-success' : ''}`;
+            
             setTimeout(() => {
                 messageElement.textContent = '';
-            }, 3000);
+            }, 5000);
+        }
+
+        // Проверка состояния авторизации
+        function checkAuthState() {
+            if (!firebaseApp) return;
+            
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    // Пользователь авторизован
+                    currentUser = user;
+                    currentUserId = user.uid;
+                    
+                    // Загружаем данные пользователя
+                    loadUserData();
+                    
+                    // Показываем основной интерфейс
+                    showMainInterface();
+                    
+                    // Показываем имя пользователя
+                    const displayName = user.displayName || user.email.split('@')[0];
+                    document.getElementById('currentUsername').textContent = displayName;
+                    document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${displayName}!`;
+                } else {
+                    // Пользователь не авторизован
+                    showLoginInterface();
+                }
+            });
+        }
+
+        // Регистрация с email и паролем
+        function registerWithEmail() {
+            if (!firebaseApp) {
+                showRegisterMessage('Сначала настройте Firebase', 'error');
+                return;
+            }
+            
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+            const username = document.getElementById('registerUsername').value.trim();
+            
+            if (!email || !password || !username) {
+                showRegisterMessage('Заполните все поля', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showRegisterMessage('Пароль должен содержать минимум 6 символов', 'error');
+                return;
+            }
+            
+            showRegisterMessage('Регистрация...', 'info');
+            
+            // Создаем пользователя
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Обновляем отображаемое имя
+                    return userCredential.user.updateProfile({
+                        displayName: username
+                    });
+                })
+                .then(() => {
+                    showRegisterMessage('Регистрация успешна!', 'success');
+                    
+                    // Создаем начальные данные для нового пользователя
+                    const initialData = {
+                        educations: [
+                            { id: 1, name: "Бакалавриат" }
+                        ],
+                        currentEducationId: 1,
+                        subjects: []
+                    };
+                    
+                    // Сохраняем начальные данные в Firebase
+                    return database.ref('users/' + currentUserId).set(initialData);
+                })
+                .then(() => {
+                    // Очищаем форму
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
+                    document.getElementById('registerUsername').value = '';
+                    
+                    // Переключаемся на вкладку входа
+                    setTimeout(() => {
+                        document.querySelector('.login-tab[data-tab="login"]').click();
+                    }, 1500);
+                })
+                .catch((error) => {
+                    console.error('Ошибка регистрации:', error);
+                    showRegisterMessage(getFirebaseErrorMessage(error), 'error');
+                });
+        }
+
+        // Вход с email и паролем
+        function loginWithEmail() {
+            if (!firebaseApp) {
+                showLoginMessage('Сначала настройте Firebase', 'error');
+                return;
+            }
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!email || !password) {
+                showLoginMessage('Заполните все поля', 'error');
+                return;
+            }
+            
+            showLoginMessage('Вход...', 'info');
+            
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    showLoginMessage('Вход успешен!', 'success');
+                    
+                    // Очищаем форму
+                    document.getElementById('loginEmail').value = '';
+                    document.getElementById('loginPassword').value = '';
+                })
+                .catch((error) => {
+                    console.error('Ошибка входа:', error);
+                    showLoginMessage(getFirebaseErrorMessage(error), 'error');
+                });
+        }
+
+        // Показать сообщение в форме входа
+        function showLoginMessage(message, type) {
+            const messageElement = document.getElementById('loginMessage');
+            messageElement.textContent = message;
+            messageElement.className = `login-message ${type === 'success' ? 'login-success' : ''}`;
+            
+            setTimeout(() => {
+                if (messageElement.textContent === message) {
+                    messageElement.textContent = '';
+                }
+            }, 5000);
+        }
+
+        // Показать сообщение в форме регистрации
+        function showRegisterMessage(message, type) {
+            const messageElement = document.getElementById('registerMessage');
+            messageElement.textContent = message;
+            messageElement.className = `login-message ${type === 'success' ? 'login-success' : ''}`;
+            
+            setTimeout(() => {
+                if (messageElement.textContent === message) {
+                    messageElement.textContent = '';
+                }
+            }, 5000);
+        }
+
+        // Получить понятное сообщение об ошибке Firebase
+        function getFirebaseErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    return 'Неверный формат email';
+                case 'auth/user-disabled':
+                    return 'Пользователь заблокирован';
+                case 'auth/user-not-found':
+                    return 'Пользователь не найден';
+                case 'auth/wrong-password':
+                    return 'Неверный пароль';
+                case 'auth/email-already-in-use':
+                    return 'Email уже используется';
+                case 'auth/weak-password':
+                    return 'Пароль слишком слабый';
+                case 'auth/network-request-failed':
+                    return 'Ошибка сети. Проверьте подключение к интернету';
+                default:
+                    return 'Ошибка: ' + error.message;
+            }
+        }
+
+        // Выход пользователя
+        function logoutUser() {
+            if (firebaseApp) {
+                // Сначала сохраняем данные
+                saveUserData();
+                
+                // Выходим из Firebase
+                firebase.auth().signOut()
+                    .then(() => {
+                        currentUser = null;
+                        currentUserId = null;
+                        showLoginInterface();
+                    })
+                    .catch((error) => {
+                        console.error('Ошибка выхода:', error);
+                    });
+            } else {
+                showLoginInterface();
+            }
         }
 
         // Показать основной интерфейс
         function showMainInterface() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
-            document.getElementById('currentUsername').textContent = currentUser;
         }
 
         // Показать экран входа
         function showLoginInterface() {
             document.getElementById('mainContainer').style.display = 'none';
             document.getElementById('loginContainer').style.display = 'block';
-            document.getElementById('usernameInput').value = '';
-            document.getElementById('usernameInput').focus();
-            renderUsersList();
         }
 
-        // Выход пользователя
-        function logoutUser() {
-            // Сохраняем данные текущего пользователя
-            saveUserData();
-            
-            // Сбрасываем текущего пользователя
-            currentUser = null;
-            
-            // Показываем экран входа
-            showLoginInterface();
-        }
-
-        // Загрузка данных текущего пользователя
+        // Загрузка данных пользователя из Firebase
         function loadUserData() {
-            if (currentUser && allUsersData[currentUser]) {
-                window.data = JSON.parse(JSON.stringify(allUsersData[currentUser]));
+            if (!currentUserId || !database) return;
+            
+            // Показываем индикатор загрузки
+            setSyncStatus('syncing', 'Загрузка данных...');
+            
+            database.ref('users/' + currentUserId).once('value')
+                .then((snapshot) => {
+                    const userData = snapshot.val();
+                    
+                    if (userData) {
+                        // Загружаем данные из Firebase
+                        data = userData;
+                        
+                        // Инициализируем интерфейс
+                        initEducationSelector();
+                        renderSubjectsTable();
+                        updateStats();
+                        
+                        setSyncStatus('online', 'Данные загружены');
+                    } else {
+                        // Данных нет, создаем начальные
+                        data = {
+                            educations: [
+                                { id: 1, name: "Бакалавриат" }
+                            ],
+                            currentEducationId: 1,
+                            subjects: []
+                        };
+                        
+                        // Сохраняем начальные данные
+                        saveUserData();
+                        
+                        setSyncStatus('online', 'Созданы начальные данные');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Ошибка загрузки данных:', error);
+                    setSyncStatus('offline', 'Ошибка загрузки данных');
+                    
+                    // Показываем сообщение об ошибке
+                    alert('Не удалось загрузить данные. Работаем в офлайн режиме.');
+                });
+        }
+
+        // Сохранение данных пользователя в Firebase
+        function saveUserData() {
+            if (!currentUserId || !database) {
+                // Сохраняем локально, если Firebase не настроен
+                localStorage.setItem('labTrackerLocalData', JSON.stringify(data));
+                return;
+            }
+            
+            if (!isOnline) {
+                pendingSync = true;
+                setSyncStatus('offline', 'Ожидание синхронизации');
+                return;
+            }
+            
+            setSyncStatus('syncing', 'Сохранение данных...');
+            
+            database.ref('users/' + currentUserId).set(data)
+                .then(() => {
+                    pendingSync = false;
+                    setSyncStatus('online', 'Данные сохранены');
+                })
+                .catch((error) => {
+                    console.error('Ошибка сохранения данных:', error);
+                    pendingSync = true;
+                    setSyncStatus('offline', 'Ошибка сохранения');
+                });
+        }
+
+        // Ручная синхронизация
+        function manualSync() {
+            if (isOnline) {
+                saveUserData();
+            } else {
+                alert('Нет подключения к интернету');
             }
         }
 
-        // Сохранение данных текущего пользователя
-        function saveUserData() {
-            if (currentUser && window.data) {
-                allUsersData[currentUser] = JSON.parse(JSON.stringify(window.data));
-                saveAllUsersData();
+        // Установка статуса синхронизации
+        function setSyncStatus(status, text) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            syncText.textContent = text;
+            
+            switch(status) {
+                case 'online':
+                    syncIcon.className = 'sync-icon sync-online';
+                    syncStatus.style.display = 'flex';
+                    break;
+                case 'offline':
+                    syncIcon.className = 'sync-icon sync-offline';
+                    syncStatus.style.display = 'flex';
+                    break;
+                case 'syncing':
+                    syncIcon.className = 'sync-icon sync-syncing';
+                    syncStatus.style.display = 'flex';
+                    break;
             }
         }
 
@@ -1336,133 +1666,22 @@
                 addNewEducation();
             });
             
-            // Обработчики для модального окна удаления образования
-            document.getElementById('cancelDeleteBtn')?.addEventListener('click', function() {
-                document.getElementById('deleteEducationModal').style.display = 'none';
-                educationToDeleteId = null;
+            // Обработчики для модального окна управления лабораторными работами
+            document.getElementById('closeLabsModalBtn')?.addEventListener('click', function() {
+                closeManageLabsModal();
             });
             
-            document.getElementById('confirmDeleteBtn')?.addEventListener('click', function() {
-                if (educationToDeleteId !== null) {
-                    deleteEducation(educationToDeleteId);
-                }
+            document.getElementById('markAllDoneBtn')?.addEventListener('click', function() {
+                markAllLabsAsDone();
             });
-        }
-
-        // Открытие модального окна управления образованиями
-        function openManageEducationsModal() {
-            const educationsList = document.getElementById('educationsList');
-            educationsList.innerHTML = '';
             
-            if (window.data.educations.length === 0) {
-                educationsList.innerHTML = `
-                    <div class="no-education-message">
-                        Нет добавленных образований. Добавьте первое образование.
-                    </div>
-                `;
-            } else {
-                window.data.educations.forEach(education => {
-                    // Подсчет количества предметов для этого образования
-                    const subjectCount = window.data.subjects.filter(subject => 
-                        subject.educationId === education.id
-                    ).length;
-                    
-                    const educationItem = document.createElement('div');
-                    educationItem.className = 'education-item';
-                    educationItem.innerHTML = `
-                        <div class="education-info">
-                            <div class="education-name">${education.name}</div>
-                            <div class="education-subjects-count">Предметов: ${subjectCount}</div>
-                        </div>
-                        <div>
-                            <button class="delete-education-btn delete-in-manage" data-id="${education.id}">✕</button>
-                        </div>
-                    `;
-                    
-                    educationsList.appendChild(educationItem);
-                });
-                
-                // Добавляем обработчики для кнопок удаления
-                document.querySelectorAll('.delete-in-manage').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const educationId = parseInt(this.dataset.id);
-                        openDeleteEducationModal(educationId);
-                    });
-                });
-            }
+            document.getElementById('markAllPassedBtn')?.addEventListener('click', function() {
+                markAllLabsAsPassed();
+            });
             
-            document.getElementById('manageEducationsModal').style.display = 'flex';
-        }
-
-        // Открытие модального окна подтверждения удаления образования
-        function openDeleteEducationModal(educationId) {
-            educationToDeleteId = educationId;
-            
-            const education = window.data.educations.find(e => e.id === educationId);
-            if (!education) return;
-            
-            // Подсчет количества предметов для этого образования
-            const subjectCount = window.data.subjects.filter(subject => 
-                subject.educationId === educationId
-            ).length;
-            
-            const deleteContent = document.getElementById('deleteEducationContent');
-            
-            if (subjectCount > 0) {
-                deleteContent.innerHTML = `
-                    <p>Вы уверены, что хотите удалить образование <strong>"${education.name}"</strong>?</p>
-                    <div class="delete-confirmation">
-                        <p><strong>Внимание!</strong> В этом образовании есть ${subjectCount} предметов. Все они также будут удалены.</p>
-                        <p>Это действие нельзя отменить.</p>
-                    </div>
-                `;
-            } else {
-                deleteContent.innerHTML = `
-                    <p>Вы уверены, что хотите удалить образование <strong>"${education.name}"</strong>?</p>
-                    <p>В этом образовании нет предметов.</p>
-                `;
-            }
-            
-            document.getElementById('deleteEducationModal').style.display = 'flex';
-            document.getElementById('manageEducationsModal').style.display = 'none';
-        }
-
-        // Удаление образования
-        function deleteEducation(educationId) {
-            // Проверяем, не пытаемся ли удалить последнее образование
-            if (window.data.educations.length <= 1) {
-                alert('Нельзя удалить последнее образование. Добавьте новое образование перед удалением этого.');
-                document.getElementById('deleteEducationModal').style.display = 'none';
-                educationToDeleteId = null;
-                return;
-            }
-            
-            // Удаляем образование
-            const educationIndex = window.data.educations.findIndex(e => e.id === educationId);
-            if (educationIndex !== -1) {
-                window.data.educations.splice(educationIndex, 1);
-            }
-            
-            // Удаляем все предметы этого образования
-            window.data.subjects = window.data.subjects.filter(subject => subject.educationId !== educationId);
-            
-            // Если текущее образование было удалено, переключаемся на первое доступное
-            if (window.data.currentEducationId === educationId) {
-                window.data.currentEducationId = window.data.educations[0].id;
-            }
-            
-            // Обновляем интерфейс
-            initEducationSelector();
-            renderSubjectsTable();
-            updateStats();
-            saveUserData();
-            
-            // Закрываем модальное окно
-            document.getElementById('deleteEducationModal').style.display = 'none';
-            educationToDeleteId = null;
-            
-            // Показываем сообщение об успешном удалении
-            alert('Образование успешно удалено.');
+            document.getElementById('clearAllBtn')?.addEventListener('click', function() {
+                clearAllLabMarks();
+            });
         }
 
         // Инициализация переключателя образований
@@ -1470,39 +1689,17 @@
             const educationSelector = document.getElementById('educationSelector');
             educationSelector.innerHTML = '';
             
-            window.data.educations.forEach(education => {
+            data.educations.forEach(education => {
                 const buttonContainer = document.createElement('div');
                 buttonContainer.style.position = 'relative';
                 buttonContainer.style.display = 'inline-block';
                 
                 const button = document.createElement('button');
-                button.className = `education-btn ${education.id === window.data.currentEducationId ? 'active' : ''}`;
+                button.className = `education-btn ${education.id === data.currentEducationId ? 'active' : ''}`;
                 button.textContent = education.name;
                 button.dataset.educationId = education.id;
                 
-                // Добавляем кнопку удаления только если образование не активно
-                if (education.id !== window.data.currentEducationId) {
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-education-btn';
-                    deleteBtn.innerHTML = '✕';
-                    deleteBtn.title = 'Удалить образование';
-                    deleteBtn.dataset.educationId = education.id;
-                    
-                    deleteBtn.addEventListener('click', function(e) {
-                        e.stopPropagation(); // Предотвращаем переключение образования
-                        const educationId = parseInt(this.dataset.educationId);
-                        openDeleteEducationModal(educationId);
-                    });
-                    
-                    button.appendChild(deleteBtn);
-                }
-                
-                button.addEventListener('click', function(e) {
-                    // Игнорируем клик, если он был на кнопке удаления
-                    if (e.target.classList.contains('delete-education-btn')) {
-                        return;
-                    }
-                    
+                button.addEventListener('click', function() {
                     // Убираем активный класс у всех кнопок
                     document.querySelectorAll('.education-btn').forEach(btn => {
                         btn.classList.remove('active');
@@ -1512,7 +1709,7 @@
                     this.classList.add('active');
                     
                     // Меняем текущее образование
-                    window.data.currentEducationId = parseInt(this.dataset.educationId);
+                    data.currentEducationId = parseInt(this.dataset.educationId);
                     
                     // Перерисовываем таблицу
                     renderSubjectsTable();
@@ -1539,8 +1736,8 @@
             subjectsBody.innerHTML = '';
             
             // Фильтруем предметы по текущему образованию
-            const currentSubjects = window.data.subjects.filter(subject => 
-                subject.educationId === window.data.currentEducationId
+            const currentSubjects = data.subjects.filter(subject => 
+                subject.educationId === data.currentEducationId
             );
             
             if (currentSubjects.length === 0) {
@@ -1553,13 +1750,6 @@
                 `;
                 return;
             }
-            
-            // Сортируем предметы: сначала незавершенные, потом завершенные
-            currentSubjects.sort((a, b) => {
-                const aCompleted = calculateCompletedLabs(a) === a.totalLabs;
-                const bCompleted = calculateCompletedLabs(b) === b.totalLabs;
-                return aCompleted - bCompleted;
-            });
             
             currentSubjects.forEach(subject => {
                 const doneLabsCount = calculateDoneLabs(subject);
@@ -1631,14 +1821,6 @@
             return subject.labs.filter(lab => lab.passed).length;
         }
 
-        // Подсчет завершенных лабораторных работ (и выполнены, и сданы)
-        function calculateCompletedLabs(subject) {
-            if (!subject.labs || subject.labs.length === 0) {
-                return Math.min(subject.doneLabs || 0, subject.passedLabs || 0);
-            }
-            return subject.labs.filter(lab => lab.done && lab.passed).length;
-        }
-
         // Расчет среднего балла
         function calculateAverageGrade(subject) {
             if (!subject.labs || subject.labs.length === 0) {
@@ -1656,20 +1838,20 @@
 
         // Обработка действий с предметами
         function handleSubjectAction(subjectId, action) {
-            const subjectIndex = window.data.subjects.findIndex(s => s.id === subjectId);
+            const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
             
             if (subjectIndex === -1) return;
             
             switch(action) {
                 case 'increment-lab':
-                    if (window.data.subjects[subjectIndex].totalLabs < 50) {
-                        window.data.subjects[subjectIndex].totalLabs++;
+                    if (data.subjects[subjectIndex].totalLabs < 50) {
+                        data.subjects[subjectIndex].totalLabs++;
                         // Добавляем новую лабораторную работу
-                        if (!window.data.subjects[subjectIndex].labs) {
-                            window.data.subjects[subjectIndex].labs = [];
+                        if (!data.subjects[subjectIndex].labs) {
+                            data.subjects[subjectIndex].labs = [];
                         }
-                        window.data.subjects[subjectIndex].labs.push({
-                            number: window.data.subjects[subjectIndex].totalLabs,
+                        data.subjects[subjectIndex].labs.push({
+                            number: data.subjects[subjectIndex].totalLabs,
                             done: false,
                             passed: false,
                             grade: null
@@ -1678,13 +1860,12 @@
                     break;
                     
                 case 'manage-labs':
-                    currentSubjectId = subjectId;
                     openManageLabsModal(subjectId);
                     break;
                     
                 case 'delete':
                     if (confirm('Удалить этот предмет?')) {
-                        window.data.subjects.splice(subjectIndex, 1);
+                        data.subjects.splice(subjectIndex, 1);
                     }
                     break;
             }
@@ -1696,14 +1877,14 @@
 
         // Открытие модального окна управления лабораторными работами
         function openManageLabsModal(subjectId) {
-            const subject = window.data.subjects.find(s => s.id === subjectId);
+            const subject = data.subjects.find(s => s.id === subjectId);
             if (!subject) return;
             
             // Обновляем заголовок
             document.getElementById('subjectTitle').textContent = subject.name;
             
             // Получаем название текущего образования
-            const education = window.data.educations.find(e => e.id === subject.educationId);
+            const education = data.educations.find(e => e.id === subject.educationId);
             document.getElementById('educationTitle').textContent = education ? `Образование: ${education.name}` : '';
             
             // Обновляем информацию о предмете
@@ -1729,7 +1910,6 @@
         // Закрытие модального окна управления лабораторными работами
         function closeManageLabsModal() {
             document.getElementById('manageLabsModal').style.display = 'none';
-            currentSubjectId = null;
             renderSubjectsTable();
             updateStats();
             saveUserData();
@@ -1751,20 +1931,6 @@
                         grade: null
                     });
                 }
-            }
-            
-            // Если количество labs не соответствует totalLabs, корректируем
-            if (subject.labs.length < subject.totalLabs) {
-                for (let i = subject.labs.length + 1; i <= subject.totalLabs; i++) {
-                    subject.labs.push({
-                        number: i,
-                        done: false,
-                        passed: false,
-                        grade: null
-                    });
-                }
-            } else if (subject.labs.length > subject.totalLabs) {
-                subject.labs = subject.labs.slice(0, subject.totalLabs);
             }
             
             subject.labs.forEach(lab => {
@@ -1799,7 +1965,7 @@
                 // Обработчик клика по лабораторной работе
                 labItem.addEventListener('click', function(e) {
                     if (!e.target.classList.contains('grade-selector')) {
-                        toggleLabStatus(lab.number);
+                        toggleLabStatus(lab.number, subject);
                     }
                 });
                 
@@ -1808,10 +1974,9 @@
                 if (gradeSelector) {
                     gradeSelector.addEventListener('change', function(e) {
                         e.stopPropagation();
-                        updateLabGrade(lab.number, parseInt(this.value));
+                        updateLabGrade(lab.number, parseInt(this.value), subject);
                     });
                     
-                    // Обработчик клика по селектору оценки
                     gradeSelector.addEventListener('click', function(e) {
                         e.stopPropagation();
                     });
@@ -1822,59 +1987,44 @@
         }
 
         // Переключение статуса лабораторной работы
-        function toggleLabStatus(labNumber) {
-            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
-            if (!subject) return;
-            
+        function toggleLabStatus(labNumber, subject) {
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
             
-            // Циклическое переключение статусов: не выполнена -> выполнена -> сдана -> не выполнена
             if (!lab.done) {
                 lab.done = true;
                 lab.passed = false;
                 lab.grade = null;
             } else if (!lab.passed) {
                 lab.passed = true;
-                lab.grade = 5; // По умолчанию отлично
+                lab.grade = 5;
             } else {
                 lab.done = false;
                 lab.passed = false;
                 lab.grade = null;
             }
             
-            // Обновляем отображение
             updateLabDisplay(subject);
         }
 
         // Обновление оценки лабораторной работы
-        function updateLabGrade(labNumber, grade) {
-            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
-            if (!subject) return;
-            
+        function updateLabGrade(labNumber, grade, subject) {
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
             
             lab.grade = grade;
-            
-            // Обновляем отображение
             updateLabDisplay(subject);
         }
 
         // Обновление отображения лабораторных работ
         function updateLabDisplay(subject) {
-            // Обновляем счетчики
             document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
             document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
             
-            // Обновляем средний балл
             const averageGrade = calculateAverageGrade(subject);
             document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
             
-            // Обновляем статистику оценок
             updateGradeStats(subject);
-            
-            // Перерисовываем сетку
             renderLabsGrid(subject);
         }
 
@@ -1896,7 +2046,6 @@
             
             const totalPassed = passedLabs.length;
             
-            // Создаем блоки статистики для каждой оценки
             [5, 4, 3, 2].forEach(grade => {
                 const count = gradeCounts[grade];
                 const percentage = totalPassed > 0 ? Math.round((count / totalPassed) * 100) : 0;
@@ -1914,7 +2063,7 @@
 
         // Отметить все лабораторные работы как выполненные
         function markAllLabsAsDone() {
-            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
@@ -1928,13 +2077,13 @@
 
         // Отметить все лабораторные работы как сданные
         function markAllLabsAsPassed() {
-            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
                 lab.done = true;
                 lab.passed = true;
-                lab.grade = lab.grade || 5; // Если нет оценки, ставим 5
+                lab.grade = lab.grade || 5;
             });
             
             updateLabDisplay(subject);
@@ -1942,7 +2091,7 @@
 
         // Сбросить все отметки
         function clearAllLabMarks() {
-            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
@@ -1965,8 +2114,8 @@
             }
             
             // Генерируем новый ID
-            const newId = window.data.subjects.length > 0 ? 
-                Math.max(...window.data.subjects.map(s => s.id)) + 1 : 1;
+            const newId = data.subjects.length > 0 ? 
+                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
             
             // Создаем массив лабораторных работ
             const labs = [];
@@ -1980,9 +2129,9 @@
             }
             
             // Добавляем новый предмет
-            window.data.subjects.push({
+            data.subjects.push({
                 id: newId,
-                educationId: window.data.currentEducationId,
+                educationId: data.currentEducationId,
                 name: subjectName,
                 totalLabs: totalLabs,
                 doneLabs: 0,
@@ -2010,11 +2159,11 @@
             }
             
             // Генерируем новый ID
-            const newId = window.data.educations.length > 0 ? 
-                Math.max(...window.data.educations.map(e => e.id)) + 1 : 1;
+            const newId = data.educations.length > 0 ? 
+                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
             
             // Добавляем новое образование
-            window.data.educations.push({
+            data.educations.push({
                 id: newId,
                 name: educationName
             });
@@ -2033,8 +2182,8 @@
             const stats = document.getElementById('stats');
             
             // Фильтруем предметы по текущему образованию
-            const currentSubjects = window.data.subjects.filter(subject => 
-                subject.educationId === window.data.currentEducationId
+            const currentSubjects = data.subjects.filter(subject => 
+                subject.educationId === data.currentEducationId
             );
             
             if (currentSubjects.length === 0) {
@@ -2049,13 +2198,12 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">0</div>
-                        <div class="stat-label">Завершено предметов</div>
+                        <div class="stat-label">Средний балл</div>
                     </div>
                 `;
                 return;
             }
             
-            // Рассчитываем статистику
             const totalSubjects = currentSubjects.length;
             const completedSubjects = currentSubjects.filter(subject => 
                 calculateDoneLabs(subject) === subject.totalLabs && 
@@ -2066,7 +2214,6 @@
             const passedLabs = currentSubjects.reduce((sum, subject) => sum + calculatePassedLabs(subject), 0);
             const overallProgress = Math.round((passedLabs / totalLabs) * 100);
             
-            // Рассчитываем общий средний балл
             let totalAverage = 0;
             let subjectsWithGrades = 0;
             
@@ -2095,6 +2242,45 @@
                 </div>
             `;
         }
+
+        // Открытие модального окна управления образованиями
+        function openManageEducationsModal() {
+            const educationsList = document.getElementById('educationsList');
+            educationsList.innerHTML = '';
+            
+            if (data.educations.length === 0) {
+                educationsList.innerHTML = `
+                    <div class="no-education-message">
+                        Нет добавленных образований. Добавьте первое образование.
+                    </div>
+                `;
+            } else {
+                data.educations.forEach(education => {
+                    const subjectCount = data.subjects.filter(subject => 
+                        subject.educationId === education.id
+                    ).length;
+                    
+                    const educationItem = document.createElement('div');
+                    educationItem.className = 'education-item';
+                    educationItem.innerHTML = `
+                        <div class="education-info">
+                            <div class="education-name">${education.name}</div>
+                            <div class="education-subjects-count">Предметов: ${subjectCount}</div>
+                        </div>
+                    `;
+                    
+                    educationsList.appendChild(educationItem);
+                });
+            }
+            
+            document.getElementById('manageEducationsModal').style.display = 'flex';
+        }
+
+        // Глобальные переменные для доступа из обработчиков событий
+        window.currentSubjectId = null;
+        window.initEducationSelector = initEducationSelector;
+        window.renderSubjectsTable = renderSubjectsTable;
+        window.updateStats = updateStats;
     </script>
 </body>
 </html>
