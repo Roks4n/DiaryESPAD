@@ -351,6 +351,7 @@
         .action-buttons {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
         
         .action-btn {
@@ -360,6 +361,7 @@
             cursor: pointer;
             font-weight: 600;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
         
         .lab-btn {
@@ -396,6 +398,15 @@
         
         .delete-btn:hover {
             background: #c82333;
+        }
+        
+        .manage-labs-btn {
+            background: #6f42c1;
+            color: white;
+        }
+        
+        .manage-labs-btn:hover {
+            background: #5a32a3;
         }
         
         .stats {
@@ -456,6 +467,8 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
         }
         
         .modal-content {
@@ -463,13 +476,24 @@
             padding: 30px;
             border-radius: 10px;
             width: 90%;
-            max-width: 500px;
+            max-width: 800px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .modal h2 {
             margin-bottom: 20px;
             color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-subtitle {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 20px;
         }
         
         .form-group {
@@ -607,6 +631,181 @@
             color: rgba(255, 255, 255, 0.9);
             font-size: 1.1rem;
         }
+        
+        .labs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .lab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .lab-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .lab-number {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .lab-status {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .lab-not-done {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .lab-done {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .lab-passed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .grade-selector {
+            margin-top: 8px;
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        
+        .grade-5 { background: #d4edda; color: #155724; }
+        .grade-4 { background: #fff3cd; color: #856404; }
+        .grade-3 { background: #f8d7da; color: #721c24; }
+        .grade-2 { background: #dc3545; color: white; }
+        
+        .status-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .status-control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            background: #6c757d;
+            color: white;
+        }
+        
+        .status-control-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .mark-all-done {
+            background: #17a2b8;
+        }
+        
+        .mark-all-passed {
+            background: #28a745;
+        }
+        
+        .clear-all {
+            background: #dc3545;
+        }
+        
+        .subject-info-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .subject-info-title {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.2rem;
+        }
+        
+        .subject-info-details {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .subject-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .subject-info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .subject-info-value {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .average-grade {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-top: 10px;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .grade-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .grade-stat {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-width: 100px;
+        }
+        
+        .grade-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .grade-stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -653,8 +852,8 @@
                         <th width="15%">Всего ЛР</th>
                         <th width="15%">Выполнено</th>
                         <th width="15%">Сдано</th>
-                        <th width="20%">Прогресс</th>
-                        <th width="10%">Действия</th>
+                        <th width="15%">Средний балл</th>
+                        <th width="15%">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="subjectsBody">
@@ -745,6 +944,56 @@
             </div>
         </div>
     </div>
+    
+    <div class="modal" id="manageLabsModal">
+        <div class="modal-content">
+            <h2>
+                Управление лабораторными работами
+                <span style="font-size: 1rem; color: #6c757d;" id="subjectTitle"></span>
+            </h2>
+            <div class="modal-subtitle" id="educationTitle"></div>
+            
+            <div class="subject-info-header">
+                <div class="subject-info-title" id="currentSubjectName"></div>
+                <div class="subject-info-details">
+                    <div class="subject-info-item">
+                        <span class="subject-info-label">Всего ЛР:</span>
+                        <span class="subject-info-value" id="totalLabsCount">0</span>
+                    </div>
+                    <div class="subject-info-item">
+                        <span class="subject-info-label">Выполнено:</span>
+                        <span class="subject-info-value" id="doneLabsCount">0</span>
+                    </div>
+                    <div class="subject-info-item">
+                        <span class="subject-info-label">Сдано:</span>
+                        <span class="subject-info-value" id="passedLabsCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="labs-grid" id="labsGrid">
+                <!-- Сетка лабораторных работ будет добавлена через JS -->
+            </div>
+            
+            <div class="status-controls">
+                <button class="status-control-btn mark-all-done" id="markAllDoneBtn">Отметить все как выполненные</button>
+                <button class="status-control-btn mark-all-passed" id="markAllPassedBtn">Отметить все как сданные</button>
+                <button class="status-control-btn clear-all" id="clearAllBtn">Сбросить все отметки</button>
+            </div>
+            
+            <div class="average-grade" id="averageGradeSection">
+                Средний балл: <span id="averageGradeValue">0</span>
+            </div>
+            
+            <div class="grade-stats" id="gradeStats">
+                <!-- Статистика оценок будет добавлена через JS -->
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="closeLabsModalBtn">Закрыть</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Структура данных для всех пользователей
@@ -752,6 +1001,7 @@
         let currentUser = null;
         let educationToDeleteId = null;
         let userToDelete = null;
+        let currentSubjectId = null; // Для управления конкретным предметом
 
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
@@ -778,7 +1028,7 @@
                 logoutUser();
             });
             
-            // Инициализация обработчиков для модальных окон (будут назначены после входа)
+            // Инициализация обработчиков для модальных окон
             initializeModalHandlers();
             
             // Обработчики для удаления пользователя
@@ -791,6 +1041,23 @@
                 if (userToDelete !== null) {
                     deleteUser(userToDelete);
                 }
+            });
+            
+            // Обработчики для управления лабораторными работами
+            document.getElementById('closeLabsModalBtn').addEventListener('click', function() {
+                closeManageLabsModal();
+            });
+            
+            document.getElementById('markAllDoneBtn').addEventListener('click', function() {
+                markAllLabsAsDone();
+            });
+            
+            document.getElementById('markAllPassedBtn').addEventListener('click', function() {
+                markAllLabsAsPassed();
+            });
+            
+            document.getElementById('clearAllBtn').addEventListener('click', function() {
+                clearAllLabMarks();
             });
         });
 
@@ -910,37 +1177,49 @@
                 // Создаем нового пользователя с начальными данными
                 allUsersData[username] = {
                     educations: [
-                        { id: 1, name: "Бакалавриат" },
-                        { id: 2, name: "Магистратура" }
+                        { id: 1, name: "Бакалавриат" }
                     ],
                     currentEducationId: 1,
                     subjects: [
                         { 
                             id: 1, 
                             educationId: 1,
-                            name: "Высшая математика", 
-                            totalLabs: 10, 
-                            doneLabs: 8, 
-                            passedLabs: 6 
-                        },
-                        { 
-                            id: 2, 
-                            educationId: 1,
-                            name: "Программирование", 
-                            totalLabs: 12, 
-                            doneLabs: 12, 
-                            passedLabs: 10 
-                        },
-                        { 
-                            id: 3, 
-                            educationId: 1,
-                            name: "Физика", 
-                            totalLabs: 8, 
-                            doneLabs: 5, 
-                            passedLabs: 3 
+                            name: "Пример предмета", 
+                            totalLabs: 5, 
+                            doneLabs: 0, 
+                            passedLabs: 0,
+                            labs: [] // Массив для хранения данных о каждой лабораторной работе
                         }
                     ]
                 };
+                
+                // Инициализируем массив лабораторных работ для примера
+                for (let i = 1; i <= 5; i++) {
+                    allUsersData[username].subjects[0].labs.push({
+                        number: i,
+                        done: false,
+                        passed: false,
+                        grade: null
+                    });
+                }
+                
+                saveAllUsersData();
+            } else {
+                // Для существующих пользователей, у которых нет структуры labs, добавляем ее
+                const userData = allUsersData[username];
+                userData.subjects.forEach(subject => {
+                    if (!subject.labs) {
+                        subject.labs = [];
+                        for (let i = 1; i <= subject.totalLabs; i++) {
+                            subject.labs.push({
+                                number: i,
+                                done: i <= subject.doneLabs,
+                                passed: i <= subject.passedLabs,
+                                grade: i <= subject.passedLabs ? 5 : null
+                            });
+                        }
+                    }
+                });
                 saveAllUsersData();
             }
             
@@ -955,6 +1234,11 @@
             
             // Показываем приветствие
             document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${username}!`;
+            
+            // Инициализируем интерфейс
+            initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
         }
 
         // Показать сообщение на экране входа
@@ -1272,16 +1556,17 @@
             
             // Сортируем предметы: сначала незавершенные, потом завершенные
             currentSubjects.sort((a, b) => {
-                const aCompleted = (a.doneLabs === a.totalLabs && a.passedLabs === a.totalLabs);
-                const bCompleted = (b.doneLabs === b.totalLabs && b.passedLabs === b.totalLabs);
+                const aCompleted = calculateCompletedLabs(a) === a.totalLabs;
+                const bCompleted = calculateCompletedLabs(b) === b.totalLabs;
                 return aCompleted - bCompleted;
             });
             
             currentSubjects.forEach(subject => {
-                const isCompleted = subject.doneLabs === subject.totalLabs && 
-                                   subject.passedLabs === subject.totalLabs;
-                
-                const progressPercentage = Math.round((subject.passedLabs / subject.totalLabs) * 100);
+                const doneLabsCount = calculateDoneLabs(subject);
+                const passedLabsCount = calculatePassedLabs(subject);
+                const averageGrade = calculateAverageGrade(subject);
+                const isCompleted = doneLabsCount === subject.totalLabs && 
+                                   passedLabsCount === subject.totalLabs;
                 
                 const row = document.createElement('tr');
                 row.className = isCompleted ? 'completed' : '';
@@ -1293,28 +1578,24 @@
                         <span class="lab-count">${subject.totalLabs}</span>
                     </td>
                     <td>
-                        <span class="status-badge ${subject.doneLabs === subject.totalLabs ? 'status-done' : 'status-pending'}">
-                            ${subject.doneLabs} из ${subject.totalLabs}
+                        <span class="status-badge ${doneLabsCount === subject.totalLabs ? 'status-done' : 'status-pending'}">
+                            ${doneLabsCount} из ${subject.totalLabs}
                         </span>
                     </td>
                     <td>
-                        <span class="status-badge ${subject.passedLabs === subject.totalLabs ? 'status-passed' : 'status-pending'}">
-                            ${subject.passedLabs} из ${subject.totalLabs}
+                        <span class="status-badge ${passedLabsCount === subject.totalLabs ? 'status-passed' : 'status-pending'}">
+                            ${passedLabsCount} из ${subject.totalLabs}
                         </span>
                     </td>
                     <td>
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: ${progressPercentage}%"></div>
-                        </div>
-                        <div style="margin-top: 5px; font-size: 0.9rem; color: #495057;">
-                            ${progressPercentage}%
+                        <div style="font-weight: 600; color: #495057; font-size: 1.1rem;">
+                            ${averageGrade.toFixed(1)}
                         </div>
                     </td>
                     <td>
                         <div class="action-buttons">
+                            <button class="action-btn manage-labs-btn" data-id="${subject.id}" data-action="manage-labs">Управление ЛР</button>
                             <button class="action-btn lab-btn" data-id="${subject.id}" data-action="increment-lab">+ЛР</button>
-                            <button class="action-btn done-btn" data-id="${subject.id}" data-action="increment-done">Вып.</button>
-                            <button class="action-btn passed-btn" data-id="${subject.id}" data-action="increment-passed">Сдано</button>
                             <button class="action-btn delete-btn" data-id="${subject.id}" data-action="delete">✕</button>
                         </div>
                     </td>
@@ -1334,6 +1615,45 @@
             });
         }
 
+        // Подсчет выполненных лабораторных работ
+        function calculateDoneLabs(subject) {
+            if (!subject.labs || subject.labs.length === 0) {
+                return subject.doneLabs || 0;
+            }
+            return subject.labs.filter(lab => lab.done).length;
+        }
+
+        // Подсчет сданных лабораторных работ
+        function calculatePassedLabs(subject) {
+            if (!subject.labs || subject.labs.length === 0) {
+                return subject.passedLabs || 0;
+            }
+            return subject.labs.filter(lab => lab.passed).length;
+        }
+
+        // Подсчет завершенных лабораторных работ (и выполнены, и сданы)
+        function calculateCompletedLabs(subject) {
+            if (!subject.labs || subject.labs.length === 0) {
+                return Math.min(subject.doneLabs || 0, subject.passedLabs || 0);
+            }
+            return subject.labs.filter(lab => lab.done && lab.passed).length;
+        }
+
+        // Расчет среднего балла
+        function calculateAverageGrade(subject) {
+            if (!subject.labs || subject.labs.length === 0) {
+                return 0;
+            }
+            
+            const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
+            if (passedLabs.length === 0) {
+                return 0;
+            }
+            
+            const sum = passedLabs.reduce((total, lab) => total + lab.grade, 0);
+            return sum / passedLabs.length;
+        }
+
         // Обработка действий с предметами
         function handleSubjectAction(subjectId, action) {
             const subjectIndex = window.data.subjects.findIndex(s => s.id === subjectId);
@@ -1344,19 +1664,22 @@
                 case 'increment-lab':
                     if (window.data.subjects[subjectIndex].totalLabs < 50) {
                         window.data.subjects[subjectIndex].totalLabs++;
+                        // Добавляем новую лабораторную работу
+                        if (!window.data.subjects[subjectIndex].labs) {
+                            window.data.subjects[subjectIndex].labs = [];
+                        }
+                        window.data.subjects[subjectIndex].labs.push({
+                            number: window.data.subjects[subjectIndex].totalLabs,
+                            done: false,
+                            passed: false,
+                            grade: null
+                        });
                     }
                     break;
                     
-                case 'increment-done':
-                    if (window.data.subjects[subjectIndex].doneLabs < window.data.subjects[subjectIndex].totalLabs) {
-                        window.data.subjects[subjectIndex].doneLabs++;
-                    }
-                    break;
-                    
-                case 'increment-passed':
-                    if (window.data.subjects[subjectIndex].passedLabs < window.data.subjects[subjectIndex].doneLabs) {
-                        window.data.subjects[subjectIndex].passedLabs++;
-                    }
+                case 'manage-labs':
+                    currentSubjectId = subjectId;
+                    openManageLabsModal(subjectId);
                     break;
                     
                 case 'delete':
@@ -1369,6 +1692,266 @@
             renderSubjectsTable();
             updateStats();
             saveUserData();
+        }
+
+        // Открытие модального окна управления лабораторными работами
+        function openManageLabsModal(subjectId) {
+            const subject = window.data.subjects.find(s => s.id === subjectId);
+            if (!subject) return;
+            
+            // Обновляем заголовок
+            document.getElementById('subjectTitle').textContent = subject.name;
+            
+            // Получаем название текущего образования
+            const education = window.data.educations.find(e => e.id === subject.educationId);
+            document.getElementById('educationTitle').textContent = education ? `Образование: ${education.name}` : '';
+            
+            // Обновляем информацию о предмете
+            document.getElementById('currentSubjectName').textContent = subject.name;
+            document.getElementById('totalLabsCount').textContent = subject.totalLabs;
+            document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
+            document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
+            
+            // Обновляем средний балл
+            const averageGrade = calculateAverageGrade(subject);
+            document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
+            
+            // Обновляем статистику оценок
+            updateGradeStats(subject);
+            
+            // Рендерим сетку лабораторных работ
+            renderLabsGrid(subject);
+            
+            // Показываем модальное окно
+            document.getElementById('manageLabsModal').style.display = 'flex';
+        }
+
+        // Закрытие модального окна управления лабораторными работами
+        function closeManageLabsModal() {
+            document.getElementById('manageLabsModal').style.display = 'none';
+            currentSubjectId = null;
+            renderSubjectsTable();
+            updateStats();
+            saveUserData();
+        }
+
+        // Рендеринг сетки лабораторных работ
+        function renderLabsGrid(subject) {
+            const labsGrid = document.getElementById('labsGrid');
+            labsGrid.innerHTML = '';
+            
+            // Инициализируем массив labs, если его нет
+            if (!subject.labs || subject.labs.length === 0) {
+                subject.labs = [];
+                for (let i = 1; i <= subject.totalLabs; i++) {
+                    subject.labs.push({
+                        number: i,
+                        done: false,
+                        passed: false,
+                        grade: null
+                    });
+                }
+            }
+            
+            // Если количество labs не соответствует totalLabs, корректируем
+            if (subject.labs.length < subject.totalLabs) {
+                for (let i = subject.labs.length + 1; i <= subject.totalLabs; i++) {
+                    subject.labs.push({
+                        number: i,
+                        done: false,
+                        passed: false,
+                        grade: null
+                    });
+                }
+            } else if (subject.labs.length > subject.totalLabs) {
+                subject.labs = subject.labs.slice(0, subject.totalLabs);
+            }
+            
+            subject.labs.forEach(lab => {
+                const labItem = document.createElement('div');
+                labItem.className = 'lab-item';
+                
+                // Определяем класс статуса
+                let statusClass = 'lab-not-done';
+                let statusText = 'Не выполнена';
+                
+                if (lab.passed && lab.done) {
+                    statusClass = 'lab-passed';
+                    statusText = 'Сдана';
+                } else if (lab.done) {
+                    statusClass = 'lab-done';
+                    statusText = 'Выполнена';
+                }
+                
+                labItem.innerHTML = `
+                    <div class="lab-number">ЛР ${lab.number}</div>
+                    <div class="lab-status ${statusClass}">${statusText}</div>
+                    ${lab.passed ? `
+                        <select class="grade-selector grade-${lab.grade || 5}" data-number="${lab.number}">
+                            <option value="5" ${lab.grade === 5 ? 'selected' : ''}>5 (Отлично)</option>
+                            <option value="4" ${lab.grade === 4 ? 'selected' : ''}>4 (Хорошо)</option>
+                            <option value="3" ${lab.grade === 3 ? 'selected' : ''}>3 (Удовл.)</option>
+                            <option value="2" ${lab.grade === 2 ? 'selected' : ''}>2 (Неуд.)</option>
+                        </select>
+                    ` : ''}
+                `;
+                
+                // Обработчик клика по лабораторной работе
+                labItem.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('grade-selector')) {
+                        toggleLabStatus(lab.number);
+                    }
+                });
+                
+                // Обработчик изменения оценки
+                const gradeSelector = labItem.querySelector('.grade-selector');
+                if (gradeSelector) {
+                    gradeSelector.addEventListener('change', function(e) {
+                        e.stopPropagation();
+                        updateLabGrade(lab.number, parseInt(this.value));
+                    });
+                    
+                    // Обработчик клика по селектору оценки
+                    gradeSelector.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                }
+                
+                labsGrid.appendChild(labItem);
+            });
+        }
+
+        // Переключение статуса лабораторной работы
+        function toggleLabStatus(labNumber) {
+            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
+            const lab = subject.labs.find(l => l.number === labNumber);
+            if (!lab) return;
+            
+            // Циклическое переключение статусов: не выполнена -> выполнена -> сдана -> не выполнена
+            if (!lab.done) {
+                lab.done = true;
+                lab.passed = false;
+                lab.grade = null;
+            } else if (!lab.passed) {
+                lab.passed = true;
+                lab.grade = 5; // По умолчанию отлично
+            } else {
+                lab.done = false;
+                lab.passed = false;
+                lab.grade = null;
+            }
+            
+            // Обновляем отображение
+            updateLabDisplay(subject);
+        }
+
+        // Обновление оценки лабораторной работы
+        function updateLabGrade(labNumber, grade) {
+            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
+            const lab = subject.labs.find(l => l.number === labNumber);
+            if (!lab) return;
+            
+            lab.grade = grade;
+            
+            // Обновляем отображение
+            updateLabDisplay(subject);
+        }
+
+        // Обновление отображения лабораторных работ
+        function updateLabDisplay(subject) {
+            // Обновляем счетчики
+            document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
+            document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
+            
+            // Обновляем средний балл
+            const averageGrade = calculateAverageGrade(subject);
+            document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
+            
+            // Обновляем статистику оценок
+            updateGradeStats(subject);
+            
+            // Перерисовываем сетку
+            renderLabsGrid(subject);
+        }
+
+        // Обновление статистики оценок
+        function updateGradeStats(subject) {
+            const gradeStats = document.getElementById('gradeStats');
+            gradeStats.innerHTML = '';
+            
+            if (!subject.labs || subject.labs.length === 0) return;
+            
+            const gradeCounts = {5: 0, 4: 0, 3: 0, 2: 0};
+            const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
+            
+            passedLabs.forEach(lab => {
+                if (gradeCounts[lab.grade] !== undefined) {
+                    gradeCounts[lab.grade]++;
+                }
+            });
+            
+            const totalPassed = passedLabs.length;
+            
+            // Создаем блоки статистики для каждой оценки
+            [5, 4, 3, 2].forEach(grade => {
+                const count = gradeCounts[grade];
+                const percentage = totalPassed > 0 ? Math.round((count / totalPassed) * 100) : 0;
+                
+                const gradeStat = document.createElement('div');
+                gradeStat.className = 'grade-stat';
+                gradeStat.innerHTML = `
+                    <div class="grade-stat-value grade-${grade}">${count}</div>
+                    <div class="grade-stat-label">${grade} (${percentage}%)</div>
+                `;
+                
+                gradeStats.appendChild(gradeStat);
+            });
+        }
+
+        // Отметить все лабораторные работы как выполненные
+        function markAllLabsAsDone() {
+            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
+            subject.labs.forEach(lab => {
+                lab.done = true;
+                lab.passed = false;
+                lab.grade = null;
+            });
+            
+            updateLabDisplay(subject);
+        }
+
+        // Отметить все лабораторные работы как сданные
+        function markAllLabsAsPassed() {
+            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
+            subject.labs.forEach(lab => {
+                lab.done = true;
+                lab.passed = true;
+                lab.grade = lab.grade || 5; // Если нет оценки, ставим 5
+            });
+            
+            updateLabDisplay(subject);
+        }
+
+        // Сбросить все отметки
+        function clearAllLabMarks() {
+            const subject = window.data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
+            subject.labs.forEach(lab => {
+                lab.done = false;
+                lab.passed = false;
+                lab.grade = null;
+            });
+            
+            updateLabDisplay(subject);
         }
 
         // Добавление нового предмета
@@ -1385,6 +1968,17 @@
             const newId = window.data.subjects.length > 0 ? 
                 Math.max(...window.data.subjects.map(s => s.id)) + 1 : 1;
             
+            // Создаем массив лабораторных работ
+            const labs = [];
+            for (let i = 1; i <= totalLabs; i++) {
+                labs.push({
+                    number: i,
+                    done: false,
+                    passed: false,
+                    grade: null
+                });
+            }
+            
             // Добавляем новый предмет
             window.data.subjects.push({
                 id: newId,
@@ -1392,7 +1986,8 @@
                 name: subjectName,
                 totalLabs: totalLabs,
                 doneLabs: 0,
-                passedLabs: 0
+                passedLabs: 0,
+                labs: labs
             });
             
             // Закрываем модальное окно и очищаем форму
@@ -1463,12 +2058,27 @@
             // Рассчитываем статистику
             const totalSubjects = currentSubjects.length;
             const completedSubjects = currentSubjects.filter(subject => 
-                subject.doneLabs === subject.totalLabs && subject.passedLabs === subject.totalLabs
+                calculateDoneLabs(subject) === subject.totalLabs && 
+                calculatePassedLabs(subject) === subject.totalLabs
             ).length;
             
             const totalLabs = currentSubjects.reduce((sum, subject) => sum + subject.totalLabs, 0);
-            const passedLabs = currentSubjects.reduce((sum, subject) => sum + subject.passedLabs, 0);
+            const passedLabs = currentSubjects.reduce((sum, subject) => sum + calculatePassedLabs(subject), 0);
             const overallProgress = Math.round((passedLabs / totalLabs) * 100);
+            
+            // Рассчитываем общий средний балл
+            let totalAverage = 0;
+            let subjectsWithGrades = 0;
+            
+            currentSubjects.forEach(subject => {
+                const avg = calculateAverageGrade(subject);
+                if (avg > 0) {
+                    totalAverage += avg;
+                    subjectsWithGrades++;
+                }
+            });
+            
+            const overallAverage = subjectsWithGrades > 0 ? (totalAverage / subjectsWithGrades) : 0;
             
             stats.innerHTML = `
                 <div class="stat-item">
@@ -1480,16 +2090,11 @@
                     <div class="stat-label">Общий прогресс</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">${completedSubjects}</div>
-                    <div class="stat-label">Завершено предметов</div>
+                    <div class="stat-value">${overallAverage.toFixed(1)}</div>
+                    <div class="stat-label">Средний балл</div>
                 </div>
             `;
         }
-
-        // При входе пользователя инициализируем интерфейс
-        window.initEducationSelector = initEducationSelector;
-        window.renderSubjectsTable = renderSubjectsTable;
-        window.updateStats = updateStats;
     </script>
 </body>
 </html>
