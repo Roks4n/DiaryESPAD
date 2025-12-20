@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трекер лабораторных работ</title>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
     <style>
+        /* === ОСНОВНЫЕ СТИЛИ === */
         * {
             margin: 0;
             padding: 0;
@@ -35,8 +31,8 @@
         }
         
         .login-container {
-            max-width: 400px;
-            margin: 100px auto;
+            max-width: 500px;
+            margin: 50px auto;
             background: white;
             padding: 40px;
             border-radius: 15px;
@@ -46,119 +42,36 @@
         
         .login-title {
             color: #667eea;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-size: 2rem;
         }
         
-        .login-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #f8f9fa;
-        }
-        
-        .login-tab {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .login-tab.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .login-form {
-            display: none;
-        }
-        
-        .login-form.active {
-            display: block;
-        }
-        
-        .login-input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-        
-        .login-input:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            margin-bottom: 10px;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .social-login {
-            margin: 25px 0;
-            text-align: center;
-        }
-        
-        .social-divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
+        .login-subtitle {
             color: #6c757d;
-        }
-        
-        .social-divider::before,
-        .social-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e0e0e0;
-        }
-        
-        .social-divider span {
-            padding: 0 15px;
-            font-size: 0.9rem;
+            margin-bottom: 30px;
+            font-size: 1rem;
         }
         
         .social-buttons {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-top: 20px;
+            gap: 15px;
+            margin: 25px 0;
         }
         
         .social-btn {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: none;
             border-radius: 10px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         .social-btn:hover {
@@ -166,61 +79,40 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
-        .social-btn-google {
-            background: white;
-            color: #757575;
-            border: 2px solid #e0e0e0;
-        }
-        
-        .social-btn-google:hover {
-            background: #f8f9fa;
-            border-color: #d0d0d0;
-        }
-        
-        .social-btn-email {
-            background: #28a745;
+        .vk-btn {
+            background: #4a76a8;
             color: white;
-            border: 2px solid #28a745;
         }
         
-        .social-btn-email:hover {
-            background: #218838;
-            border-color: #1e7e34;
+        .local-btn {
+            background: #6c757d;
+            color: white;
         }
         
-        .social-icon {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-        
-        .login-message {
-            margin-top: 15px;
-            color: #dc3545;
-            min-height: 20px;
+        .offline-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
             font-size: 0.9rem;
-        }
-        
-        .login-success {
-            color: #28a745;
+            border: 1px solid #ffeaa7;
         }
         
         .sync-status {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 18px;
             border-radius: 20px;
             font-size: 0.85rem;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             z-index: 1000;
+            backdrop-filter: blur(10px);
         }
         
         .sync-icon {
@@ -238,28 +130,13 @@
             background: #dc3545;
         }
         
-        .sync-syncing {
-            background: #ffc107;
-            animation: pulse 0.5s infinite;
-        }
-        
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
         
-        .sync-btn {
-            background: #17a2b8;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin-left: 10px;
-        }
-        
+        /* === ОСНОВНОЙ ИНТЕРФЕЙС === */
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -323,6 +200,12 @@
             opacity: 0.9;
         }
         
+        .welcome-message {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+        
         .controls {
             padding: 20px;
             background: #f8f9fa;
@@ -350,7 +233,7 @@
             position: relative;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
         
         .education-btn.active {
@@ -363,6 +246,7 @@
             background: #dee2e6;
         }
         
+        /* СТИЛИ ДЛЯ КНОПКИ УДАЛЕНИЯ ОБРАЗОВАНИЯ */
         .delete-education-btn {
             background: none;
             border: none;
@@ -393,7 +277,6 @@
             border-radius: 50px;
             cursor: pointer;
             font-weight: 600;
-            margin-left: auto;
             transition: background 0.3s ease;
         }
         
@@ -401,6 +284,12 @@
             background: #218838;
         }
         
+        .education-btn.add-education {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        /* === ТАБЛИЦА ПРЕДМЕТОВ === */
         .table-container {
             padding: 20px;
             overflow-x: auto;
@@ -432,11 +321,6 @@
         
         tr.completed {
             background-color: #f8f9fa;
-        }
-        
-        tr.completed td {
-            text-decoration: line-through;
-            color: #6c757d;
         }
         
         .subject-name {
@@ -472,21 +356,6 @@
             color: #155724;
         }
         
-        .progress-container {
-            width: 100%;
-            background: #e9ecef;
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            border-radius: 5px;
-            transition: width 0.5s ease;
-        }
-        
         .action-buttons {
             display: flex;
             gap: 8px;
@@ -503,6 +372,15 @@
             white-space: nowrap;
         }
         
+        .manage-labs-btn {
+            background: #6f42c1;
+            color: white;
+        }
+        
+        .manage-labs-btn:hover {
+            background: #5a32a3;
+        }
+        
         .lab-btn {
             background: #6c757d;
             color: white;
@@ -510,24 +388,6 @@
         
         .lab-btn:hover {
             background: #545b62;
-        }
-        
-        .done-btn {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .done-btn:hover {
-            background: #138496;
-        }
-        
-        .passed-btn {
-            background: #28a745;
-            color: white;
-        }
-        
-        .passed-btn:hover {
-            background: #218838;
         }
         
         .delete-btn {
@@ -539,15 +399,7 @@
             background: #c82333;
         }
         
-        .manage-labs-btn {
-            background: #6f42c1;
-            color: white;
-        }
-        
-        .manage-labs-btn:hover {
-            background: #5a32a3;
-        }
-        
+        /* === СТАТИСТИКА === */
         .stats {
             display: flex;
             justify-content: space-between;
@@ -572,33 +424,7 @@
             margin-top: 5px;
         }
         
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .add-btn {
-                margin-left: 0;
-                margin-top: 10px;
-            }
-            
-            .stats {
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .user-info {
-                position: static;
-                justify-content: center;
-                margin-top: 15px;
-            }
-            
-            .social-buttons {
-                flex-direction: column;
-            }
-        }
-        
+        /* === МОДАЛЬНЫЕ ОКНА === */
         .modal {
             display: none;
             position: fixed;
@@ -619,7 +445,7 @@
             padding: 30px;
             border-radius: 10px;
             width: 90%;
-            max-width: 800px;
+            max-width: 500px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             max-height: 90vh;
             overflow-y: auto;
@@ -628,15 +454,6 @@
         .modal h2 {
             margin-bottom: 20px;
             color: #495057;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-subtitle {
-            font-size: 1rem;
-            color: #6c757d;
-            margin-bottom: 20px;
         }
         
         .form-group {
@@ -685,99 +502,10 @@
             font-weight: 600;
         }
         
-        .education-btn.add-education {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .delete-confirmation {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .delete-confirmation p {
-            margin-bottom: 10px;
-            color: #856404;
-        }
-        
-        .delete-confirmation-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .confirm-delete-btn {
-            padding: 8px 16px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        .cancel-delete-btn {
-            padding: 8px 16px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        .education-management {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .education-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .education-info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .education-name {
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .education-subjects-count {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 3px;
-        }
-        
-        .no-education-message {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-            font-style: italic;
-        }
-        
-        .welcome-message {
-            margin-top: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-        }
-        
+        /* === УПРАВЛЕНИЕ ЛАБОРАТОРНЫМИ === */
         .labs-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
             gap: 10px;
             margin-top: 20px;
         }
@@ -786,7 +514,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             cursor: pointer;
@@ -842,40 +570,6 @@
         .grade-3 { background: #f8d7da; color: #721c24; }
         .grade-2 { background: #dc3545; color: white; }
         
-        .status-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .status-control-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            background: #6c757d;
-            color: white;
-        }
-        
-        .status-control-btn:hover {
-            opacity: 0.9;
-        }
-        
-        .mark-all-done {
-            background: #17a2b8;
-        }
-        
-        .mark-all-passed {
-            background: #28a745;
-        }
-        
-        .clear-all {
-            background: #dc3545;
-        }
-        
         .subject-info-header {
             background: #f8f9fa;
             padding: 15px;
@@ -912,6 +606,40 @@
             color: #495057;
         }
         
+        .status-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .status-control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            background: #6c757d;
+            color: white;
+        }
+        
+        .status-control-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .mark-all-done {
+            background: #17a2b8;
+        }
+        
+        .mark-all-passed {
+            background: #28a745;
+        }
+        
+        .clear-all {
+            background: #dc3545;
+        }
+        
         .average-grade {
             font-size: 1.3rem;
             font-weight: 700;
@@ -923,33 +651,35 @@
             border-radius: 8px;
         }
         
-        .grade-stats {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+        /* === АДАПТИВНОСТЬ === */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .add-btn {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .user-info {
+                position: static;
+                justify-content: center;
+                margin-top: 15px;
+            }
+            
+            .social-buttons {
+                flex-direction: column;
+            }
         }
         
-        .grade-stat {
-            text-align: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            min-width: 100px;
-        }
-        
-        .grade-stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-        
-        .grade-stat-label {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-        
+        /* === ЗАГРУЗКА === */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -978,100 +708,45 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .connection-error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .local-mode-notice {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body>
-    <!-- Загрузка -->
+    <!-- Экран загрузки -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
         <div>Загрузка приложения...</div>
     </div>
     
-    <!-- Индикатор синхронизации -->
+    <!-- Статус синхронизации -->
     <div class="sync-status" id="syncStatus" style="display: none;">
-        <div class="sync-icon sync-offline" id="syncIcon"></div>
-        <span id="syncText">Офлайн</span>
-        <button class="sync-btn" id="manualSyncBtn">Синхронизировать</button>
+        <div class="sync-icon sync-online" id="syncIcon"></div>
+        <span id="syncText">Локальный режим</span>
     </div>
     
-    <!-- Экран входа/регистрации -->
+    <!-- Экран входа -->
     <div class="login-container" id="loginContainer">
         <h2 class="login-title">Трекер лабораторных работ</h2>
+        <p class="login-subtitle">Версия для работы без VPN в России</p>
         
-        <div class="login-tabs">
-            <button class="login-tab active" data-tab="login">Вход</button>
-            <button class="login-tab" data-tab="register">Регистрация</button>
-        </div>
-        
-        <!-- Форма входа -->
-        <div class="login-form active" id="loginForm">
-            <div class="social-buttons">
-                <button class="social-btn social-btn-google" id="googleLoginBtn">
-                    <div class="social-icon">G</div>
-                    Войти через Google
-                </button>
-                
-                <button class="social-btn social-btn-email" id="emailLoginBtn">
-                    <div class="social-icon">@</div>
-                    Войти по email
-                </button>
-            </div>
+        <div class="social-buttons">
+            <button class="social-btn vk-btn" id="vkLoginBtn" onclick="loginWithVK()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M13.821 24H10.184C5.694 24 3.224 21.094 3.224 16.219V7.781C3.224 2.906 5.694 0 10.184 0H13.821C18.306 0 20.776 2.906 20.776 7.781V16.219C20.776 21.094 18.306 24 13.821 24ZM9.042 6.969C6.963 6.969 5.573 8.152 5.573 10.156C5.573 11.62 6.339 12.873 8.229 13.797L10.844 15.048C12.026 5.763 12.728 5.763 13.816 5.763H13.928C15.02 5.763 15.722 5.763 16.904 15.048L19.519 13.797C21.409 12.873 22.175 11.62 22.175 10.156C22.175 8.152 20.784 6.969 18.705 6.969H18.593C17.505 6.969 16.804 6.969 15.622 15.048L14.822 11.14C14.611 9.847 14.116 9.212 13.028 9.212H12.916C11.828 9.212 11.333 9.847 11.122 11.14L10.322 15.048C9.14 6.969 8.439 6.969 7.351 6.969H6.958H6.846H6.734H6.622H6.509H6.397H6.285H6.173H6.061H9.042Z"/>
+                </svg>
+                Войти через ВКонтакте
+            </button>
             
-            <div class="login-message" id="loginMessage"></div>
+            <button class="social-btn local-btn" onclick="startLocalMode()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                </svg>
+                Начать без входа (локально)
+            </button>
         </div>
         
-        <!-- Форма регистрации -->
-        <div class="login-form" id="registerForm">
-            <div class="social-buttons">
-                <button class="social-btn social-btn-google" id="googleRegisterBtn">
-                    <div class="social-icon">G</div>
-                    Зарегистрироваться через Google
-                </button>
-                
-                <button class="social-btn social-btn-email" id="emailRegisterBtn">
-                    <div class="social-icon">@</div>
-                    Зарегистрироваться по email
-                </button>
-            </div>
-            
-            <div class="login-message" id="registerMessage"></div>
-        </div>
-        
-        <!-- Форма входа по email -->
-        <div class="login-form" id="emailLoginForm">
-            <input type="email" id="loginEmail" class="login-input" placeholder="Email" required>
-            <input type="password" id="loginPassword" class="login-input" placeholder="Пароль" required>
-            <button class="login-btn" id="emailLoginSubmitBtn">Войти</button>
-            <button class="login-btn" onclick="showLoginForm()" style="background: #6c757d;">Назад</button>
-            <div class="login-message" id="emailLoginMessage"></div>
-        </div>
-        
-        <!-- Форма регистрации по email -->
-        <div class="login-form" id="emailRegisterForm">
-            <input type="email" id="registerEmail" class="login-input" placeholder="Email" required>
-            <input type="password" id="registerPassword" class="login-input" placeholder="Пароль (мин. 6 символов)" required>
-            <input type="text" id="registerUsername" class="login-input" placeholder="Имя пользователя" required>
-            <button class="login-btn" id="emailRegisterSubmitBtn">Зарегистрироваться</button>
-            <button class="login-btn" onclick="showRegisterForm()" style="background: #6c757d;">Назад</button>
-            <div class="login-message" id="emailRegisterMessage"></div>
+        <div class="offline-notice">
+            <strong>⚠️ Работает без интернета!</strong>
+            <p>Все данные сохраняются в вашем браузере. Для входа через ВК нужен интернет.</p>
         </div>
     </div>
     
@@ -1083,19 +758,19 @@
                     <img src="" alt="Аватар" class="user-avatar" id="userAvatar" style="display: none;">
                     <span id="displayName"></span>
                 </div>
-                <button class="logout-btn" id="logoutBtn">Выйти</button>
+                <button class="logout-btn" id="logoutBtn" onclick="logoutUser()">Выйти</button>
             </div>
             <h1>Трекер лабораторных работ</h1>
-            <p class="subtitle">Данные сохраняются в облаке Firebase</p>
+            <p class="subtitle">Все данные сохраняются в вашем браузере</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
         
         <div class="controls">
+            <!-- Кнопки выбора образования с кнопками удаления -->
             <div class="education-selector" id="educationSelector">
                 <!-- Образования будут добавлены через JS -->
             </div>
-            <button class="add-btn" id="addSubjectBtn">Добавить предмет</button>
-            <button class="add-btn" id="manageEducationsBtn" style="background: #17a2b8;">Управление образованиями</button>
+            <button class="add-btn" id="addSubjectBtn">+ Добавить предмет</button>
         </div>
         
         <div class="table-container">
@@ -1135,7 +810,7 @@
                     <input type="number" id="totalLabs" min="1" max="50" required>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" id="cancelBtn">Отмена</button>
+                    <button type="button" class="cancel-btn" onclick="closeModal('addSubjectModal')">Отмена</button>
                     <button type="submit" class="save-btn">Сохранить</button>
                 </div>
             </form>
@@ -1148,39 +823,19 @@
             <form id="educationForm">
                 <div class="form-group">
                     <label for="educationName">Название образования</label>
-                    <input type="text" id="educationName" required>
+                    <input type="text" id="educationName" placeholder="Например: Бакалавриат, Магистратура" required>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" id="cancelEducationBtn">Отмена</button>
+                    <button type="button" class="cancel-btn" onclick="closeModal('addEducationModal')">Отмена</button>
                     <button type="submit" class="save-btn">Сохранить</button>
                 </div>
             </form>
         </div>
     </div>
     
-    <div class="modal" id="manageEducationsModal">
-        <div class="modal-content">
-            <h2>Управление образованиями</h2>
-            
-            <div class="education-management" id="educationsList">
-                <!-- Список образований будет добавлен через JS -->
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="add-btn" id="addNewEducationBtn" style="width: 100%;">Добавить новое образование</button>
-                <button class="cancel-btn" id="closeManageModalBtn" style="width: 100%;">Закрыть</button>
-            </div>
-        </div>
-    </div>
-    
     <div class="modal" id="manageLabsModal">
         <div class="modal-content">
-            <h2>
-                Управление лабораторными работами
-                <span style="font-size: 1rem; color: #6c757d;" id="subjectTitle"></span>
-            </h2>
-            <div class="modal-subtitle" id="educationTitle"></div>
-            
+            <h2>Управление лабораторными работами</h2>
             <div class="subject-info-header">
                 <div class="subject-info-title" id="currentSubjectName"></div>
                 <div class="subject-info-details">
@@ -1200,52 +855,28 @@
             </div>
             
             <div class="labs-grid" id="labsGrid">
-                <!-- Сетка лабораторных работ будет добавлена через JS -->
+                <!-- Лабораторные работы будут добавлены через JS -->
             </div>
             
             <div class="status-controls">
-                <button class="status-control-btn mark-all-done" id="markAllDoneBtn">Отметить все как выполненные</button>
-                <button class="status-control-btn mark-all-passed" id="markAllPassedBtn">Отметить все как сданные</button>
-                <button class="status-control-btn clear-all" id="clearAllBtn">Сбросить все отметки</button>
+                <button class="status-control-btn mark-all-done" onclick="markAllLabsAsDone()">Отметить все как выполненные</button>
+                <button class="status-control-btn mark-all-passed" onclick="markAllLabsAsPassed()">Отметить все как сданные</button>
+                <button class="status-control-btn clear-all" onclick="clearAllLabMarks()">Сбросить все отметки</button>
             </div>
             
             <div class="average-grade" id="averageGradeSection">
                 Средний балл: <span id="averageGradeValue">0</span>
             </div>
             
-            <div class="grade-stats" id="gradeStats">
-                <!-- Статистика оценок будет добавлена через JS -->
-            </div>
-            
             <div class="modal-buttons">
-                <button type="button" class="cancel-btn" id="closeLabsModalBtn">Закрыть</button>
+                <button type="button" class="cancel-btn" onclick="closeModal('manageLabsModal')">Закрыть</button>
             </div>
         </div>
     </div>
 
     <script>
-        // === КОНФИГУРАЦИЯ FIREBASE ===
-        // ТВОИ ДАННЫЕ УЖЕ ВСТАВЛЕНЫ В КОД!
-        const firebaseConfig = {
-            apiKey: "AIzaSyA8UdIM2QRWTvTknWJJMfF4dcEX-KPXEts",
-            authDomain: "diaryespad.firebaseapp.com",
-            databaseURL: "https://diaryespad-default-rtdb.firebaseio.com/",
-            projectId: "diaryespad",
-            storageBucket: "diaryespad.firebasestorage.app",
-            messagingSenderId: "34397954040",
-            appId: "1:34397954040:web:bf6e34d3e625bf811e800d",
-            measurementId: "G-E7RLBGBWQ9"
-        };
-        
-        // Глобальные переменные
-        let firebaseApp = null;
-        let database = null;
+        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let currentUser = null;
-        let currentUserId = null;
-        let isOnline = navigator.onLine;
-        let pendingSync = false;
-        
-        // Данные приложения
         let data = {
             educations: [
                 { id: 1, name: "Бакалавриат" }
@@ -1253,557 +884,191 @@
             currentEducationId: 1,
             subjects: []
         };
-
-        // Инициализация приложения
+        
+        let currentSubjectId = null; // Для управления лабораторными
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
         document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
-
-        // Инициализация Firebase и приложения
-        function initializeApp() {
-            try {
-                // Инициализируем Firebase
-                firebaseApp = firebase.initializeApp(firebaseConfig);
-                database = firebase.database();
-                
-                console.log('Firebase успешно инициализирован');
-                
-                // Настраиваем слушатели подключения
-                setupConnectionListeners();
-                
-                // Инициализация интерфейса
-                initializeUI();
-                
-                // Скрываем загрузку
-                setTimeout(() => {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    checkAuthState();
-                }, 500);
-                
-            } catch (error) {
-                console.error('Ошибка инициализации Firebase:', error);
-                showConnectionError();
-            }
-        }
-
-        // Показать ошибку подключения
-        function showConnectionError() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-            
-            const loginContainer = document.getElementById('loginContainer');
-            loginContainer.innerHTML = `
-                <h2 class="login-title">Трекер лабораторных работ</h2>
-                <div class="connection-error">
-                    <h3>Ошибка подключения</h3>
-                    <p>Не удалось подключиться к Firebase. Возможные причины:</p>
-                    <ul>
-                        <li>Проверьте подключение к интернету</li>
-                        <li>Попробуйте использовать VPN</li>
-                        <li>Обновите страницу</li>
-                    </ul>
-                </div>
-                <button class="login-btn" onclick="location.reload()">Обновить страницу</button>
-            `;
-            loginContainer.style.display = 'block';
-        }
-
-        // Настройка слушателей подключения
-        function setupConnectionListeners() {
-            const connectedRef = database.ref(".info/connected");
-            
-            connectedRef.on("value", function(snap) {
-                if (snap.val() === true) {
-                    setOnlineStatus(true);
-                } else {
-                    setOnlineStatus(false);
-                }
-            });
-            
-            // Слушатель изменения состояния сети браузера
-            window.addEventListener('online', () => setOnlineStatus(true));
-            window.addEventListener('offline', () => setOnlineStatus(false));
-        }
-
-        // Установка статуса подключения
-        function setOnlineStatus(online) {
-            isOnline = online;
-            const syncStatus = document.getElementById('syncStatus');
-            const syncIcon = document.getElementById('syncIcon');
-            const syncText = document.getElementById('syncText');
-            
-            if (online) {
-                syncIcon.className = 'sync-icon sync-online';
-                syncText.textContent = 'Онлайн';
-                syncStatus.style.display = 'flex';
-                
-                // Если есть ожидающая синхронизация, выполняем её
-                if (pendingSync) {
-                    syncData();
-                }
-            } else {
-                syncIcon.className = 'sync-icon sync-offline';
-                syncText.textContent = 'Офлайн';
-                syncStatus.style.display = 'flex';
-            }
-        }
-
-        // Инициализация интерфейса
-        function initializeUI() {
-            // Инициализация вкладок входа
-            initializeLoginTabs();
-            
-            // Обработчики кнопок
-            document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
-            document.getElementById('googleRegisterBtn').addEventListener('click', loginWithGoogle);
-            document.getElementById('emailLoginBtn').addEventListener('click', showEmailLoginForm);
-            document.getElementById('emailRegisterBtn').addEventListener('click', showEmailRegisterForm);
-            document.getElementById('emailLoginSubmitBtn').addEventListener('click', loginWithEmail);
-            document.getElementById('emailRegisterSubmitBtn').addEventListener('click', registerWithEmail);
-            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
-            document.getElementById('manualSyncBtn').addEventListener('click', manualSync);
-            
-            // Обработчики Enter в формах
-            document.getElementById('loginPassword')?.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') loginWithEmail();
-            });
-            
-            document.getElementById('registerPassword')?.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') registerWithEmail();
-            });
-            
-            // Инициализация обработчиков модальных окон
-            initializeModalHandlers();
-        }
-
-        // Инициализация вкладок входа
-        function initializeLoginTabs() {
-            const tabs = document.querySelectorAll('.login-tab');
-            const forms = document.querySelectorAll('.login-form');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabName = this.dataset.tab;
-                    
-                    // Убираем активный класс у всех вкладок и форм
-                    tabs.forEach(t => t.classList.remove('active'));
-                    forms.forEach(f => f.classList.remove('active'));
-                    
-                    // Добавляем активный класс текущей вкладке и форме
-                    this.classList.add('active');
-                    document.getElementById(`${tabName}Form`).classList.add('active');
-                });
-            });
-        }
-
-        // Показать форму входа по email
-        function showEmailLoginForm() {
-            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('emailLoginForm').classList.add('active');
-        }
-
-        // Показать форму регистрации по email
-        function showEmailRegisterForm() {
-            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('emailRegisterForm').classList.add('active');
-        }
-
-        // Вернуться к форме входа
-        function showLoginForm() {
-            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('loginForm').classList.add('active');
-        }
-
-        // Вернуться к форме регистрации
-        function showRegisterForm() {
-            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('registerForm').classList.add('active');
-        }
-
-        // Проверка состояния авторизации
-        function checkAuthState() {
-            firebase.auth().onAuthStateChanged(function(user) {
-                if (user) {
-                    // Пользователь авторизован
-                    handleUserLogin(user);
-                } else {
-                    // Пользователь не авторизован
-                    showLoginInterface();
-                }
-            });
-        }
-
-        // Обработка входа пользователя
-        function handleUserLogin(user) {
-            currentUser = user;
-            currentUserId = user.uid;
-            
-            // Обновляем отображение информации о пользователе
-            updateUserDisplay(user);
-            
-            // Загружаем данные пользователя
-            loadUserData();
-            
-            // Показываем основной интерфейс
-            showMainInterface();
-        }
-
-        // Обновление отображения информации о пользователе
-        function updateUserDisplay(user) {
-            const displayName = user.displayName || user.email.split('@')[0];
-            const photoURL = user.photoURL;
-            
-            document.getElementById('displayName').textContent = displayName;
-            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${displayName}!`;
-            
-            // Отображаем аватар, если есть
-            const avatarElement = document.getElementById('userAvatar');
-            if (photoURL) {
-                avatarElement.src = photoURL;
-                avatarElement.style.display = 'block';
-            } else {
-                // Создаем инициалы для аватара
-                const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
-                avatarElement.style.display = 'block';
-            }
-        }
-
-        // Вход через Google
-        function loginWithGoogle() {
-            showMessage('loginMessage', 'Подключение к Google...', 'info');
-            
-            const provider = new firebase.auth.GoogleAuthProvider();
-            
-            provider.addScope('profile');
-            provider.addScope('email');
-            
-            firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                    showMessage('loginMessage', 'Вход через Google успешен!', 'success');
-                })
-                .catch((error) => {
-                    console.error('Ошибка входа через Google:', error);
-                    showMessage('loginMessage', getFirebaseErrorMessage(error), 'error');
-                });
-        }
-
-        // Регистрация с email и паролем
-        function registerWithEmail() {
-            const email = document.getElementById('registerEmail').value.trim();
-            const password = document.getElementById('registerPassword').value.trim();
-            const username = document.getElementById('registerUsername').value.trim();
-            
-            if (!email || !password || !username) {
-                showMessage('emailRegisterMessage', 'Заполните все поля', 'error');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showMessage('emailRegisterMessage', 'Пароль должен содержать минимум 6 символов', 'error');
-                return;
-            }
-            
-            showMessage('emailRegisterMessage', 'Регистрация...', 'info');
-            
-            firebase.auth().createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    return userCredential.user.updateProfile({
-                        displayName: username
-                    });
-                })
-                .then(() => {
-                    showMessage('emailRegisterMessage', 'Регистрация успешна!', 'success');
-                    
-                    // Создаем начальные данные для нового пользователя
-                    const initialData = {
-                        educations: [
-                            { id: 1, name: "Бакалавриат" }
-                        ],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
-                    
-                    // Сохраняем начальные данные в Firebase
-                    return database.ref('users/' + currentUserId).set(initialData);
-                })
-                .then(() => {
-                    // Очищаем форму
-                    document.getElementById('registerEmail').value = '';
-                    document.getElementById('registerPassword').value = '';
-                    document.getElementById('registerUsername').value = '';
-                })
-                .catch((error) => {
-                    console.error('Ошибка регистрации:', error);
-                    showMessage('emailRegisterMessage', getFirebaseErrorMessage(error), 'error');
-                });
-        }
-
-        // Вход с email и паролем
-        function loginWithEmail() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            
-            if (!email || !password) {
-                showMessage('emailLoginMessage', 'Заполните все поля', 'error');
-                return;
-            }
-            
-            showMessage('emailLoginMessage', 'Вход...', 'info');
-            
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    showMessage('emailLoginMessage', 'Вход успешен!', 'success');
-                    
-                    // Очищаем форму
-                    document.getElementById('loginEmail').value = '';
-                    document.getElementById('loginPassword').value = '';
-                })
-                .catch((error) => {
-                    console.error('Ошибка входа:', error);
-                    showMessage('emailLoginMessage', getFirebaseErrorMessage(error), 'error');
-                });
-        }
-
-        // Показать сообщение
-        function showMessage(elementId, message, type) {
-            const messageElement = document.getElementById(elementId);
-            messageElement.textContent = message;
-            messageElement.className = `login-message ${type === 'success' ? 'login-success' : ''}`;
-            
+            // Скрываем экран загрузки
             setTimeout(() => {
-                if (messageElement.textContent === message) {
-                    messageElement.textContent = '';
+                document.getElementById('loadingOverlay').style.display = 'none';
+                
+                // Проверяем, есть ли сохраненный пользователь
+                const savedUser = localStorage.getItem('lab_tracker_user');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    showMainInterface();
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    updateUserDisplay(currentUser);
+                } else {
+                    document.getElementById('loginContainer').style.display = 'block';
                 }
-            }, 5000);
-        }
-
-        // Получить понятное сообщение об ошибке Firebase
-        function getFirebaseErrorMessage(error) {
-            switch (error.code) {
-                case 'auth/invalid-email':
-                    return 'Неверный формат email';
-                case 'auth/user-disabled':
-                    return 'Пользователь заблокирован';
-                case 'auth/user-not-found':
-                    return 'Пользователь не найден';
-                case 'auth/wrong-password':
-                    return 'Неверный пароль';
-                case 'auth/email-already-in-use':
-                    return 'Email уже используется';
-                case 'auth/weak-password':
-                    return 'Пароль слишком слабый';
-                case 'auth/network-request-failed':
-                    return 'Ошибка сети. Проверьте подключение к интернету';
-                case 'auth/popup-blocked':
-                    return 'Всплывающее окно было заблокировано браузером';
-                case 'auth/popup-closed-by-user':
-                    return 'Вход отменен пользователем';
-                case 'auth/operation-not-allowed':
-                    return 'Этот метод входа не разрешен. Проверьте настройки Firebase';
-                default:
-                    return 'Ошибка: ' + error.message;
-            }
-        }
-
-        // Выход пользователя
-        function logoutUser() {
-            // Сначала сохраняем данные
-            saveUserData();
+            }, 500);
             
-            // Выходим из Firebase
-            firebase.auth().signOut()
-                .then(() => {
-                    currentUser = null;
-                    currentUserId = null;
-                    showLoginInterface();
-                })
-                .catch((error) => {
-                    console.error('Ошибка выхода:', error);
-                });
-        }
-
-        // Показать основной интерфейс
-        function showMainInterface() {
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('mainContainer').style.display = 'block';
-        }
-
-        // Показать экран входа
-        function showLoginInterface() {
-            document.getElementById('mainContainer').style.display = 'none';
-            document.getElementById('loginContainer').style.display = 'block';
-        }
-
-        // Загрузка данных пользователя из Firebase
-        function loadUserData() {
-            if (!currentUserId || !database) return;
-            
-            // Показываем индикатор загрузки
-            setSyncStatus('syncing', 'Загрузка данных...');
-            
-            database.ref('users/' + currentUserId).once('value')
-                .then((snapshot) => {
-                    const userData = snapshot.val();
-                    
-                    if (userData) {
-                        // Загружаем данные из Firebase
-                        data = userData;
-                        
-                        // Инициализируем интерфейс
-                        initEducationSelector();
-                        renderSubjectsTable();
-                        updateStats();
-                        
-                        setSyncStatus('online', 'Данные загружены');
-                    } else {
-                        // Данных нет, создаем начальные
-                        data = {
-                            educations: [
-                                { id: 1, name: "Бакалавриат" }
-                            ],
-                            currentEducationId: 1,
-                            subjects: []
-                        };
-                        
-                        // Сохраняем начальные данные
-                        saveUserData();
-                        
-                        setSyncStatus('online', 'Созданы начальные данные');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Ошибка загрузки данных:', error);
-                    setSyncStatus('offline', 'Ошибка загрузки данных');
-                    
-                    // Показываем сообщение об ошибке
-                    alert('Не удалось загрузить данные. Работаем в офлайн режиме.');
-                });
-        }
-
-        // Сохранение данных пользователя в Firebase
-        function saveUserData() {
-            if (!currentUserId || !database) return;
-            
-            if (!isOnline) {
-                pendingSync = true;
-                setSyncStatus('offline', 'Ожидание синхронизации');
-                return;
-            }
-            
-            setSyncStatus('syncing', 'Сохранение данных...');
-            
-            database.ref('users/' + currentUserId).set(data)
-                .then(() => {
-                    pendingSync = false;
-                    setSyncStatus('online', 'Данные сохранены');
-                })
-                .catch((error) => {
-                    console.error('Ошибка сохранения данных:', error);
-                    pendingSync = true;
-                    setSyncStatus('offline', 'Ошибка сохранения');
-                });
-        }
-
-        // Синхронизация данных
-        function syncData() {
-            saveUserData();
-        }
-
-        // Ручная синхронизация
-        function manualSync() {
-            if (isOnline) {
-                saveUserData();
-            } else {
-                alert('Нет подключения к интернету');
-            }
-        }
-
-        // Установка статуса синхронизации
-        function setSyncStatus(status, text) {
-            const syncStatus = document.getElementById('syncStatus');
-            const syncIcon = document.getElementById('syncIcon');
-            const syncText = document.getElementById('syncText');
-            
-            syncText.textContent = text;
-            
-            switch(status) {
-                case 'online':
-                    syncIcon.className = 'sync-icon sync-online';
-                    syncStatus.style.display = 'flex';
-                    break;
-                case 'offline':
-                    syncIcon.className = 'sync-icon sync-offline';
-                    syncStatus.style.display = 'flex';
-                    break;
-                case 'syncing':
-                    syncIcon.className = 'sync-icon sync-syncing';
-                    syncStatus.style.display = 'flex';
-                    break;
-            }
-        }
-
-        // Инициализация обработчиков модальных окон
-        function initializeModalHandlers() {
-            // Обработчики для кнопок
-            document.getElementById('addSubjectBtn')?.addEventListener('click', function() {
+            // Инициализация обработчиков
+            initEventListeners();
+        });
+        
+        function initEventListeners() {
+            // Кнопка добавления предмета
+            document.getElementById('addSubjectBtn').addEventListener('click', function() {
                 document.getElementById('addSubjectModal').style.display = 'flex';
             });
             
-            document.getElementById('cancelBtn')?.addEventListener('click', function() {
-                document.getElementById('addSubjectModal').style.display = 'none';
-                document.getElementById('subjectForm').reset();
-            });
-            
-            document.getElementById('subjectForm')?.addEventListener('submit', function(e) {
+            // Форма добавления предмета
+            document.getElementById('subjectForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 addNewSubject();
             });
             
-            // Кнопка управления образованиями
-            document.getElementById('manageEducationsBtn')?.addEventListener('click', function() {
-                openManageEducationsModal();
-            });
-            
-            // Кнопка закрытия модального окна управления образованиями
-            document.getElementById('closeManageModalBtn')?.addEventListener('click', function() {
-                document.getElementById('manageEducationsModal').style.display = 'none';
-            });
-            
-            // Кнопка добавления нового образования из модального окна управления
-            document.getElementById('addNewEducationBtn')?.addEventListener('click', function() {
-                document.getElementById('manageEducationsModal').style.display = 'none';
-                document.getElementById('addEducationModal').style.display = 'flex';
-            });
-            
-            document.getElementById('cancelEducationBtn')?.addEventListener('click', function() {
-                document.getElementById('addEducationModal').style.display = 'none';
-                document.getElementById('educationForm').reset();
-            });
-            
-            document.getElementById('educationForm')?.addEventListener('submit', function(e) {
+            // Форма добавления образования
+            document.getElementById('educationForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 addNewEducation();
             });
-            
-            // Обработчики для модального окна управления лабораторными работами
-            document.getElementById('closeLabsModalBtn')?.addEventListener('click', function() {
-                closeManageLabsModal();
-            });
-            
-            document.getElementById('markAllDoneBtn')?.addEventListener('click', function() {
-                markAllLabsAsDone();
-            });
-            
-            document.getElementById('markAllPassedBtn')?.addEventListener('click', function() {
-                markAllLabsAsPassed();
-            });
-            
-            document.getElementById('clearAllBtn')?.addEventListener('click', function() {
-                clearAllLabMarks();
-            });
         }
-
-        // Инициализация переключателя образований
+        
+        // ========== АВТОРИЗАЦИЯ ==========
+        function loginWithVK() {
+            const vkAppId = 54404407;
+            const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            const scope = 'email';
+            
+            const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${vkAppId}&display=popup&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&v=5.199&state=lab_tracker`;
+            
+            const popup = window.open(vkAuthUrl, 'VK Auth', 'width=600,height=600');
+            
+            // Проверяем URL popup-окна
+            const checkPopup = setInterval(() => {
+                try {
+                    const popupUrl = popup.location.href;
+                    if (popupUrl.includes(window.location.origin)) {
+                        clearInterval(checkPopup);
+                        
+                        // Извлекаем параметры из URL
+                        const hash = popupUrl.split('#')[1];
+                        const params = new URLSearchParams(hash);
+                        
+                        const accessToken = params.get('access_token');
+                        const userId = params.get('user_id');
+                        const email = params.get('email');
+                        
+                        if (accessToken && userId) {
+                            // Получаем информацию о пользователе
+                            getVKUserInfo(accessToken, userId, email);
+                        }
+                        
+                        popup.close();
+                    }
+                } catch (e) {
+                    // Игнорируем ошибки доступа к popup
+                }
+            }, 500);
+        }
+        
+        async function getVKUserInfo(accessToken, userId, email) {
+            try {
+                // Запрашиваем данные пользователя из VK API
+                const response = await fetch(`https://api.vk.com/method/users.get?user_ids=${userId}&fields=first_name,last_name,photo_200&access_token=${accessToken}&v=5.199`);
+                const result = await response.json();
+                
+                if (result.response && result.response[0]) {
+                    const user = result.response[0];
+                    const userData = {
+                        id: `vk_${userId}`,
+                        email: email || `${userId}@vk.com`,
+                        name: `${user.first_name} ${user.last_name}`,
+                        photo: user.photo_200,
+                        provider: 'vk'
+                    };
+                    
+                    // Сохраняем данные пользователя
+                    localStorage.setItem('lab_tracker_user', JSON.stringify(userData));
+                    currentUser = userData;
+                    
+                    // Показываем основной интерфейс
+                    showMainInterface();
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    updateUserDisplay(userData);
+                    
+                    // Показываем статус
+                    showSyncStatus('online', 'Вход через ВК выполнен');
+                }
+            } catch (error) {
+                console.error('Ошибка получения данных VK:', error);
+                alert('Не удалось получить данные пользователя. Используйте локальный режим.');
+            }
+        }
+        
+        function startLocalMode() {
+            const userName = prompt('Введите ваше имя для локального режима:', 'Студент');
+            if (!userName) return;
+            
+            const userData = {
+                id: `local_${Date.now()}`,
+                name: userName,
+                email: 'local@example.com',
+                provider: 'local'
+            };
+            
+            localStorage.setItem('lab_tracker_user', JSON.stringify(userData));
+            currentUser = userData;
+            
+            showMainInterface();
+            initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
+            updateUserDisplay(userData);
+            
+            showSyncStatus('online', 'Локальный режим');
+        }
+        
+        function updateUserDisplay(user) {
+            document.getElementById('displayName').textContent = user.name;
+            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${user.name}!`;
+            
+            const avatarElement = document.getElementById('userAvatar');
+            if (user.photo) {
+                avatarElement.src = user.photo;
+                avatarElement.style.display = 'block';
+            } else {
+                // Генерируем аватар с инициалами
+                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                avatarElement.style.display = 'block';
+            }
+        }
+        
+        function logoutUser() {
+            // Сохраняем данные перед выходом
+            saveDataToStorage();
+            
+            // Очищаем данные
+            localStorage.removeItem('lab_tracker_user');
+            currentUser = null;
+            data = {
+                educations: [{ id: 1, name: "Бакалавриат" }],
+                currentEducationId: 1,
+                subjects: []
+            };
+            
+            // Показываем окно входа
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'block';
+            
+            showSyncStatus('offline', 'Вы вышли из системы');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+        }
+        
+        // ========== УПРАВЛЕНИЕ ОБРАЗОВАНИЯМИ ==========
         function initEducationSelector() {
             const educationSelector = document.getElementById('educationSelector');
             educationSelector.innerHTML = '';
@@ -1815,39 +1080,111 @@
                 
                 const button = document.createElement('button');
                 button.className = `education-btn ${education.id === data.currentEducationId ? 'active' : ''}`;
-                button.textContent = education.name;
+                button.innerHTML = `
+                    ${education.name}
+                    ${data.educations.length > 1 ? '<span class="delete-education-btn" onclick="deleteEducation(' + education.id + ', event)">×</span>' : ''}
+                `;
                 button.dataset.educationId = education.id;
                 
-                button.addEventListener('click', function() {
-                    document.querySelectorAll('.education-btn').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
-                    
-                    this.classList.add('active');
-                    data.currentEducationId = parseInt(this.dataset.educationId);
-                    
-                    renderSubjectsTable();
-                    updateStats();
+                button.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('delete-education-btn')) {
+                        // Переключаем активное образование
+                        document.querySelectorAll('.education-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        
+                        this.classList.add('active');
+                        data.currentEducationId = parseInt(this.dataset.educationId);
+                        
+                        renderSubjectsTable();
+                        updateStats();
+                        saveDataToStorage();
+                    }
                 });
                 
                 buttonContainer.appendChild(button);
                 educationSelector.appendChild(buttonContainer);
             });
             
+            // Кнопка добавления нового образования
             const addEducationBtn = document.createElement('button');
             addEducationBtn.className = 'education-btn add-education';
-            addEducationBtn.textContent = '+ Новое образование';
+            addEducationBtn.innerHTML = '<span style="font-size: 1.2rem;">+</span> Добавить образование';
             addEducationBtn.addEventListener('click', function() {
                 document.getElementById('addEducationModal').style.display = 'flex';
             });
             educationSelector.appendChild(addEducationBtn);
         }
-
-        // Рендеринг таблицы с предметами
+        
+        // ========== ФУНКЦИЯ УДАЛЕНИЯ ОБРАЗОВАНИЯ ==========
+        function deleteEducation(educationId, event) {
+            event.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по кнопке образования
+            
+            // Нельзя удалить последнее образование
+            if (data.educations.length <= 1) {
+                alert('Нельзя удалить последнее образование!');
+                return;
+            }
+            
+            if (confirm('Удалить это образование? Все предметы в нём также будут удалены!')) {
+                // Удаляем образование
+                const educationIndex = data.educations.findIndex(e => e.id === educationId);
+                if (educationIndex > -1) {
+                    data.educations.splice(educationIndex, 1);
+                }
+                
+                // Удаляем все предметы этого образования
+                data.subjects = data.subjects.filter(subject => subject.educationId !== educationId);
+                
+                // Если удалили текущее активное образование, выбираем первое из оставшихся
+                if (data.currentEducationId === educationId) {
+                    data.currentEducationId = data.educations[0].id;
+                }
+                
+                // Обновляем интерфейс и сохраняем
+                initEducationSelector();
+                renderSubjectsTable();
+                updateStats();
+                saveDataToStorage();
+                
+                showSyncStatus('online', 'Образование удалено');
+            }
+        }
+        
+        function addNewEducation() {
+            const educationName = document.getElementById('educationName').value.trim();
+            
+            if (!educationName) {
+                alert('Введите название образования');
+                return;
+            }
+            
+            // Генерируем новый ID
+            const newId = data.educations.length > 0 ? 
+                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
+            
+            data.educations.push({
+                id: newId,
+                name: educationName
+            });
+            
+            // Закрываем модальное окно и очищаем форму
+            closeModal('addEducationModal');
+            document.getElementById('educationName').value = '';
+            
+            // Обновляем интерфейс
+            initEducationSelector();
+            saveDataToStorage();
+            
+            showSyncStatus('online', 'Образование добавлено');
+        }
+        
+        // ========== УПРАВЛЕНИЕ ПРЕДМЕТАМИ ==========
         function renderSubjectsTable() {
             const subjectsBody = document.getElementById('subjectsBody');
             subjectsBody.innerHTML = '';
             
+            // Фильтруем предметы по текущему образованию
             const currentSubjects = data.subjects.filter(subject => 
                 subject.educationId === data.currentEducationId
             );
@@ -1896,107 +1233,131 @@
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <button class="action-btn manage-labs-btn" data-id="${subject.id}" data-action="manage-labs">Управление ЛР</button>
-                            <button class="action-btn lab-btn" data-id="${subject.id}" data-action="increment-lab">+ЛР</button>
-                            <button class="action-btn delete-btn" data-id="${subject.id}" data-action="delete">✕</button>
+                            <button class="action-btn manage-labs-btn" onclick="openManageLabsModal(${subject.id})">Управление ЛР</button>
+                            <button class="action-btn lab-btn" onclick="incrementLabCount(${subject.id})">+ЛР</button>
+                            <button class="action-btn delete-btn" onclick="deleteSubject(${subject.id})">✕</button>
                         </div>
                     </td>
                 `;
                 
                 subjectsBody.appendChild(row);
             });
-            
-            document.querySelectorAll('.action-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const subjectId = parseInt(this.dataset.id);
-                    const action = this.dataset.action;
-                    
-                    handleSubjectAction(subjectId, action);
-                });
-            });
         }
-
-        // Подсчет выполненных лабораторных работ
+        
         function calculateDoneLabs(subject) {
-            if (!subject.labs || subject.labs.length === 0) {
-                return subject.doneLabs || 0;
-            }
+            if (!subject.labs || subject.labs.length === 0) return 0;
             return subject.labs.filter(lab => lab.done).length;
         }
-
-        // Подсчет сданных лабораторных работ
+        
         function calculatePassedLabs(subject) {
-            if (!subject.labs || subject.labs.length === 0) {
-                return subject.passedLabs || 0;
-            }
+            if (!subject.labs || subject.labs.length === 0) return 0;
             return subject.labs.filter(lab => lab.passed).length;
         }
-
-        // Расчет среднего балла
+        
         function calculateAverageGrade(subject) {
-            if (!subject.labs || subject.labs.length === 0) {
-                return 0;
-            }
+            if (!subject.labs || subject.labs.length === 0) return 0;
             
             const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
-            if (passedLabs.length === 0) {
-                return 0;
-            }
+            if (passedLabs.length === 0) return 0;
             
             const sum = passedLabs.reduce((total, lab) => total + lab.grade, 0);
             return sum / passedLabs.length;
         }
-
-        // Обработка действий с предметами
-        function handleSubjectAction(subjectId, action) {
-            const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
+        
+        function addNewSubject() {
+            const subjectName = document.getElementById('subjectName').value;
+            const totalLabs = parseInt(document.getElementById('totalLabs').value);
             
-            if (subjectIndex === -1) return;
-            
-            switch(action) {
-                case 'increment-lab':
-                    if (data.subjects[subjectIndex].totalLabs < 50) {
-                        data.subjects[subjectIndex].totalLabs++;
-                        if (!data.subjects[subjectIndex].labs) {
-                            data.subjects[subjectIndex].labs = [];
-                        }
-                        data.subjects[subjectIndex].labs.push({
-                            number: data.subjects[subjectIndex].totalLabs,
-                            done: false,
-                            passed: false,
-                            grade: null
-                        });
-                    }
-                    break;
-                    
-                case 'manage-labs':
-                    openManageLabsModal(subjectId);
-                    break;
-                    
-                case 'delete':
-                    if (confirm('Удалить этот предмет?')) {
-                        data.subjects.splice(subjectIndex, 1);
-                    }
-                    break;
+            if (!subjectName || !totalLabs || totalLabs < 1) {
+                alert('Пожалуйста, заполните все поля корректно');
+                return;
             }
             
+            // Генерируем новый ID
+            const newId = data.subjects.length > 0 ? 
+                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
+            
+            // Создаем массив лабораторных работ
+            const labs = [];
+            for (let i = 1; i <= totalLabs; i++) {
+                labs.push({
+                    number: i,
+                    done: false,
+                    passed: false,
+                    grade: null
+                });
+            }
+            
+            data.subjects.push({
+                id: newId,
+                educationId: data.currentEducationId,
+                name: subjectName,
+                totalLabs: totalLabs,
+                labs: labs
+            });
+            
+            // Закрываем модальное окно и очищаем форму
+            closeModal('addSubjectModal');
+            document.getElementById('subjectName').value = '';
+            document.getElementById('totalLabs').value = '';
+            
+            // Обновляем интерфейс
             renderSubjectsTable();
             updateStats();
-            saveUserData();
+            saveDataToStorage();
+            
+            showSyncStatus('online', 'Предмет добавлен');
         }
-
-        // Открытие модального окна управления лабораторными работами
+        
+        function incrementLabCount(subjectId) {
+            const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
+            
+            if (subjectIndex !== -1 && data.subjects[subjectIndex].totalLabs < 50) {
+                data.subjects[subjectIndex].totalLabs++;
+                
+                // Добавляем новую лабораторную работу
+                if (!data.subjects[subjectIndex].labs) {
+                    data.subjects[subjectIndex].labs = [];
+                }
+                
+                data.subjects[subjectIndex].labs.push({
+                    number: data.subjects[subjectIndex].totalLabs,
+                    done: false,
+                    passed: false,
+                    grade: null
+                });
+                
+                renderSubjectsTable();
+                updateStats();
+                saveDataToStorage();
+                
+                showSyncStatus('online', 'Лабораторная работа добавлена');
+            }
+        }
+        
+        function deleteSubject(subjectId) {
+            if (confirm('Удалить этот предмет?')) {
+                const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
+                if (subjectIndex !== -1) {
+                    data.subjects.splice(subjectIndex, 1);
+                    
+                    renderSubjectsTable();
+                    updateStats();
+                    saveDataToStorage();
+                    
+                    showSyncStatus('online', 'Предмет удален');
+                }
+            }
+        }
+        
+        // ========== УПРАВЛЕНИЕ ЛАБОРАТОРНЫМИ РАБОТАМИ ==========
         function openManageLabsModal(subjectId) {
+            currentSubjectId = subjectId;
             const subject = data.subjects.find(s => s.id === subjectId);
+            
             if (!subject) return;
             
-            window.currentSubjectId = subjectId;
-            
-            document.getElementById('subjectTitle').textContent = subject.name;
-            
-            const education = data.educations.find(e => e.id === subject.educationId);
-            document.getElementById('educationTitle').textContent = education ? `Образование: ${education.name}` : '';
-            
+            // Заполняем информацию о предмете
             document.getElementById('currentSubjectName').textContent = subject.name;
             document.getElementById('totalLabsCount').textContent = subject.totalLabs;
             document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
@@ -2005,25 +1366,18 @@
             const averageGrade = calculateAverageGrade(subject);
             document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
             
-            updateGradeStats(subject);
+            // Рендерим сетку лабораторных работ
             renderLabsGrid(subject);
             
+            // Показываем модальное окно
             document.getElementById('manageLabsModal').style.display = 'flex';
         }
-
-        // Закрытие модального окна управления лабораторными работами
-        function closeManageLabsModal() {
-            document.getElementById('manageLabsModal').style.display = 'none';
-            renderSubjectsTable();
-            updateStats();
-            saveUserData();
-        }
-
-        // Рендеринг сетки лабораторных работ
+        
         function renderLabsGrid(subject) {
             const labsGrid = document.getElementById('labsGrid');
             labsGrid.innerHTML = '';
             
+            // Инициализируем labs если их нет
             if (!subject.labs || subject.labs.length === 0) {
                 subject.labs = [];
                 for (let i = 1; i <= subject.totalLabs; i++) {
@@ -2036,9 +1390,13 @@
                 }
             }
             
-            subject.labs.forEach(lab => {
+            // Сортируем лабораторные работы по номеру
+            const sortedLabs = [...subject.labs].sort((a, b) => a.number - b.number);
+            
+            sortedLabs.forEach(lab => {
                 const labItem = document.createElement('div');
                 labItem.className = 'lab-item';
+                labItem.dataset.labNumber = lab.number;
                 
                 let statusClass = 'lab-not-done';
                 let statusText = 'Не выполнена';
@@ -2055,7 +1413,7 @@
                     <div class="lab-number">ЛР ${lab.number}</div>
                     <div class="lab-status ${statusClass}">${statusText}</div>
                     ${lab.passed ? `
-                        <select class="grade-selector grade-${lab.grade || 5}" data-number="${lab.number}">
+                        <select class="grade-selector grade-${lab.grade || 5}" onchange="updateLabGrade(${lab.number}, this.value)">
                             <option value="5" ${lab.grade === 5 ? 'selected' : ''}>5 (Отлично)</option>
                             <option value="4" ${lab.grade === 4 ? 'selected' : ''}>4 (Хорошо)</option>
                             <option value="3" ${lab.grade === 3 ? 'selected' : ''}>3 (Удовл.)</option>
@@ -2066,28 +1424,18 @@
                 
                 labItem.addEventListener('click', function(e) {
                     if (!e.target.classList.contains('grade-selector')) {
-                        toggleLabStatus(lab.number, subject);
+                        toggleLabStatus(lab.number);
                     }
                 });
-                
-                const gradeSelector = labItem.querySelector('.grade-selector');
-                if (gradeSelector) {
-                    gradeSelector.addEventListener('change', function(e) {
-                        e.stopPropagation();
-                        updateLabGrade(lab.number, parseInt(this.value), subject);
-                    });
-                    
-                    gradeSelector.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                    });
-                }
                 
                 labsGrid.appendChild(labItem);
             });
         }
-
-        // Переключение статуса лабораторной работы
-        function toggleLabStatus(labNumber, subject) {
+        
+        function toggleLabStatus(labNumber) {
+            const subject = data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
             
@@ -2097,73 +1445,51 @@
                 lab.grade = null;
             } else if (!lab.passed) {
                 lab.passed = true;
-                lab.grade = 5;
+                lab.grade = 5; // По умолчанию оценка 5
             } else {
                 lab.done = false;
                 lab.passed = false;
                 lab.grade = null;
             }
             
+            // Обновляем отображение
             updateLabDisplay(subject);
+            saveDataToStorage();
         }
-
-        // Обновление оценки лабораторной работы
-        function updateLabGrade(labNumber, grade, subject) {
+        
+        function updateLabGrade(labNumber, grade) {
+            const subject = data.subjects.find(s => s.id === currentSubjectId);
+            if (!subject) return;
+            
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
             
-            lab.grade = grade;
+            lab.grade = parseInt(grade);
+            
+            // Обновляем отображение
             updateLabDisplay(subject);
+            saveDataToStorage();
         }
-
-        // Обновление отображения лабораторных работ
+        
         function updateLabDisplay(subject) {
+            // Обновляем счетчики
             document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
             document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
             
+            // Обновляем средний балл
             const averageGrade = calculateAverageGrade(subject);
             document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
             
-            updateGradeStats(subject);
+            // Перерисовываем сетку
             renderLabsGrid(subject);
+            
+            // Обновляем основную таблицу
+            renderSubjectsTable();
+            updateStats();
         }
-
-        // Обновление статистики оценок
-        function updateGradeStats(subject) {
-            const gradeStats = document.getElementById('gradeStats');
-            gradeStats.innerHTML = '';
-            
-            if (!subject.labs || subject.labs.length === 0) return;
-            
-            const gradeCounts = {5: 0, 4: 0, 3: 0, 2: 0};
-            const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
-            
-            passedLabs.forEach(lab => {
-                if (gradeCounts[lab.grade] !== undefined) {
-                    gradeCounts[lab.grade]++;
-                }
-            });
-            
-            const totalPassed = passedLabs.length;
-            
-            [5, 4, 3, 2].forEach(grade => {
-                const count = gradeCounts[grade];
-                const percentage = totalPassed > 0 ? Math.round((count / totalPassed) * 100) : 0;
-                
-                const gradeStat = document.createElement('div');
-                gradeStat.className = 'grade-stat';
-                gradeStat.innerHTML = `
-                    <div class="grade-stat-value grade-${grade}">${count}</div>
-                    <div class="grade-stat-label">${grade} (${percentage}%)</div>
-                `;
-                
-                gradeStats.appendChild(gradeStat);
-            });
-        }
-
-        // Отметить все лабораторные работы как выполненные
+        
         function markAllLabsAsDone() {
-            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
+            const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
@@ -2173,11 +1499,13 @@
             });
             
             updateLabDisplay(subject);
+            saveDataToStorage();
+            
+            showSyncStatus('online', 'Все ЛР отмечены как выполненные');
         }
-
-        // Отметить все лабораторные работы как сданные
+        
         function markAllLabsAsPassed() {
-            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
+            const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
@@ -2187,11 +1515,13 @@
             });
             
             updateLabDisplay(subject);
+            saveDataToStorage();
+            
+            showSyncStatus('online', 'Все ЛР отмечены как сданные');
         }
-
-        // Сбросить все отметки
+        
         function clearAllLabMarks() {
-            const subject = data.subjects.find(s => s.id === window.currentSubjectId);
+            const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
             
             subject.labs.forEach(lab => {
@@ -2201,74 +1531,12 @@
             });
             
             updateLabDisplay(subject);
+            saveDataToStorage();
+            
+            showSyncStatus('online', 'Все отметки сброшены');
         }
-
-        // Добавление нового предмета
-        function addNewSubject() {
-            const subjectName = document.getElementById('subjectName').value;
-            const totalLabs = parseInt(document.getElementById('totalLabs').value);
-            
-            if (!subjectName || !totalLabs || totalLabs < 1) {
-                alert('Пожалуйста, заполните все поля корректно');
-                return;
-            }
-            
-            const newId = data.subjects.length > 0 ? 
-                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
-            
-            const labs = [];
-            for (let i = 1; i <= totalLabs; i++) {
-                labs.push({
-                    number: i,
-                    done: false,
-                    passed: false,
-                    grade: null
-                });
-            }
-            
-            data.subjects.push({
-                id: newId,
-                educationId: data.currentEducationId,
-                name: subjectName,
-                totalLabs: totalLabs,
-                doneLabs: 0,
-                passedLabs: 0,
-                labs: labs
-            });
-            
-            document.getElementById('addSubjectModal').style.display = 'none';
-            document.getElementById('subjectForm').reset();
-            
-            renderSubjectsTable();
-            updateStats();
-            saveUserData();
-        }
-
-        // Добавление нового образования
-        function addNewEducation() {
-            const educationName = document.getElementById('educationName').value;
-            
-            if (!educationName) {
-                alert('Пожалуйста, введите название образования');
-                return;
-            }
-            
-            const newId = data.educations.length > 0 ? 
-                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
-            
-            data.educations.push({
-                id: newId,
-                name: educationName
-            });
-            
-            document.getElementById('addEducationModal').style.display = 'none';
-            document.getElementById('educationForm').reset();
-            
-            initEducationSelector();
-            saveUserData();
-        }
-
-        // Обновление статистики
+        
+        // ========== СТАТИСТИКА ==========
         function updateStats() {
             const stats = document.getElementById('stats');
             
@@ -2302,7 +1570,7 @@
             
             const totalLabs = currentSubjects.reduce((sum, subject) => sum + subject.totalLabs, 0);
             const passedLabs = currentSubjects.reduce((sum, subject) => sum + calculatePassedLabs(subject), 0);
-            const overallProgress = Math.round((passedLabs / totalLabs) * 100);
+            const overallProgress = totalLabs > 0 ? Math.round((passedLabs / totalLabs) * 100) : 0;
             
             let totalAverage = 0;
             let subjectsWithGrades = 0;
@@ -2332,47 +1600,127 @@
                 </div>
             `;
         }
-
-        // Открытие модального окна управления образованиями
-        function openManageEducationsModal() {
-            const educationsList = document.getElementById('educationsList');
-            educationsList.innerHTML = '';
-            
-            if (data.educations.length === 0) {
-                educationsList.innerHTML = `
-                    <div class="no-education-message">
-                        Нет добавленных образований. Добавьте первое образование.
-                    </div>
-                `;
-            } else {
-                data.educations.forEach(education => {
-                    const subjectCount = data.subjects.filter(subject => 
-                        subject.educationId === education.id
-                    ).length;
-                    
-                    const educationItem = document.createElement('div');
-                    educationItem.className = 'education-item';
-                    educationItem.innerHTML = `
-                        <div class="education-info">
-                            <div class="education-name">${education.name}</div>
-                            <div class="education-subjects-count">Предметов: ${subjectCount}</div>
-                        </div>
+        
+        // ========== СОХРАНЕНИЕ ДАННЫХ ==========
+        function saveDataToStorage() {
+            if (currentUser) {
+                // Сохраняем данные для текущего пользователя
+                localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
+                
+                // Обновляем статус сохранения
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.innerHTML = `
+                        <div class="sync-icon sync-online"></div>
+                        <span>Данные сохранены</span>
                     `;
                     
-                    educationsList.appendChild(educationItem);
-                });
+                    // Возвращаем обычный статус через 2 секунды
+                    setTimeout(() => {
+                        syncStatus.innerHTML = `
+                            <div class="sync-icon sync-online"></div>
+                            <span>Локальный режим (данные в браузере)</span>
+                        `;
+                    }, 2000);
+                }
             }
-            
-            document.getElementById('manageEducationsModal').style.display = 'flex';
         }
-
-        // Глобальные переменные
-        window.currentSubjectId = null;
-        window.initEducationSelector = initEducationSelector;
-        window.renderSubjectsTable = renderSubjectsTable;
-        window.updateStats = updateStats;
-        window.showLoginForm = showLoginForm;
-        window.showRegisterForm = showRegisterForm;
+        
+        function loadDataFromStorage() {
+            if (currentUser) {
+                const savedData = localStorage.getItem(`lab_tracker_data_${currentUser.id}`);
+                if (savedData) {
+                    data = JSON.parse(savedData);
+                }
+            }
+        }
+        
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function showSyncStatus(status, text) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            if (syncStatus && syncIcon && syncText) {
+                syncText.textContent = text;
+                syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
+                syncStatus.style.display = 'flex';
+            }
+        }
+        
+        // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
+        function exportData() {
+            const exportData = {
+                user: currentUser,
+                appData: data,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `lab_tracker_backup_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showSyncStatus('online', 'Данные экспортированы');
+        }
+        
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        // Проверяем структуру данных
+                        if (importedData.user && importedData.appData) {
+                            if (confirm('Заменить текущие данные импортированными?')) {
+                                currentUser = importedData.user;
+                                data = importedData.appData;
+                                
+                                localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
+                                localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
+                                
+                                // Обновляем интерфейс
+                                updateUserDisplay(currentUser);
+                                initEducationSelector();
+                                renderSubjectsTable();
+                                updateStats();
+                                
+                                showSyncStatus('online', 'Данные успешно импортированы');
+                            }
+                        } else {
+                            alert('Файл имеет неверный формат');
+                        }
+                    } catch (error) {
+                        alert('Ошибка при чтении файла: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // ========== ГОТОВО! ==========
+        console.log('Трекер лабораторных работ загружен!');
     </script>
 </body>
 </html>
