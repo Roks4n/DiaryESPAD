@@ -825,31 +825,61 @@
             border: 1px solid #ffeaa7;
         }
         
-        /* Новые стили для восстановления */
-        .restore-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            text-align: center;
+        /* Стили для выбора аккаунта */
+        .account-selection {
+            max-width: 600px;
+            margin: 20px auto;
         }
         
-        .restore-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .restore-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
+        .account-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .account-item:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .account-item.active {
+            border-color: #667eea;
+            background: #f0f5ff;
+        }
+        
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .account-title {
             font-weight: 600;
-            color: white;
-            background: #17a2b8;
+            font-size: 1.1rem;
+            color: #495057;
+        }
+        
+        .account-date {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .account-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .account-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
     </style>
 </head>
@@ -910,14 +940,13 @@
         </div>
         
         <!-- Секция восстановления данных -->
-        <div class="restore-section" id="restoreSection" style="display: none;">
+        <div class="backup-section" id="restoreSection" style="display: none;">
             <h4>💾 Восстановление данных с другого устройства</h4>
             <p style="font-size: 0.9rem; color: #6c757d; margin: 10px 0;">
-                Есть сохраненные данные с другого устройства? Импортируйте их:
+                Есть сохраненные данные с другого устройства?
             </p>
-            <div class="restore-buttons">
-                <button class="restore-btn" onclick="importBackupFile()">📤 Импорт из файла</button>
-                <button class="restore-btn" onclick="showRestoreFromCloud()" style="background: #28a745;">☁️ Искать в облаке</button>
+            <div class="backup-buttons">
+                <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт из файла</button>
             </div>
         </div>
     </div>
@@ -973,7 +1002,6 @@
             <div class="backup-buttons">
                 <button class="backup-btn export-btn" onclick="exportBackup()">📥 Экспорт данных</button>
                 <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт данных</button>
-                <button class="backup-btn" style="background: #6f42c1;" onclick="showCloudRestore()">☁️ Восстановить из облака</button>
             </div>
         </div>
         
@@ -1060,16 +1088,18 @@
         </div>
     </div>
     
-    <!-- Модальное окно восстановления из облака -->
-    <div class="modal" id="cloudRestoreModal">
+    <!-- Модальное окно выбора аккаунта -->
+    <div class="modal" id="accountSelectionModal">
         <div class="modal-content">
-            <h2>Восстановление данных из облака</h2>
-            <div id="cloudRestoreContent">
-                <p>Поиск ваших данных в облаке...</p>
+            <h2>Выберите аккаунт</h2>
+            <div id="accountSelectionContent">
+                <p>🔍 Поиск ваших аккаунтов...</p>
                 <div class="spinner" style="margin: 20px auto;"></div>
             </div>
             <div class="modal-buttons">
-                <button type="button" class="cancel-btn" onclick="closeModal('cloudRestoreModal')">Отмена</button>
+                <button type="button" class="cancel-btn" onclick="closeModal('accountSelectionModal')">Отмена</button>
+                <button type="button" class="save-btn" onclick="createNewAccount()" id="createNewAccountBtn" style="display: none;">Создать новый аккаунт</button>
+                <button type="button" class="save-btn" onclick="useSelectedAccount()" id="useAccountBtn" style="display: none; background: #28a745;">Использовать выбранный</button>
             </div>
         </div>
     </div>
@@ -1094,6 +1124,8 @@
         let userBinId = null;
         let currentSubjectId = null;
         let lastError = null;
+        let foundUserBins = [];
+        let selectedBinId = null;
         
         // ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
         document.addEventListener('DOMContentLoaded', function() {
@@ -1281,6 +1313,14 @@
                 
                 if (!response.ok) {
                     const errorText = await response.text();
+                    
+                    // Если бин с таким именем уже существует (409 Conflict)
+                    if (response.status === 409) {
+                        console.log('⚠️ Бин с таким именем уже существует');
+                        // Попробуем с другим timestamp
+                        return createUserBin(userData, initialData);
+                    }
+                    
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
@@ -1365,94 +1405,65 @@
             }
         }
         
-        // ========== ПОИСК СУЩЕСТВУЮЩЕГО БИНА ПОЛЬЗОВАТЕЛЯ ==========
+        // ========== ПОИСК ВСЕХ БИНОВ ПОЛЬЗОВАТЕЛЯ ==========
         
-        async function findExistingUserBin(user) {
+        async function findAllUserBins(user) {
             try {
-                console.log('🔍 Ищем существующий бин для пользователя:', user.id);
+                console.log('🔍 Поиск всех бинов пользователя:', user.id);
                 
-                // Стратегия 1: Проверяем локальное хранилище на других бинах
-                const allBinKeys = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('lab_tracker_bin_')) {
-                        allBinKeys.push(key);
+                // Получаем список всех бинов
+                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY
                     }
+                });
+                
+                if (!response.ok) {
+                    console.error('❌ Не удалось получить список бинов:', response.status);
+                    return [];
                 }
                 
-                console.log('Найдено ключей с бинами:', allBinKeys.length);
+                const result = await response.json();
+                const userBins = [];
                 
-                // Стратегия 2: Ищем в экспортированных бэкапах
-                const backupBinIds = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('lab_tracker_backup_') || key === 'lab_tracker_data_' + user.id) {
+                if (result && result.records) {
+                    console.log(`Найдено ${result.records.length} бинов, проверяем...`);
+                    
+                    // Ограничиваем проверку первыми 20 бинами для скорости
+                    const binsToCheck = result.records.slice(0, 20);
+                    
+                    // Проверяем каждый бин на принадлежность пользователю
+                    for (const bin of binsToCheck) {
                         try {
-                            const item = JSON.parse(localStorage.getItem(key));
-                            if (item && item.binId) {
-                                backupBinIds.push(item.binId);
+                            const binData = await getUserBin(bin.id);
+                            if (binData && binData.user && binData.user.id === user.id) {
+                                console.log(`✅ Найден бин пользователя: ${bin.id}`);
+                                
+                                userBins.push({
+                                    id: bin.id,
+                                    name: bin.name || 'Без имени',
+                                    createdAt: binData.createdAt || 'Неизвестно',
+                                    updatedAt: binData.updatedAt || 'Неизвестно',
+                                    subjectsCount: binData.data?.subjects?.length || 0,
+                                    data: binData
+                                });
                             }
                         } catch (e) {
-                            // Игнорируем ошибки парсинга
+                            // Пропускаем бины с ошибками доступа
+                            console.log(`Пропускаем бин ${bin.id}: ${e.message}`);
                         }
                     }
                 }
                 
-                // Стратегия 3: Пробуем получить список бинов через API
-                // JSONBin v3 API не предоставляет полноценного поиска по содержимому,
-                // но мы можем попробовать получить список бинов
-                try {
-                    const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
-                        method: 'GET',
-                        headers: {
-                            'X-Master-Key': JSONBIN_API_KEY
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result && result.records) {
-                            console.log('Получен список бинов:', result.records.length);
-                            
-                            // Проверяем каждый бин на принадлежность пользователю
-                            for (const bin of result.records) {
-                                try {
-                                    const binData = await getUserBin(bin.id);
-                                    if (binData && binData.user && binData.user.id === user.id) {
-                                        console.log('✅ Найден существующий бин:', bin.id);
-                                        return bin.id;
-                                    }
-                                } catch (e) {
-                                    // Пропускаем бины с ошибками доступа
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('Не удалось получить список бинов:', e.message);
-                }
-                
-                // Стратегия 4: Проверяем бины из бэкапов
-                for (const binId of backupBinIds) {
-                    try {
-                        const binData = await getUserBin(binId);
-                        if (binData && binData.user && binData.user.id === user.id) {
-                            console.log('✅ Найден бин из бэкапа:', binId);
-                            return binId;
-                        }
-                    } catch (e) {
-                        // Пропускаем невалидные binId
-                    }
-                }
-                
-                console.log('❌ Существующий бин не найден');
-                return null;
+                console.log(`Найдено ${userBins.length} бинов пользователя`);
+                return userBins;
                 
             } catch (error) {
-                console.error('❌ Ошибка поиска бина:', error);
+                console.error('❌ Ошибка поиска бинов:', error);
                 lastError = error.message;
                 updateDebugPanel();
-                return null;
+                return [];
             }
         }
         
@@ -1531,67 +1542,7 @@
             }
         }
         
-        // ========== СОХРАНЕНИЕ ДАННЫХ ==========
-        
-        async function saveDataToServer() {
-            if (!currentUser || !userBinId) {
-                console.warn('Не могу сохранить: нет пользователя или ID бина');
-                saveLocalData();
-                return false;
-            }
-            
-            try {
-                console.log('💾 Сохраняем данные в облако...');
-                const success = await updateUserBin(userBinId, currentUser, data);
-                
-                if (success) {
-                    console.log('✅ Данные успешно сохранены в облако');
-                    lastError = null;
-                    updateDebugPanel();
-                    return true;
-                }
-                
-                return false;
-                
-            } catch (error) {
-                console.error('❌ Не удалось сохранить на сервер:', error);
-                saveLocalData();
-                lastError = error.message;
-                updateDebugPanel();
-                return false;
-            }
-        }
-        
-        function saveLocalData() {
-            if (currentUser) {
-                localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
-                console.log('💾 Данные сохранены локально');
-            }
-        }
-        
-        // Автосохранение
-        function autoSave() {
-            console.log('🔄 Автосохранение...');
-            
-            // Всегда сохраняем локально
-            saveLocalData();
-            
-            // Пробуем сохранить в облако если есть интернет
-            if (navigator.onLine && currentUser && userBinId) {
-                saveDataToServer().then(success => {
-                    if (success) {
-                        updateSyncStatus('online', 'Данные сохранены в облако');
-                        updateDebugPanel();
-                    } else {
-                        updateSyncStatus('offline', 'Ошибка синхронизации');
-                    }
-                });
-            } else {
-                updateSyncStatus('offline', 'Локальное сохранение');
-            }
-        }
-        
-        // ========== УЛУЧШЕННАЯ VK АВТОРИЗАЦИЯ С ПОИСКОМ СУЩЕСТВУЮЩИХ ДАННЫХ ==========
+        // ========== УЛУЧШЕННАЯ VK АВТОРИЗАЦИЯ С ВЫБОРОМ АККАУНТА ==========
         
         async function handleVKAuthSuccess(authData) {
             try {
@@ -1624,9 +1575,6 @@
                 
                 updateDebugPanel();
                 
-                // Показываем секцию восстановления
-                document.getElementById('restoreSection').style.display = 'block';
-                
                 // Шаг 1: Проверяем локальное хранилище на текущем устройстве
                 const localBinId = localStorage.getItem(`lab_tracker_bin_${currentUser.id}`);
                 
@@ -1640,26 +1588,31 @@
                     return;
                 }
                 
-                // Шаг 2: Ищем существующий бин в облаке и локальных бэкапах
-                console.log('🔍 Ищем существующий бин для пользователя...');
-                showMessage('🔍 Ищем ваши данные в облаке...', 'warning');
+                // Шаг 2: Ищем ВСЕ существующие бины пользователя
+                console.log('🔍 Ищем все существующие бины пользователя...');
+                showMessage('🔍 Поиск ваших аккаунтов в облаке...', 'warning');
                 
-                const foundBinId = await findExistingUserBin(currentUser);
+                foundUserBins = await findAllUserBins(currentUser);
                 
-                if (foundBinId) {
-                    console.log('✅ Найден существующий бин:', foundBinId);
-                    userBinId = foundBinId;
-                    localStorage.setItem('lab_tracker_bin_id', foundBinId);
-                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, foundBinId);
+                if (foundUserBins.length === 0) {
+                    // Бинов не найдено - создаем новый
+                    console.log('❌ Существующие бины не найдены, создаем новый');
+                    await createNewUserBin();
+                } else if (foundUserBins.length === 1) {
+                    // Найден только один бин - используем его
+                    console.log('✅ Найден один бин, используем его:', foundUserBins[0].id);
+                    userBinId = foundUserBins[0].id;
+                    localStorage.setItem('lab_tracker_bin_id', userBinId);
+                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, userBinId);
                     
-                    // Загружаем данные
                     await loadUserData();
-                    return;
+                } else {
+                    // Найдено несколько бинов - показываем выбор
+                    console.log(`✅ Найдено ${foundUserBins.length} бинов, показываем выбор`);
+                    showAccountSelection();
                 }
                 
-                // Шаг 3: Предлагаем восстановить из файла или создать новый аккаунт
-                console.log('⚠️ Существующий бин не найден');
-                showMessage('📁 У вас нет сохраненных данных. Создайте новый аккаунт или импортируйте бэкап.', 'warning');
+                updateDebugPanel();
                 
             } catch (error) {
                 console.error('❌ Ошибка VK авторизации:', error);
@@ -1669,11 +1622,129 @@
             }
         }
         
+        // ========== ПОКАЗ ВЫБОРА АККАУНТА ==========
+        
+        function showAccountSelection() {
+            document.getElementById('accountSelectionModal').style.display = 'flex';
+            const content = document.getElementById('accountSelectionContent');
+            
+            if (foundUserBins.length === 0) {
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <p>❌ Аккаунты не найдены</p>
+                        <p style="color: #6c757d; font-size: 0.9rem;">
+                            У вас еще нет сохраненных аккаунтов в облаке.
+                        </p>
+                    </div>
+                `;
+                document.getElementById('createNewAccountBtn').style.display = 'block';
+                document.getElementById('useAccountBtn').style.display = 'none';
+                return;
+            }
+            
+            // Сортируем бины по дате создания (новые сверху)
+            foundUserBins.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            let html = `
+                <p>Найдено ${foundUserBins.length} аккаунт(ов) в облаке:</p>
+                <div style="margin: 20px 0; max-height: 300px; overflow-y: auto;">
+            `;
+            
+            foundUserBins.forEach((bin, index) => {
+                const date = new Date(bin.createdAt).toLocaleString('ru-RU');
+                const subjectsCount = bin.subjectsCount;
+                const isSelected = selectedBinId === bin.id;
+                
+                html += `
+                    <div class="account-item ${isSelected ? 'active' : ''}" 
+                         onclick="selectAccount('${bin.id}')"
+                         style="padding: 15px; margin: 10px 0; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600; font-size: 1.1rem; color: #495057;">
+                                Аккаунт ${index + 1}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #6c757d;">
+                                ${date}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; font-size: 0.9rem; color: #6c757d;">
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                📚 Предметов: ${subjectsCount}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                📍 ID: ${bin.id.substring(0, 12)}...
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+                <p style="color: #856404; font-size: 0.9rem; margin-top: 15px;">
+                    ⚠️ Выберите аккаунт, который хотите использовать. 
+                    Рекомендуем выбрать самый новый (верхний в списке).
+                </p>
+            `;
+            
+            content.innerHTML = html;
+            
+            // Автоматически выбираем первый (самый новый) аккаунт
+            if (foundUserBins.length > 0 && !selectedBinId) {
+                selectedBinId = foundUserBins[0].id;
+                updateAccountSelection();
+            }
+            
+            document.getElementById('createNewAccountBtn').style.display = 'block';
+            document.getElementById('useAccountBtn').style.display = 'block';
+        }
+        
+        function selectAccount(binId) {
+            selectedBinId = binId;
+            updateAccountSelection();
+        }
+        
+        function updateAccountSelection() {
+            // Обновляем выделение в UI
+            const accountItems = document.querySelectorAll('.account-item');
+            accountItems.forEach(item => {
+                const binId = item.getAttribute('onclick').match(/'([^']+)'/)[1];
+                if (binId === selectedBinId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+        
+        function useSelectedAccount() {
+            if (!selectedBinId) {
+                showMessage('Выберите аккаунт', 'error');
+                return;
+            }
+            
+            userBinId = selectedBinId;
+            localStorage.setItem('lab_tracker_bin_id', userBinId);
+            localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, userBinId);
+            
+            closeModal('accountSelectionModal');
+            loadUserData();
+        }
+        
+        function createNewAccount() {
+            closeModal('accountSelectionModal');
+            createNewUserBin();
+        }
+        
+        // ========== ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ ==========
+        
         async function loadUserData() {
             try {
                 if (!userBinId) {
                     throw new Error('Нет ID бина для загрузки');
                 }
+                
+                console.log('📥 Загружаем данные пользователя из бина:', userBinId);
                 
                 const binData = await getUserBin(userBinId);
                 
@@ -1702,9 +1773,6 @@
                         return;
                     }
                 }
-                
-                // Скрываем секцию восстановления
-                document.getElementById('restoreSection').style.display = 'none';
                 
                 // Показываем основной интерфейс
                 showSuccessLogin();
@@ -1738,17 +1806,11 @@
                     
                     data = initialData;
                     
-                    // Скрываем секцию восстановления
-                    document.getElementById('restoreSection').style.display = 'none';
-                    
                     showSuccessLogin();
-                    showMessage('✅ Аккаунт создан! Данные сохраняются в облако', 'success');
+                    showMessage('✅ Новый аккаунт создан! Данные сохраняются в облако', 'success');
                 } else {
                     // Облако недоступно, используем локальное
                     loadLocalData();
-                    
-                    // Скрываем секцию восстановления
-                    document.getElementById('restoreSection').style.display = 'none';
                     
                     showSuccessLogin();
                     showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
@@ -1758,9 +1820,6 @@
                 console.error('Не удалось создать облачное хранилище:', error);
                 // Используем локальное хранилище
                 loadLocalData();
-                
-                // Скрываем секцию восстановления
-                document.getElementById('restoreSection').style.display = 'none';
                 
                 showSuccessLogin();
                 showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
@@ -1817,6 +1876,9 @@
         }
         
         function showSuccessLogin() {
+            // Скрываем секцию восстановления
+            document.getElementById('restoreSection').style.display = 'none';
+            
             showMainInterface();
             initEducationSelector();
             renderSubjectsTable();
@@ -1825,107 +1887,6 @@
             
             updateSyncStatus('online', 'Вход выполнен');
             updateDebugPanel();
-        }
-        
-        // ========== ВОССТАНОВЛЕНИЕ ИЗ ОБЛАКА ==========
-        
-        function showRestoreFromCloud() {
-            if (!currentUser) {
-                showMessage('Сначала войдите в систему', 'error');
-                return;
-            }
-            
-            document.getElementById('cloudRestoreModal').style.display = 'flex';
-            restoreFromCloud();
-        }
-        
-        async function restoreFromCloud() {
-            try {
-                const content = document.getElementById('cloudRestoreContent');
-                content.innerHTML = '<p>🔍 Поиск ваших данных в облаке...</p><div class="spinner" style="margin: 20px auto;"></div>';
-                
-                const foundBinId = await findExistingUserBin(currentUser);
-                
-                if (foundBinId) {
-                    content.innerHTML = `
-                        <div style="text-align: left;">
-                            <p>✅ Найден ваш аккаунт в облаке!</p>
-                            <p><strong>ID бина:</strong> ${foundBinId.substring(0, 15)}...</p>
-                            <p>Хотите восстановить данные из этого аккаунта?</p>
-                            <p style="color: #856404; font-size: 0.9rem; margin-top: 10px;">
-                                ⚠️ Внимание: Текущие локальные данные будут заменены
-                            </p>
-                        </div>
-                    `;
-                    
-                    const restoreBtn = document.createElement('button');
-                    restoreBtn.className = 'save-btn';
-                    restoreBtn.style.marginTop = '15px';
-                    restoreBtn.textContent = 'Восстановить данные';
-                    restoreBtn.onclick = async () => {
-                        userBinId = foundBinId;
-                        localStorage.setItem('lab_tracker_bin_id', foundBinId);
-                        localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, foundBinId);
-                        
-                        await loadUserData();
-                        closeModal('cloudRestoreModal');
-                    };
-                    
-                    content.appendChild(restoreBtn);
-                } else {
-                    content.innerHTML = `
-                        <div style="text-align: left;">
-                            <p>❌ Ваши данные не найдены в облаке.</p>
-                            <p>Возможные причины:</p>
-                            <ul style="text-align: left; margin-left: 20px; color: #6c757d;">
-                                <li>Вы еще не создавали аккаунт на этом сервисе</li>
-                                <li>Вы использовали другой метод входа</li>
-                                <li>Данные были удалены</li>
-                            </ul>
-                            <p style="margin-top: 15px;">Вы можете:</p>
-                        </div>
-                    `;
-                    
-                    const createBtn = document.createElement('button');
-                    createBtn.className = 'save-btn';
-                    createBtn.style.marginTop = '10px';
-                    createBtn.textContent = 'Создать новый аккаунт';
-                    createBtn.onclick = async () => {
-                        closeModal('cloudRestoreModal');
-                        await createNewUserBin();
-                    };
-                    
-                    const importBtn = document.createElement('button');
-                    importBtn.className = 'cancel-btn';
-                    importBtn.style.marginTop = '10px';
-                    importBtn.textContent = 'Импортировать из файла';
-                    importBtn.onclick = () => {
-                        closeModal('cloudRestoreModal');
-                        importBackupFile();
-                    };
-                    
-                    content.appendChild(createBtn);
-                    content.appendChild(document.createElement('br'));
-                    content.appendChild(importBtn);
-                }
-                
-            } catch (error) {
-                document.getElementById('cloudRestoreContent').innerHTML = `
-                    <div style="text-align: left; color: #dc3545;">
-                        <p>❌ Ошибка поиска данных: ${error.message}</p>
-                        <p>Проверьте соединение с интернетом и попробуйте снова.</p>
-                    </div>
-                `;
-            }
-        }
-        
-        function showCloudRestore() {
-            if (!currentUser) {
-                showMessage('Сначала войдите в систему', 'error');
-                return;
-            }
-            
-            showRestoreFromCloud();
         }
         
         // ========== ЛОКАЛЬНЫЙ РЕЖИМ ==========
@@ -2022,45 +1983,21 @@
             showMessage('🔍 Проверяю бины пользователя...', 'warning');
             
             try {
-                // Получаем список всех бинов
-                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY
-                    }
-                });
+                const bins = await findAllUserBins(currentUser);
                 
-                if (response.ok) {
-                    const result = await response.json();
-                    let userBins = [];
-                    
-                    if (result && result.records) {
-                        // Проверяем каждый бин
-                        for (const bin of result.records.slice(0, 10)) { // Ограничиваем первые 10
-                            try {
-                                const binData = await getUserBin(bin.id);
-                                if (binData && binData.user && binData.user.id === currentUser.id) {
-                                    userBins.push({
-                                        id: bin.id,
-                                        name: bin.name || 'Без имени',
-                                        updated: binData.updatedAt || 'Неизвестно'
-                                    });
-                                }
-                            } catch (e) {
-                                // Пропускаем
-                            }
+                if (bins.length > 0) {
+                    let message = `Найдено ${bins.length} бин(ов):\n`;
+                    bins.forEach((bin, index) => {
+                        const date = new Date(bin.createdAt).toLocaleString('ru-RU');
+                        message += `\n${index + 1}. ${bin.id.substring(0, 15)}... (${date})`;
+                        message += `\n   📚 Предметов: ${bin.subjectsCount}`;
+                        if (bin.id === userBinId) {
+                            message += ' ← ТЕКУЩИЙ';
                         }
-                    }
-                    
-                    if (userBins.length > 0) {
-                        let message = `Найдено ${userBins.length} бин(ов):\n`;
-                        userBins.forEach(bin => {
-                            message += `\n• ${bin.id.substring(0, 15)}... (${bin.name})`;
-                        });
-                        alert(message);
-                    } else {
-                        alert('Бины пользователя не найдены');
-                    }
+                    });
+                    alert(message);
+                } else {
+                    alert('Бины пользователя не найдены');
                 }
             } catch (error) {
                 alert('Ошибка проверки: ' + error.message);
@@ -2955,6 +2892,66 @@
             updateDebugPanel();
         }
         
+        // ========== СОХРАНЕНИЕ ДАННЫХ ==========
+        
+        async function saveDataToServer() {
+            if (!currentUser || !userBinId) {
+                console.warn('Не могу сохранить: нет пользователя или ID бина');
+                saveLocalData();
+                return false;
+            }
+            
+            try {
+                console.log('💾 Сохраняем данные в облако...');
+                const success = await updateUserBin(userBinId, currentUser, data);
+                
+                if (success) {
+                    console.log('✅ Данные успешно сохранены в облако');
+                    lastError = null;
+                    updateDebugPanel();
+                    return true;
+                }
+                
+                return false;
+                
+            } catch (error) {
+                console.error('❌ Не удалось сохранить на сервер:', error);
+                saveLocalData();
+                lastError = error.message;
+                updateDebugPanel();
+                return false;
+            }
+        }
+        
+        function saveLocalData() {
+            if (currentUser) {
+                localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
+                console.log('💾 Данные сохранены локально');
+            }
+        }
+        
+        // Автосохранение
+        function autoSave() {
+            console.log('🔄 Автосохранение...');
+            
+            // Всегда сохраняем локально
+            saveLocalData();
+            
+            // Пробуем сохранить в облако если есть интернет
+            if (navigator.onLine && currentUser && userBinId) {
+                saveDataToServer().then(success => {
+                    if (success) {
+                        updateSyncStatus('online', 'Данные сохранены в облако');
+                        updateDebugPanel();
+                    } else {
+                        updateSyncStatus('offline', 'Ошибка синхронизации');
+                    }
+                });
+            } else {
+                updateSyncStatus('offline', 'Локальное сохранение');
+            }
+        }
+        
         // ========== СИНХРОНИЗАЦИЯ ПРИ ВОССТАНОВЛЕНИИ СЕТИ ==========
         
         window.addEventListener('online', function() {
@@ -2996,7 +2993,7 @@
         console.log('🚀 Трекер лабораторных работ загружен!');
         console.log('🔑 API Key: JSONBin.io');
         console.log('💾 Хранилище: Cloud + Local Backup');
-        console.log('🔍 Поиск бинов: Включен');
+        console.log('🔍 Поиск бинов: Включен (выбор аккаунта)');
         console.log('🐛 Отладка: Включена (нажмите 🐛 в левом нижнем углу)');
         
     </script>
