@@ -52,6 +52,12 @@
             font-size: 1rem;
         }
         
+        /* Контейнер для VK OneTap */
+        .vkid-container {
+            margin: 25px 0;
+            min-height: 48px;
+        }
+        
         .social-buttons {
             display: flex;
             flex-direction: column;
@@ -762,6 +768,26 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* === Стили для сообщений === */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
     </style>
 </head>
 <body>
@@ -782,18 +808,14 @@
         <h2 class="login-title">Трекер лабораторных работ</h2>
         <p class="login-subtitle">Версия для работы без VPN в России</p>
         
+        <!-- VK OneTap Widget -->
+        <div id="vkid-container" class="vkid-container"></div>
+        
+        <div class="divider">
+            <span>или</span>
+        </div>
+        
         <div class="social-buttons">
-            <button class="social-btn vk-btn" onclick="loginWithVK()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M13.821 24H10.184C5.694 24 3.224 21.094 3.224 16.219V7.781C3.224 2.906 5.694 0 10.184 0H13.821C18.306 0 20.776 2.906 20.776 7.781V16.219C20.776 21.094 18.306 24 13.821 24ZM9.042 6.969C6.963 6.969 5.573 8.152 5.573 10.156C5.573 11.62 6.339 12.873 8.229 13.797L10.844 15.048C12.026 5.763 12.728 5.763 13.816 5.763H13.928C15.02 5.763 15.722 5.763 16.904 15.048L19.519 13.797C21.409 12.873 22.175 11.62 22.175 10.156C22.175 8.152 20.784 6.969 18.705 6.969H18.593C17.505 6.969 16.804 6.969 15.622 15.048L14.822 11.14C14.611 9.847 14.116 9.212 13.028 9.212H12.916C11.828 9.212 11.333 9.847 11.122 11.14L10.322 15.048C9.14 6.969 8.439 6.969 7.351 6.969H6.958H6.846H6.734H6.622H6.509H6.397H6.285H6.173H6.061H9.042Z"/>
-                </svg>
-                Войти через ВКонтакте
-            </button>
-            
-            <div class="divider">
-                <span>или</span>
-            </div>
-            
             <button class="social-btn local-btn" onclick="startLocalMode()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
@@ -803,8 +825,8 @@
         </div>
         
         <div class="offline-notice">
-            <strong>💡 Совет:</strong>
-            <p>Используйте локальный режим - он работает всегда. Данные сохраняются в вашем браузере.</p>
+            <strong>⚠️ Работает без интернета!</strong>
+            <p>Все данные сохраняются в вашем браузере. Для входа через ВК нужен интернет.</p>
         </div>
         
         <!-- Секция бэкапа -->
@@ -956,6 +978,170 @@
         </div>
     </div>
 
+    <!-- VK OneTap SDK и интеграция -->
+    <script nonce="csp_nonce" src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+    <script nonce="csp_nonce" type="text/javascript">
+        // Инициализация VK OneTap
+        function initVKOneTap() {
+            if ('VKIDSDK' in window) {
+                try {
+                    const VKID = window.VKIDSDK;
+
+                    VKID.Config.init({
+                        app: 54404407,
+                        redirectUrl: 'https://roks4n.github.io',
+                        responseMode: VKID.ConfigResponseMode.Callback,
+                        source: VKID.ConfigSource.LOWCODE,
+                        scope: 'email',
+                    });
+
+                    const oneTap = new VKID.OneTap();
+
+                    oneTap.render({
+                        container: document.getElementById('vkid-container'),
+                        scheme: 'dark',
+                        showAlternativeLogin: true,
+                        oauthList: [
+                            'mail_ru',
+                            'ok_ru'
+                        ]
+                    })
+                    .on(VKID.WidgetEvents.ERROR, function(error) {
+                        console.error('VK OneTap Error:', error);
+                        // Если виджет не работает, скрываем его и показываем кнопку
+                        document.getElementById('vkid-container').innerHTML = `
+                            <button class="social-btn vk-btn" onclick="loginWithVKSimple()" style="margin-bottom: 15px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                    <path d="M13.821 24H10.184C5.694 24 3.224 21.094 3.224 16.219V7.781C3.224 2.906 5.694 0 10.184 0H13.821C18.306 0 20.776 2.906 20.776 7.781V16.219C20.776 21.094 18.306 24 13.821 24ZM9.042 6.969C6.963 6.969 5.573 8.152 5.573 10.156C5.573 11.62 6.339 12.873 8.229 13.797L10.844 15.048C12.026 5.763 12.728 5.763 13.816 5.763H13.928C15.02 5.763 15.722 5.763 16.904 15.048L19.519 13.797C21.409 12.873 22.175 11.62 22.175 10.156C22.175 8.152 20.784 6.969 18.705 6.969H18.593C17.505 6.969 16.804 6.969 15.622 15.048L14.822 11.14C14.611 9.847 14.116 9.212 13.028 9.212H12.916C11.828 9.212 11.333 9.847 11.122 11.14L10.322 15.048C9.14 6.969 8.439 6.969 7.351 6.969H6.958H6.846H6.734H6.622H6.509H6.397H6.285H6.173H6.061H9.042Z"/>
+                                </svg>
+                                Войти через ВКонтакте
+                            </button>
+                        `;
+                        showMessage('VK OneTap виджет временно недоступен. Используйте кнопку выше или локальный режим.', 'error');
+                    })
+                    .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function(payload) {
+                        const code = payload.code;
+                        const deviceId = payload.device_id;
+
+                        try {
+                            // Пытаемся обменять code на токен
+                            const authData = await VKID.Auth.exchangeCode(code, deviceId);
+                            handleVKAuthSuccess(authData);
+                        } catch (error) {
+                            console.error('VK Auth exchange error:', error);
+                            // Если обмен не удался, показываем альтернативную кнопку
+                            showMessage('Не удалось выполнить авторизацию через VK OneTap. Используйте локальный режим.', 'error');
+                        }
+                    });
+                    
+                    console.log('VK OneTap инициализирован');
+                } catch (error) {
+                    console.error('VK OneTap init error:', error);
+                    // Если SDK не загрузился, показываем обычную кнопку
+                    document.getElementById('vkid-container').innerHTML = `
+                        <button class="social-btn vk-btn" onclick="loginWithVKSimple()" style="margin-bottom: 15px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                <path d="M13.821 24H10.184C5.694 24 3.224 21.094 3.224 16.219V7.781C3.224 2.906 5.694 0 10.184 0H13.821C18.306 0 20.776 2.906 20.776 7.781V16.219C20.776 21.094 18.306 24 13.821 24ZM9.042 6.969C6.963 6.969 5.573 8.152 5.573 10.156C5.573 11.62 6.339 12.873 8.229 13.797L10.844 15.048C12.026 5.763 12.728 5.763 13.816 5.763H13.928C15.02 5.763 15.722 5.763 16.904 15.048L19.519 13.797C21.409 12.873 22.175 11.62 22.175 10.156C22.175 8.152 20.784 6.969 18.705 6.969H18.593C17.505 6.969 16.804 6.969 15.622 15.048L14.822 11.14C14.611 9.847 14.116 9.212 13.028 9.212H12.916C11.828 9.212 11.333 9.847 11.122 11.14L10.322 15.048C9.14 6.969 8.439 6.969 7.351 6.969H6.958H6.846H6.734H6.622H6.509H6.397H6.285H6.173H6.061H9.042Z"/>
+                            </svg>
+                            Войти через ВКонтакте
+                        </button>
+                    `;
+                }
+            } else {
+                // Если SDK не загрузился
+                setTimeout(() => {
+                    if (!('VKIDSDK' in window)) {
+                        document.getElementById('vkid-container').innerHTML = `
+                            <button class="social-btn vk-btn" onclick="loginWithVKSimple()" style="margin-bottom: 15px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                    <path d="M13.821 24H10.184C5.694 24 3.224 21.094 3.224 16.219V7.781C3.224 2.906 5.694 0 10.184 0H13.821C18.306 0 20.776 2.906 20.776 7.781V16.219C20.776 21.094 18.306 24 13.821 24ZM9.042 6.969C6.963 6.969 5.573 8.152 5.573 10.156C5.573 11.62 6.339 12.873 8.229 13.797L10.844 15.048C12.026 5.763 12.728 5.763 13.816 5.763H13.928C15.02 5.763 15.722 5.763 16.904 15.048L19.519 13.797C21.409 12.873 22.175 11.62 22.175 10.156C22.175 8.152 20.784 6.969 18.705 6.969H18.593C17.505 6.969 16.804 6.969 15.622 15.048L14.822 11.14C14.611 9.847 14.116 9.212 13.028 9.212H12.916C11.828 9.212 11.333 9.847 11.122 11.14L10.322 15.048C9.14 6.969 8.439 6.969 7.351 6.969H6.958H6.846H6.734H6.622H6.509H6.397H6.285H6.173H6.061H9.042Z"/>
+                                </svg>
+                                Войти через ВКонтакте
+                            </button>
+                        `;
+                    }
+                }, 2000);
+            }
+        }
+        
+        // Обработка успешной авторизации через VK
+        async function handleVKAuthSuccess(authData) {
+            try {
+                const accessToken = authData.access_token;
+                const userId = authData.user_id;
+                const email = authData.email || authData.email_address;
+                
+                if (!accessToken || !userId) {
+                    throw new Error('No access token or user ID');
+                }
+                
+                // Получаем информацию о пользователе
+                const userInfo = await getVKUserInfo(accessToken, userId, email);
+                
+                if (userInfo) {
+                    userInfo.accessToken = accessToken;
+                    localStorage.setItem('lab_tracker_user', JSON.stringify(userInfo));
+                    currentUser = userInfo;
+                    
+                    loadDataFromStorage();
+                    showMainInterface();
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    updateUserDisplay(userInfo);
+                    
+                    updateSyncStatus('online', 'Вход через ВК выполнен');
+                    showMessage('Успешный вход через ВКонтакте!', 'success');
+                }
+            } catch (error) {
+                console.error('VK auth success error:', error);
+                showMessage('Ошибка при обработке авторизации. Используйте локальный режим.', 'error');
+            }
+        }
+        
+        // Альтернативный метод входа через VK (если OneTap не работает)
+        function loginWithVKSimple() {
+            const vkAppId = 54404407;
+            const redirectUri = encodeURIComponent('https://roks4n.github.io');
+            const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${vkAppId}&display=popup&redirect_uri=${redirectUri}&scope=email&response_type=token&v=5.199&state=lab_tracker`;
+            
+            const popup = window.open(vkAuthUrl, 'VK Auth', 'width=600,height=600');
+            
+            if (!popup) {
+                alert('Разрешите всплывающие окна для этого сайта!');
+                return;
+            }
+            
+            const checkPopup = setInterval(() => {
+                try {
+                    if (popup.closed) {
+                        clearInterval(checkPopup);
+                        return;
+                    }
+                    
+                    const popupUrl = popup.location.href;
+                    
+                    if (popupUrl.includes('access_token=')) {
+                        clearInterval(checkPopup);
+                        
+                        const hash = popupUrl.split('#')[1];
+                        const params = new URLSearchParams(hash);
+                        const accessToken = params.get('access_token');
+                        const userId = params.get('user_id');
+                        const email = params.get('email');
+                        
+                        if (accessToken && userId) {
+                            processVKAuth({ access_token: accessToken, user_id: userId, email: email });
+                            popup.close();
+                        }
+                    }
+                } catch (e) {
+                    // Игнорируем ошибки доступа
+                }
+            }, 500);
+        }
+    </script>
+
     <script>
         // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let currentUser = null;
@@ -989,10 +1175,13 @@
                     } catch (e) {
                         console.error('Error loading user:', e);
                         document.getElementById('loginContainer').style.display = 'block';
+                        initVKOneTap();
                     }
                 } else {
                     document.getElementById('loginContainer').style.display = 'block';
                     document.getElementById('backupSection').style.display = 'block';
+                    // Инициализируем VK OneTap после загрузки страницы
+                    setTimeout(initVKOneTap, 100);
                 }
             }, 500);
             
@@ -1000,160 +1189,7 @@
             updateSyncStatus('online', 'Готов к работе');
         });
         
-        // ========== ВХОД ЧЕРЕЗ ВК (ПРОСТАЯ КНОПКА) ==========
-        function loginWithVK() {
-            const vkAppId = 54404407;
-            
-            // Пробуем разные варианты redirect URI
-            const redirectUris = [
-                'https://roks4n.github.io',
-                'https://roks4n.github.io/DiaryESPAD/',
-                window.location.origin + window.location.pathname,
-                'http://localhost:8000'
-            ];
-            
-            // Пробуем каждый URI
-            for (let i = 0; i < redirectUris.length; i++) {
-                try {
-                    const redirectUri = encodeURIComponent(redirectUris[i]);
-                    const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${vkAppId}&display=popup&redirect_uri=${redirectUri}&scope=email&response_type=token&v=5.199&state=lab_tracker`;
-                    
-                    // Открываем popup
-                    const popup = window.open(vkAuthUrl, 'VK Auth', 'width=600,height=600,scrollbars=yes');
-                    
-                    if (!popup) {
-                        if (i === redirectUris.length - 1) {
-                            alert('Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта или используйте локальный режим.');
-                        }
-                        continue;
-                    }
-                    
-                    // Проверяем авторизацию
-                    const checkPopup = setInterval(() => {
-                        try {
-                            if (popup.closed) {
-                                clearInterval(checkPopup);
-                                return;
-                            }
-                            
-                            const popupUrl = popup.location.href;
-                            
-                            // Если есть токен в URL
-                            if (popupUrl.includes('access_token=')) {
-                                clearInterval(checkPopup);
-                                
-                                // Извлекаем параметры
-                                let hash, params;
-                                
-                                if (popupUrl.includes('#')) {
-                                    hash = popupUrl.split('#')[1];
-                                    params = new URLSearchParams(hash);
-                                } else {
-                                    // Для некоторых редиректов
-                                    const urlObj = new URL(popupUrl);
-                                    const token = urlObj.searchParams.get('access_token');
-                                    const userId = urlObj.searchParams.get('user_id');
-                                    const email = urlObj.searchParams.get('email');
-                                    
-                                    if (token) {
-                                        processVKAuth({ access_token: token, user_id: userId, email: email });
-                                        popup.close();
-                                        return;
-                                    }
-                                }
-                                
-                                if (params) {
-                                    const accessToken = params.get('access_token');
-                                    const userId = params.get('user_id');
-                                    const email = params.get('email');
-                                    
-                                    if (accessToken && userId) {
-                                        processVKAuth({ access_token: accessToken, user_id: userId, email: email });
-                                        popup.close();
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            // Игнорируем ошибки доступа к cross-origin
-                        }
-                    }, 500);
-                    
-                    // Автоматически закрываем через 60 секунд
-                    setTimeout(() => {
-                        if (popup && !popup.closed) {
-                            popup.close();
-                            alert('Время авторизации истекло. Попробуйте снова или используйте локальный режим.');
-                        }
-                    }, 60000);
-                    
-                    break; // Останавливаем цикл после успешного открытия
-                    
-                } catch (e) {
-                    console.error('Error with redirect URI:', redirectUris[i], e);
-                    if (i === redirectUris.length - 1) {
-                        alert('Не удалось выполнить авторизацию. Используйте локальный режим.');
-                    }
-                }
-            }
-        }
-        
-        // ========== ОБРАБОТКА АВТОРИЗАЦИИ ВК ==========
-        async function processVKAuth(authData) {
-            const { access_token, user_id, email } = authData;
-            
-            if (!access_token || !user_id) {
-                alert('Ошибка авторизации: не получен токен');
-                return;
-            }
-            
-            try {
-                // Пытаемся получить данные пользователя
-                const userInfo = await getVKUserInfo(access_token, user_id, email);
-                
-                if (userInfo) {
-                    // Успешная авторизация
-                    userInfo.accessToken = access_token;
-                    localStorage.setItem('lab_tracker_user', JSON.stringify(userInfo));
-                    currentUser = userInfo;
-                    
-                    loadDataFromStorage();
-                    showMainInterface();
-                    initEducationSelector();
-                    renderSubjectsTable();
-                    updateStats();
-                    updateUserDisplay(userInfo);
-                    
-                    updateSyncStatus('online', 'Вход через ВК выполнен');
-                    showNotification('Успешный вход через ВКонтакте!');
-                } else {
-                    // Если не удалось получить данные, создаем базового пользователя
-                    const fallbackUser = {
-                        id: `vk_${user_id}`,
-                        email: email || `${user_id}@vk.com`,
-                        name: `Пользователь ВК ${user_id}`,
-                        provider: 'vk',
-                        accessToken: access_token
-                    };
-                    
-                    localStorage.setItem('lab_tracker_user', JSON.stringify(fallbackUser));
-                    currentUser = fallbackUser;
-                    
-                    loadDataFromStorage();
-                    showMainInterface();
-                    initEducationSelector();
-                    renderSubjectsTable();
-                    updateStats();
-                    updateUserDisplay(fallbackUser);
-                    
-                    updateSyncStatus('online', 'Вход через ВК (базовый режим)');
-                    showNotification('Вход выполнен (базовый режим)');
-                }
-            } catch (error) {
-                console.error('VK auth error:', error);
-                alert('Вход через ВК не удался. Используйте локальный режим.');
-            }
-        }
-        
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ VK ==========
         async function getVKUserInfo(accessToken, userId, email) {
             try {
                 const response = await fetch(`https://api.vk.com/method/users.get?user_ids=${userId}&fields=first_name,last_name,photo_200&access_token=${accessToken}&v=5.199`);
@@ -1174,6 +1210,59 @@
                 console.error('Error fetching VK user info:', error);
             }
             return null;
+        }
+        
+        async function processVKAuth(authData) {
+            const { access_token, user_id, email } = authData;
+            
+            if (!access_token || !user_id) {
+                showMessage('Ошибка авторизации: не получен токен', 'error');
+                return;
+            }
+            
+            try {
+                const userInfo = await getVKUserInfo(access_token, user_id, email);
+                
+                if (userInfo) {
+                    userInfo.accessToken = access_token;
+                    localStorage.setItem('lab_tracker_user', JSON.stringify(userInfo));
+                    currentUser = userInfo;
+                    
+                    loadDataFromStorage();
+                    showMainInterface();
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    updateUserDisplay(userInfo);
+                    
+                    updateSyncStatus('online', 'Вход через ВК выполнен');
+                    showMessage('Успешный вход через ВКонтакте!', 'success');
+                } else {
+                    // Создаем базового пользователя
+                    const fallbackUser = {
+                        id: `vk_${user_id}`,
+                        email: email || `${user_id}@vk.com`,
+                        name: `Пользователь ВК ${user_id}`,
+                        provider: 'vk',
+                        accessToken: access_token
+                    };
+                    
+                    localStorage.setItem('lab_tracker_user', JSON.stringify(fallbackUser));
+                    currentUser = fallbackUser;
+                    
+                    loadDataFromStorage();
+                    showMainInterface();
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    updateUserDisplay(fallbackUser);
+                    
+                    updateSyncStatus('online', 'Вход через ВК');
+                }
+            } catch (error) {
+                console.error('VK auth error:', error);
+                showMessage('Вход через ВК не удался. Используйте локальный режим.', 'error');
+            }
         }
         
         // ========== ЛОКАЛЬНЫЙ РЕЖИМ ==========
@@ -1199,7 +1288,7 @@
             updateUserDisplay(userData);
             
             updateSyncStatus('online', `Добро пожаловать, ${userName}!`);
-            showNotification('Локальный режим активирован');
+            showMessage('Локальный режим активирован', 'success');
         }
         
         function updateUserDisplay(user) {
@@ -1233,6 +1322,9 @@
                 document.getElementById('mainContainer').style.display = 'none';
                 document.getElementById('loginContainer').style.display = 'block';
                 document.getElementById('backupSection').style.display = 'block';
+                
+                // Переинициализируем VK OneTap
+                setTimeout(initVKOneTap, 100);
                 
                 updateSyncStatus('offline', 'Вы вышли из системы');
             }
@@ -1291,7 +1383,7 @@
             const educationName = document.getElementById('educationName').value.trim();
             
             if (!educationName) {
-                alert('Введите название образования');
+                showMessage('Введите название образования', 'error');
                 return;
             }
             
@@ -1310,7 +1402,7 @@
             saveDataToStorage();
             
             updateSyncStatus('online', 'Образование добавлено');
-            showNotification('Образование добавлено успешно');
+            showMessage('Образование добавлено успешно', 'success');
         }
         
         // ========== ФУНКЦИЯ УДАЛЕНИЯ ОБРАЗОВАНИЯ ==========
@@ -1318,7 +1410,7 @@
             event.stopPropagation();
             
             if (data.educations.length <= 1) {
-                alert('Нельзя удалить последнее образование!');
+                showMessage('Нельзя удалить последнее образование!', 'error');
                 return;
             }
             
@@ -1340,7 +1432,7 @@
                 saveDataToStorage();
                 
                 updateSyncStatus('online', 'Образование удалено');
-                showNotification('Образование удалено');
+                showMessage('Образование удалено', 'success');
             }
         }
         
@@ -1356,7 +1448,7 @@
             const totalLabs = parseInt(document.getElementById('totalLabs').value);
             
             if (!subjectName || !totalLabs || totalLabs < 1) {
-                alert('Пожалуйста, заполните все поля корректно');
+                showMessage('Пожалуйста, заполните все поля корректно', 'error');
                 return;
             }
             
@@ -1390,7 +1482,7 @@
             saveDataToStorage();
             
             updateSyncStatus('online', 'Предмет добавлен');
-            showNotification('Предмет добавлен успешно');
+            showMessage('Предмет добавлен успешно', 'success');
         }
         
         function renderSubjectsTable() {
@@ -1498,9 +1590,9 @@
                 saveDataToStorage();
                 
                 updateSyncStatus('online', 'Лабораторная работа добавлена');
-                showNotification('Лабораторная работа добавлена');
+                showMessage('Лабораторная работа добавлена', 'success');
             } else {
-                alert('Максимальное количество лабораторных работ: 50');
+                showMessage('Максимальное количество лабораторных работ: 50', 'error');
             }
         }
         
@@ -1515,7 +1607,7 @@
                     saveDataToStorage();
                     
                     updateSyncStatus('online', 'Предмет удален');
-                    showNotification('Предмет удален');
+                    showMessage('Предмет удален', 'success');
                 }
             }
         }
@@ -1660,7 +1752,7 @@
             saveDataToStorage();
             
             updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
-            showNotification('Все лабораторные работы отмечены как выполненные');
+            showMessage('Все лабораторные работы отмечены как выполненные', 'success');
         }
         
         function markAllLabsAsPassed() {
@@ -1677,7 +1769,7 @@
             saveDataToStorage();
             
             updateSyncStatus('online', 'Все ЛР отмечены как сданные');
-            showNotification('Все лабораторные работы отмечены как сданные');
+            showMessage('Все лабораторные работы отмечены как сданные', 'success');
         }
         
         function clearAllLabMarks() {
@@ -1694,7 +1786,7 @@
             saveDataToStorage();
             
             updateSyncStatus('online', 'Все отметки сброшены');
-            showNotification('Все отметки сброшены');
+            showMessage('Все отметки сброшены', 'success');
         }
         
         // ========== СТАТИСТИКА ==========
@@ -1757,7 +1849,7 @@
                 </div>
                 <div class="stat-item">
                     <div class="stat-value">${overallAverage.toFixed(1)}</div>
-                    <div class="stat-label">Средний балл</div>
+                        <div class="stat-label">Средний балл</div>
                 </div>
             `;
         }
@@ -1797,7 +1889,7 @@
         // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
         function exportBackup() {
             if (!currentUser) {
-                alert('Сначала войдите в систему');
+                showMessage('Сначала войдите в систему', 'error');
                 return;
             }
             
@@ -1819,7 +1911,7 @@
             linkElement.click();
             
             updateSyncStatus('online', 'Данные экспортированы');
-            showNotification('Данные успешно экспортированы');
+            showMessage('Данные успешно экспортированы', 'success');
         }
         
         function importBackupFile() {
@@ -1858,13 +1950,13 @@
                                 }
                                 
                                 updateSyncStatus('online', 'Данные успешно импортированы');
-                                showNotification('Данные успешно импортированы');
+                                showMessage('Данные успешно импортированы', 'success');
                             }
                         } else {
-                            alert('Файл имеет неверный формат');
+                            showMessage('Файл имеет неверный формат', 'error');
                         }
                     } catch (error) {
-                        alert('Ошибка при чтении файла: ' + error.message);
+                        showMessage('Ошибка при чтении файла: ' + error.message, 'error');
                     }
                 };
                 
@@ -1898,32 +1990,30 @@
             }
         }
         
-        function showNotification(message) {
-            // Создаем временное уведомление
-            const notification = document.createElement('div');
-            notification.textContent = message;
-            notification.style.position = 'fixed';
-            notification.style.top = '20px';
-            notification.style.left = '50%';
-            notification.style.transform = 'translateX(-50%)';
-            notification.style.background = '#28a745';
-            notification.style.color = 'white';
-            notification.style.padding = '10px 20px';
-            notification.style.borderRadius = '5px';
-            notification.style.zIndex = '1001';
-            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        function showMessage(text, type) {
+            // Создаем временное сообщение
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '80px';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translateX(-50%)';
+            messageDiv.style.zIndex = '1001';
+            messageDiv.style.maxWidth = '90%';
+            messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
             
-            document.body.appendChild(notification);
+            document.body.appendChild(messageDiv);
             
             setTimeout(() => {
-                notification.remove();
-            }, 3000);
+                messageDiv.remove();
+            }, 5000);
         }
         
         // ========== ГОТОВО! ==========
         console.log('Трекер лабораторных работ загружен!');
-        console.log('Версия: без VK OneTap (простая кнопка)');
-        console.log('Все данные сохраняются локально в браузере');
+        console.log('VK OneTap App ID: 54404407');
+        console.log('Режим: локальное хранилище + VK OneTap');
     </script>
 </body>
 </html>
