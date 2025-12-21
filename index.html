@@ -651,6 +651,40 @@
             border-radius: 8px;
         }
         
+        /* === БЭКАП === */
+        .backup-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .backup-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .backup-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .export-btn {
+            background: #28a745;
+        }
+        
+        .import-btn {
+            background: #17a2b8;
+        }
+        
         /* === АДАПТИВНОСТЬ === */
         @media (max-width: 768px) {
             .controls {
@@ -748,6 +782,17 @@
             <strong>⚠️ Работает без интернета!</strong>
             <p>Все данные сохраняются в вашем браузере. Для входа через ВК нужен интернет.</p>
         </div>
+        
+        <!-- Секция бэкапа -->
+        <div class="backup-section" id="backupSection" style="display: none;">
+            <h4>💾 Восстановление данных</h4>
+            <p style="font-size: 0.9rem; color: #6c757d; margin: 10px 0;">
+                У вас есть сохраненные данные? Импортируйте их:
+            </p>
+            <div class="backup-buttons">
+                <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт из файла</button>
+            </div>
+        </div>
     </div>
     
     <!-- Основной интерфейс -->
@@ -770,7 +815,8 @@
             <div class="education-selector" id="educationSelector">
                 <!-- Образования будут добавлены через JS -->
             </div>
-            <button class="add-btn" id="addSubjectBtn">+ Добавить предмет</button>
+            <button class="add-btn" id="addSubjectBtn" onclick="showAddSubjectModal()">+ Добавить предмет</button>
+            <button class="add-btn" style="background: #17a2b8;" onclick="showAddEducationModal()">+ Добавить образование</button>
         </div>
         
         <div class="table-container">
@@ -791,6 +837,18 @@
             </table>
         </div>
         
+        <!-- Секция бэкапа в основном интерфейсе -->
+        <div class="backup-section">
+            <h4>💾 Резервное копирование</h4>
+            <p style="font-size: 0.9rem; color: #6c757d; margin: 10px 0;">
+                Экспортируйте данные, чтобы не потерять при очистке браузера
+            </p>
+            <div class="backup-buttons">
+                <button class="backup-btn export-btn" onclick="exportBackup()">📥 Экспорт данных</button>
+                <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт данных</button>
+            </div>
+        </div>
+        
         <div class="stats" id="stats">
             <!-- Статистика будет обновляться через JS -->
         </div>
@@ -800,7 +858,7 @@
     <div class="modal" id="addSubjectModal">
         <div class="modal-content">
             <h2>Добавить новый предмет</h2>
-            <form id="subjectForm">
+            <form id="subjectForm" onsubmit="addNewSubject(event)">
                 <div class="form-group">
                     <label for="subjectName">Название предмета</label>
                     <input type="text" id="subjectName" required>
@@ -820,7 +878,7 @@
     <div class="modal" id="addEducationModal">
         <div class="modal-content">
             <h2>Добавить новое образование</h2>
-            <form id="educationForm">
+            <form id="educationForm" onsubmit="addNewEducation(event)">
                 <div class="form-group">
                     <label for="educationName">Название образования</label>
                     <input type="text" id="educationName" placeholder="Например: Бакалавриат, Магистратура" required>
@@ -896,54 +954,56 @@
                 // Проверяем, есть ли сохраненный пользователь
                 const savedUser = localStorage.getItem('lab_tracker_user');
                 if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    showMainInterface();
-                    initEducationSelector();
-                    renderSubjectsTable();
-                    updateStats();
-                    updateUserDisplay(currentUser);
+                    try {
+                        currentUser = JSON.parse(savedUser);
+                        loadDataFromStorage();
+                        showMainInterface();
+                        initEducationSelector();
+                        renderSubjectsTable();
+                        updateStats();
+                        updateUserDisplay(currentUser);
+                    } catch (e) {
+                        console.error('Error loading user:', e);
+                        document.getElementById('loginContainer').style.display = 'block';
+                    }
                 } else {
                     document.getElementById('loginContainer').style.display = 'block';
+                    document.getElementById('backupSection').style.display = 'block';
                 }
             }, 500);
             
-            // Инициализация обработчиков
-            initEventListeners();
+            // Показываем статус
+            updateSyncStatus('online', 'Готов к работе');
         });
-        
-        function initEventListeners() {
-            // Кнопка добавления предмета
-            document.getElementById('addSubjectBtn').addEventListener('click', function() {
-                document.getElementById('addSubjectModal').style.display = 'flex';
-            });
-            
-            // Форма добавления предмета
-            document.getElementById('subjectForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                addNewSubject();
-            });
-            
-            // Форма добавления образования
-            document.getElementById('educationForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                addNewEducation();
-            });
-        }
         
         // ========== АВТОРИЗАЦИЯ ==========
         function loginWithVK() {
-            const vkAppId = 54404407;
+            // Ваш ID приложения ВКонтакте
+            const vkAppId = 54404407; // Замените на ваш, если другой
+            
+            // Текущий URL для редиректа
             const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            
+            // Запрашиваем email
             const scope = 'email';
             
+            // URL для авторизации
             const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${vkAppId}&display=popup&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&v=5.199&state=lab_tracker`;
             
+            // Открываем popup окно
             const popup = window.open(vkAuthUrl, 'VK Auth', 'width=600,height=600');
             
-            // Проверяем URL popup-окна
+            if (!popup) {
+                alert('Браузер заблокировал popup окно. Разрешите popup для этого сайта.');
+                return;
+            }
+            
+            // Проверяем завершение авторизации
             const checkPopup = setInterval(() => {
                 try {
                     const popupUrl = popup.location.href;
+                    
+                    // Если произошел редирект на наш сайт
                     if (popupUrl.includes(window.location.origin)) {
                         clearInterval(checkPopup);
                         
@@ -958,12 +1018,19 @@
                         if (accessToken && userId) {
                             // Получаем информацию о пользователе
                             getVKUserInfo(accessToken, userId, email);
+                        } else {
+                            alert('Ошибка авторизации: не получен токен');
                         }
                         
                         popup.close();
                     }
                 } catch (e) {
-                    // Игнорируем ошибки доступа к popup
+                    // Игнорируем ошибки доступа к popup (пока он открыт)
+                }
+                
+                // Если popup закрыт пользователем
+                if (popup.closed) {
+                    clearInterval(checkPopup);
                 }
             }, 500);
         }
@@ -981,12 +1048,16 @@
                         email: email || `${userId}@vk.com`,
                         name: `${user.first_name} ${user.last_name}`,
                         photo: user.photo_200,
-                        provider: 'vk'
+                        provider: 'vk',
+                        accessToken: accessToken // Сохраняем токен для возможных будущих запросов
                     };
                     
                     // Сохраняем данные пользователя
                     localStorage.setItem('lab_tracker_user', JSON.stringify(userData));
                     currentUser = userData;
+                    
+                    // Создаем новые данные или загружаем существующие
+                    loadDataFromStorage();
                     
                     // Показываем основной интерфейс
                     showMainInterface();
@@ -996,7 +1067,7 @@
                     updateUserDisplay(userData);
                     
                     // Показываем статус
-                    showSyncStatus('online', 'Вход через ВК выполнен');
+                    updateSyncStatus('online', 'Вход через ВК выполнен');
                 }
             } catch (error) {
                 console.error('Ошибка получения данных VK:', error);
@@ -1018,13 +1089,14 @@
             localStorage.setItem('lab_tracker_user', JSON.stringify(userData));
             currentUser = userData;
             
+            loadDataFromStorage();
             showMainInterface();
             initEducationSelector();
             renderSubjectsTable();
             updateStats();
             updateUserDisplay(userData);
             
-            showSyncStatus('online', 'Локальный режим');
+            updateSyncStatus('online', 'Локальный режим');
         }
         
         function updateUserDisplay(user) {
@@ -1044,23 +1116,26 @@
         }
         
         function logoutUser() {
-            // Сохраняем данные перед выходом
-            saveDataToStorage();
-            
-            // Очищаем данные
-            localStorage.removeItem('lab_tracker_user');
-            currentUser = null;
-            data = {
-                educations: [{ id: 1, name: "Бакалавриат" }],
-                currentEducationId: 1,
-                subjects: []
-            };
-            
-            // Показываем окно входа
-            document.getElementById('mainContainer').style.display = 'none';
-            document.getElementById('loginContainer').style.display = 'block';
-            
-            showSyncStatus('offline', 'Вы вышли из системы');
+            if (confirm('Вы действительно хотите выйти?')) {
+                // Сохраняем данные перед выходом
+                saveDataToStorage();
+                
+                // Очищаем данные
+                localStorage.removeItem('lab_tracker_user');
+                currentUser = null;
+                data = {
+                    educations: [{ id: 1, name: "Бакалавриат" }],
+                    currentEducationId: 1,
+                    subjects: []
+                };
+                
+                // Показываем окно входа
+                document.getElementById('mainContainer').style.display = 'none';
+                document.getElementById('loginContainer').style.display = 'block';
+                document.getElementById('backupSection').style.display = 'block';
+                
+                updateSyncStatus('offline', 'Вы вышли из системы');
+            }
         }
         
         function showMainInterface() {
@@ -1105,20 +1180,45 @@
                 buttonContainer.appendChild(button);
                 educationSelector.appendChild(buttonContainer);
             });
+        }
+        
+        function showAddEducationModal() {
+            document.getElementById('addEducationModal').style.display = 'flex';
+        }
+        
+        function addNewEducation(event) {
+            event.preventDefault();
             
-            // Кнопка добавления нового образования
-            const addEducationBtn = document.createElement('button');
-            addEducationBtn.className = 'education-btn add-education';
-            addEducationBtn.innerHTML = '<span style="font-size: 1.2rem;">+</span> Добавить образование';
-            addEducationBtn.addEventListener('click', function() {
-                document.getElementById('addEducationModal').style.display = 'flex';
+            const educationName = document.getElementById('educationName').value.trim();
+            
+            if (!educationName) {
+                alert('Введите название образования');
+                return;
+            }
+            
+            // Генерируем новый ID
+            const newId = data.educations.length > 0 ? 
+                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
+            
+            data.educations.push({
+                id: newId,
+                name: educationName
             });
-            educationSelector.appendChild(addEducationBtn);
+            
+            // Закрываем модальное окно и очищаем форму
+            closeModal('addEducationModal');
+            document.getElementById('educationName').value = '';
+            
+            // Обновляем интерфейс
+            initEducationSelector();
+            saveDataToStorage();
+            
+            updateSyncStatus('online', 'Образование добавлено');
         }
         
         // ========== ФУНКЦИЯ УДАЛЕНИЯ ОБРАЗОВАНИЯ ==========
         function deleteEducation(educationId, event) {
-            event.stopPropagation(); // Останавливаем всплытие, чтобы не сработал клик по кнопке образования
+            event.stopPropagation(); // Останавливаем всплытие
             
             // Нельзя удалить последнее образование
             if (data.educations.length <= 1) {
@@ -1147,39 +1247,62 @@
                 updateStats();
                 saveDataToStorage();
                 
-                showSyncStatus('online', 'Образование удалено');
+                updateSyncStatus('online', 'Образование удалено');
             }
         }
         
-        function addNewEducation() {
-            const educationName = document.getElementById('educationName').value.trim();
+        // ========== УПРАВЛЕНИЕ ПРЕДМЕТАМИ ==========
+        function showAddSubjectModal() {
+            document.getElementById('addSubjectModal').style.display = 'flex';
+        }
+        
+        function addNewSubject(event) {
+            event.preventDefault();
             
-            if (!educationName) {
-                alert('Введите название образования');
+            const subjectName = document.getElementById('subjectName').value;
+            const totalLabs = parseInt(document.getElementById('totalLabs').value);
+            
+            if (!subjectName || !totalLabs || totalLabs < 1) {
+                alert('Пожалуйста, заполните все поля корректно');
                 return;
             }
             
             // Генерируем новый ID
-            const newId = data.educations.length > 0 ? 
-                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
+            const newId = data.subjects.length > 0 ? 
+                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
             
-            data.educations.push({
+            // Создаем массив лабораторных работ
+            const labs = [];
+            for (let i = 1; i <= totalLabs; i++) {
+                labs.push({
+                    number: i,
+                    done: false,
+                    passed: false,
+                    grade: null
+                });
+            }
+            
+            data.subjects.push({
                 id: newId,
-                name: educationName
+                educationId: data.currentEducationId,
+                name: subjectName,
+                totalLabs: totalLabs,
+                labs: labs
             });
             
             // Закрываем модальное окно и очищаем форму
-            closeModal('addEducationModal');
-            document.getElementById('educationName').value = '';
+            closeModal('addSubjectModal');
+            document.getElementById('subjectName').value = '';
+            document.getElementById('totalLabs').value = '';
             
             // Обновляем интерфейс
-            initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
             saveDataToStorage();
             
-            showSyncStatus('online', 'Образование добавлено');
+            updateSyncStatus('online', 'Предмет добавлен');
         }
         
-        // ========== УПРАВЛЕНИЕ ПРЕДМЕТАМИ ==========
         function renderSubjectsTable() {
             const subjectsBody = document.getElementById('subjectsBody');
             subjectsBody.innerHTML = '';
@@ -1264,51 +1387,6 @@
             return sum / passedLabs.length;
         }
         
-        function addNewSubject() {
-            const subjectName = document.getElementById('subjectName').value;
-            const totalLabs = parseInt(document.getElementById('totalLabs').value);
-            
-            if (!subjectName || !totalLabs || totalLabs < 1) {
-                alert('Пожалуйста, заполните все поля корректно');
-                return;
-            }
-            
-            // Генерируем новый ID
-            const newId = data.subjects.length > 0 ? 
-                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
-            
-            // Создаем массив лабораторных работ
-            const labs = [];
-            for (let i = 1; i <= totalLabs; i++) {
-                labs.push({
-                    number: i,
-                    done: false,
-                    passed: false,
-                    grade: null
-                });
-            }
-            
-            data.subjects.push({
-                id: newId,
-                educationId: data.currentEducationId,
-                name: subjectName,
-                totalLabs: totalLabs,
-                labs: labs
-            });
-            
-            // Закрываем модальное окно и очищаем форму
-            closeModal('addSubjectModal');
-            document.getElementById('subjectName').value = '';
-            document.getElementById('totalLabs').value = '';
-            
-            // Обновляем интерфейс
-            renderSubjectsTable();
-            updateStats();
-            saveDataToStorage();
-            
-            showSyncStatus('online', 'Предмет добавлен');
-        }
-        
         function incrementLabCount(subjectId) {
             const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
             
@@ -1331,7 +1409,9 @@
                 updateStats();
                 saveDataToStorage();
                 
-                showSyncStatus('online', 'Лабораторная работа добавлена');
+                updateSyncStatus('online', 'Лабораторная работа добавлена');
+            } else {
+                alert('Максимальное количество лабораторных работ: 50');
             }
         }
         
@@ -1345,7 +1425,7 @@
                     updateStats();
                     saveDataToStorage();
                     
-                    showSyncStatus('online', 'Предмет удален');
+                    updateSyncStatus('online', 'Предмет удален');
                 }
             }
         }
@@ -1501,7 +1581,7 @@
             updateLabDisplay(subject);
             saveDataToStorage();
             
-            showSyncStatus('online', 'Все ЛР отмечены как выполненные');
+            updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
         }
         
         function markAllLabsAsPassed() {
@@ -1517,7 +1597,7 @@
             updateLabDisplay(subject);
             saveDataToStorage();
             
-            showSyncStatus('online', 'Все ЛР отмечены как сданные');
+            updateSyncStatus('online', 'Все ЛР отмечены как сданные');
         }
         
         function clearAllLabMarks() {
@@ -1533,7 +1613,7 @@
             updateLabDisplay(subject);
             saveDataToStorage();
             
-            showSyncStatus('online', 'Все отметки сброшены');
+            updateSyncStatus('online', 'Все отметки сброшены');
         }
         
         // ========== СТАТИСТИКА ==========
@@ -1601,28 +1681,14 @@
             `;
         }
         
-        // ========== СОХРАНЕНИЕ ДАННЫХ ==========
+        // ========== СОХРАНЕНИЕ И ЗАГРУЗКА ДАННЫХ ==========
         function saveDataToStorage() {
             if (currentUser) {
                 // Сохраняем данные для текущего пользователя
                 localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
                 
-                // Обновляем статус сохранения
-                const syncStatus = document.getElementById('syncStatus');
-                if (syncStatus) {
-                    syncStatus.innerHTML = `
-                        <div class="sync-icon sync-online"></div>
-                        <span>Данные сохранены</span>
-                    `;
-                    
-                    // Возвращаем обычный статус через 2 секунды
-                    setTimeout(() => {
-                        syncStatus.innerHTML = `
-                            <div class="sync-icon sync-online"></div>
-                            <span>Локальный режим (данные в браузере)</span>
-                        `;
-                    }, 2000);
-                }
+                // Обновляем статус
+                updateSyncStatus('online', 'Данные сохранены');
             }
         }
         
@@ -1630,30 +1696,35 @@
             if (currentUser) {
                 const savedData = localStorage.getItem(`lab_tracker_data_${currentUser.id}`);
                 if (savedData) {
-                    data = JSON.parse(savedData);
+                    try {
+                        data = JSON.parse(savedData);
+                    } catch (e) {
+                        console.error('Error parsing saved data:', e);
+                        // Если данные повреждены, создаем новые
+                        data = {
+                            educations: [{ id: 1, name: "Бакалавриат" }],
+                            currentEducationId: 1,
+                            subjects: []
+                        };
+                    }
+                } else {
+                    // Создаем новые данные
+                    data = {
+                        educations: [{ id: 1, name: "Бакалавриат" }],
+                        currentEducationId: 1,
+                        subjects: []
+                    };
                 }
             }
         }
         
-        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        
-        function showSyncStatus(status, text) {
-            const syncStatus = document.getElementById('syncStatus');
-            const syncIcon = document.getElementById('syncIcon');
-            const syncText = document.getElementById('syncText');
-            
-            if (syncStatus && syncIcon && syncText) {
-                syncText.textContent = text;
-                syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
-                syncStatus.style.display = 'flex';
-            }
-        }
-        
         // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
-        function exportData() {
+        function exportBackup() {
+            if (!currentUser) {
+                alert('Сначала войдите в систему');
+                return;
+            }
+            
             const exportData = {
                 user: currentUser,
                 appData: data,
@@ -1671,10 +1742,10 @@
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
             
-            showSyncStatus('online', 'Данные экспортированы');
+            updateSyncStatus('online', 'Данные экспортированы');
         }
         
-        function importData() {
+        function importBackupFile() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
@@ -1691,19 +1762,29 @@
                         // Проверяем структуру данных
                         if (importedData.user && importedData.appData) {
                             if (confirm('Заменить текущие данные импортированными?')) {
+                                // Сохраняем данные
+                                localStorage.setItem('lab_tracker_user', JSON.stringify(importedData.user));
+                                localStorage.setItem(`lab_tracker_data_${importedData.user.id}`, JSON.stringify(importedData.appData));
+                                
+                                // Загружаем данные
                                 currentUser = importedData.user;
                                 data = importedData.appData;
                                 
-                                localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
-                                localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
-                                
                                 // Обновляем интерфейс
-                                updateUserDisplay(currentUser);
-                                initEducationSelector();
-                                renderSubjectsTable();
-                                updateStats();
+                                if (document.getElementById('mainContainer').style.display === 'block') {
+                                    updateUserDisplay(currentUser);
+                                    initEducationSelector();
+                                    renderSubjectsTable();
+                                    updateStats();
+                                } else {
+                                    showMainInterface();
+                                    initEducationSelector();
+                                    renderSubjectsTable();
+                                    updateStats();
+                                    updateUserDisplay(currentUser);
+                                }
                                 
-                                showSyncStatus('online', 'Данные успешно импортированы');
+                                updateSyncStatus('online', 'Данные успешно импортированы');
                             }
                         } else {
                             alert('Файл имеет неверный формат');
@@ -1719,8 +1800,35 @@
             input.click();
         }
         
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function updateSyncStatus(status, text) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            if (syncStatus && syncIcon && syncText) {
+                syncText.textContent = text;
+                syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
+                syncStatus.style.display = 'flex';
+                
+                // Скрываем статус через 3 секунды (кроме ошибок)
+                if (status !== 'offline') {
+                    setTimeout(() => {
+                        syncText.textContent = 'Локальный режим';
+                        syncIcon.className = 'sync-icon sync-online';
+                    }, 3000);
+                }
+            }
+        }
+        
         // ========== ГОТОВО! ==========
         console.log('Трекер лабораторных работ загружен!');
+        console.log('VK App ID: 54404407');
+        console.log('Режим: локальное хранилище');
     </script>
 </body>
 </html>
