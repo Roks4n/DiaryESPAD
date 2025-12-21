@@ -825,7 +825,6 @@
             border: 1px solid #ffeaa7;
         }
         
-        /* Стили для выбора аккаунта */
         .account-selection {
             max-width: 600px;
             margin: 20px auto;
@@ -903,13 +902,12 @@
     <div class="debug-panel" id="debugPanel">
         <div><strong>Отладка:</strong></div>
         <div>Пользователь: <span id="debugUser">нет</span></div>
-        <div>Бин ID: <span id="debugBinId">нет</span></div>
+        <div>GitHub User: <span id="debugGitHubUser">нет</span></div>
         <div>Состояние: <span id="debugState">загрузка...</span></div>
         <div>Последняя ошибка: <span id="debugError">нет</span></div>
         <div style="margin-top: 10px; font-size: 0.7rem;">
-            <button onclick="testJSONBinConnection()" style="padding: 3px 8px; font-size: 0.7rem;">Тест API</button>
+            <button onclick="testGitHubConnection()" style="padding: 3px 8px; font-size: 0.7rem;">Тест GitHub API</button>
             <button onclick="clearAllData()" style="padding: 3px 8px; font-size: 0.7rem; background: #dc3545;">Очистить все</button>
-            <button onclick="checkUserBins()" style="padding: 3px 8px; font-size: 0.7rem; background: #17a2b8;">Проверить бины</button>
         </div>
     </div>
     
@@ -936,7 +934,7 @@
         
         <div class="offline-notice">
             <strong>⚠️ Работает без интернета!</strong>
-            <p>Все данные сохраняются в облаке и доступны с любого устройства</p>
+            <p>Все данные сохраняются в GitHub и доступны с любого устройства</p>
         </div>
         
         <!-- Секция восстановления данных -->
@@ -962,7 +960,7 @@
                 <button class="logout-btn" id="logoutBtn" onclick="logoutUser()">Выйти</button>
             </div>
             <h1>Трекер лабораторных работ</h1>
-            <p class="subtitle">Данные сохраняются в облаке и доступны с любого устройства</p>
+            <p class="subtitle">Данные сохраняются в GitHub и доступны с любого устройства</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
         
@@ -1107,9 +1105,15 @@
     <!-- VK OneTap SDK -->
     <script nonce="csp_nonce" src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
     <script nonce="csp_nonce" type="text/javascript">
-        // ========== КОНФИГУРАЦИЯ JSONBIN.IO ==========
-        const JSONBIN_API_KEY = '$2a$10$hgCNcJrpEsfFY1IvG2G9Gu35PEVGvZFVinV.nmuKyvW5kb6RHpRba';
-        const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3';
+        // ========== GITHUB API КОНФИГУРАЦИЯ ==========
+        // ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА СВОИ!
+        const GITHUB_CONFIG = {
+            username: 'ВАШ_GITHUB_USERNAME',      // Ваш GitHub username
+            token: 'ВАШ_GITHUB_TOKEN',           // Personal access token
+            repo: 'lab-tracker',                 // Название репозитория
+            branch: 'main',                      // Ветка
+            dataPath: 'data/users'               // Путь к данным
+        };
         
         // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let currentUser = null;
@@ -1121,45 +1125,39 @@
             subjects: []
         };
         
-        let userBinId = null;
-        let currentSubjectId = null;
         let lastError = null;
-        let foundUserBins = [];
-        let selectedBinId = null;
         
         // ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
-                // Тестируем соединение с JSONBin
-                testJSONBinConnection().then(isConnected => {
+                // Проверяем соединение с GitHub
+                testGitHubConnection().then(isConnected => {
                     if (!isConnected) {
-                        showMessage('⚠️ Облачное хранилище недоступно. Работаем в локальном режиме.', 'warning');
+                        showMessage('⚠️ GitHub API недоступен. Работаем в локальном режиме.', 'warning');
                     }
                 });
                 
                 // Проверяем сохраненного пользователя
                 const savedUser = localStorage.getItem('lab_tracker_user');
-                const savedBinId = localStorage.getItem('lab_tracker_bin_id');
                 
-                if (savedUser && savedBinId) {
+                if (savedUser) {
                     try {
                         currentUser = JSON.parse(savedUser);
-                        userBinId = savedBinId;
                         
                         updateDebugPanel();
                         
-                        // Пробуем загрузить данные с сервера
-                        loadDataFromServer().then(success => {
+                        // Загружаем данные
+                        loadUserData().then(success => {
                             if (success) {
                                 showMainInterface();
                                 initEducationSelector();
                                 renderSubjectsTable();
                                 updateStats();
                                 updateUserDisplay(currentUser);
-                                updateSyncStatus('online', 'Данные загружены из облака');
-                                showMessage('✅ Данные успешно загружены из облака', 'success');
+                                updateSyncStatus('online', 'Данные загружены из GitHub');
+                                showMessage('✅ Данные успешно загружены из GitHub', 'success');
                             } else {
                                 // Загружаем локальную копию
                                 loadLocalData();
@@ -1172,7 +1170,7 @@
                                 showMessage('⚠️ Используем локальные данные', 'warning');
                             }
                         }).catch(error => {
-                            console.error('Не удалось загрузить с сервера:', error);
+                            console.error('Не удалось загрузить:', error);
                             lastError = error.message;
                             loadLocalData();
                             showMainInterface();
@@ -1210,305 +1208,210 @@
         
         function updateDebugPanel() {
             document.getElementById('debugUser').textContent = currentUser ? currentUser.name : 'нет';
-            document.getElementById('debugBinId').textContent = userBinId ? userBinId.substring(0, 10) + '...' : 'нет';
+            document.getElementById('debugGitHubUser').textContent = GITHUB_CONFIG.username;
             document.getElementById('debugState').textContent = navigator.onLine ? 'онлайн' : 'оффлайн';
             document.getElementById('debugError').textContent = lastError || 'нет';
         }
         
-        // ========== ТЕСТИРОВАНИЕ JSONBIN API ==========
+        // ========== ТЕСТИРОВАНИЕ GITHUB API ==========
         
-        async function testJSONBinConnection() {
-            console.log('🔧 Тестирование соединения с JSONBin.io...');
+        async function testGitHubConnection() {
+            console.log('🔧 Тестирование соединения с GitHub API...');
             
             try {
-                // Создаем тестовые данные
-                const testData = { 
-                    test: 'connection', 
-                    timestamp: new Date().toISOString(),
-                    app: 'lab_tracker'
-                };
-                
-                // Пробуем создать тестовый бин
-                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
-                    method: 'POST',
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}`, {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY,
-                        'X-Bin-Name': 'test_connection_lab_tracker_' + Date.now(),
-                        'X-Bin-Private': 'true'
-                    },
-                    body: JSON.stringify(testData)
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
                 });
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Ошибка JSONBin API:', response.status, errorText);
+                    console.error('❌ Ошибка GitHub API:', response.status);
                     
                     if (response.status === 401) {
-                        lastError = 'Неверный API ключ JSONBin';
-                        showMessage('❌ Неверный API ключ облачного хранилища', 'error');
-                    } else if (response.status === 429) {
-                        lastError = 'Лимит запросов превышен';
-                        showMessage('⚠️ Лимит облачного хранилища превышен', 'warning');
+                        lastError = 'Неверный GitHub токен';
+                        showMessage('❌ Неверный GitHub токен', 'error');
+                    } else if (response.status === 404) {
+                        lastError = 'Репозиторий не найден';
+                        showMessage('❌ Репозиторий не найден', 'error');
                     } else {
-                        lastError = `Ошибка API: ${response.status}`;
+                        lastError = `Ошибка GitHub API: ${response.status}`;
                     }
                     
                     updateDebugPanel();
                     return false;
                 }
                 
-                const result = await response.json();
-                console.log('✅ Соединение с JSONBin.io успешно!');
-                console.log('Создан тестовый бин ID:', result.metadata.id);
-                
-                // Удаляем тестовый бин
-                await fetch(`${JSONBIN_BASE_URL}/b/${result.metadata.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY
-                    }
-                });
-                
+                console.log('✅ Соединение с GitHub API успешно!');
                 lastError = null;
                 updateDebugPanel();
                 return true;
                 
             } catch (error) {
-                console.error('❌ Ошибка соединения с JSONBin:', error);
+                console.error('❌ Ошибка соединения с GitHub:', error);
                 lastError = error.message;
                 updateDebugPanel();
                 return false;
             }
         }
         
-        // ========== ОСНОВНЫЕ ФУНКЦИИ JSONBIN.IO ==========
+        // ========== ОСНОВНЫЕ ФУНКЦИИ GITHUB API ==========
         
-        // Создание нового бина для пользователя
-        async function createUserBin(userData, initialData) {
+        // Получить файл с GitHub
+        async function getGitHubFile(filePath) {
             try {
-                console.log('Создаем бин для пользователя:', userData.id);
-                
-                // Генерируем уникальное имя с timestamp
-                const timestamp = Date.now();
-                const binName = `lab_tracker_${userData.id}_${timestamp}`;
-                
-                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY,
-                        'X-Bin-Name': binName,
-                        'X-Bin-Private': 'true'
-                    },
-                    body: JSON.stringify({
-                        user: userData,
-                        data: initialData,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        version: '1.0',
-                        app: 'lab_tracker'
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    
-                    // Если бин с таким именем уже существует (409 Conflict)
-                    if (response.status === 409) {
-                        console.log('⚠️ Бин с таким именем уже существует');
-                        // Попробуем с другим timestamp
-                        return createUserBin(userData, initialData);
+                const response = await fetch(
+                    `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${filePath}`,
+                    {
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
                     }
-                    
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                );
+                
+                if (response.status === 404) {
+                    return null; // Файл не существует
                 }
-                
-                const result = await response.json();
-                console.log('✅ Бин создан:', result.metadata.id);
-                
-                // Сохраняем связь пользователь-бин
-                localStorage.setItem(`lab_tracker_bin_${userData.id}`, result.metadata.id);
-                
-                return result.metadata.id;
-                
-            } catch (error) {
-                console.error('❌ Ошибка создания бина:', error);
-                lastError = error.message;
-                updateDebugPanel();
-                throw error;
-            }
-        }
-        
-        // Получение данных пользователя
-        async function getUserBin(binId) {
-            try {
-                console.log('Загружаем бин:', binId);
-                
-                const response = await fetch(`${JSONBIN_BASE_URL}/b/${binId}/latest`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY
-                    }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        console.log('Бин не найден');
-                        return null;
-                    }
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ Бин загружен');
-                return result.record;
-                
-            } catch (error) {
-                console.error('❌ Ошибка загрузки бина:', error);
-                lastError = error.message;
-                updateDebugPanel();
-                throw error;
-            }
-        }
-        
-        // Обновление данных пользователя
-        async function updateUserBin(binId, userData, appData) {
-            try {
-                console.log('Обновляем бин:', binId);
-                
-                const response = await fetch(`${JSONBIN_BASE_URL}/b/${binId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify({
-                        user: userData,
-                        data: appData,
-                        updatedAt: new Date().toISOString()
-                    })
-                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${await response.text()}`);
                 }
                 
-                console.log('✅ Бин обновлен');
+                const fileData = await response.json();
+                return fileData;
+                
+            } catch (error) {
+                console.error('❌ Ошибка получения файла:', error);
+                lastError = error.message;
+                updateDebugPanel();
+                return null;
+            }
+        }
+        
+        // Сохранить файл на GitHub
+        async function saveGitHubFile(filePath, content, message) {
+            try {
+                // 1. Проверяем существует ли файл
+                const existingFile = await getGitHubFile(filePath);
+                
+                // 2. Сохраняем/обновляем файл
+                const response = await fetch(
+                    `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${filePath}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            content: btoa(unescape(encodeURIComponent(content))), // Base64 encode
+                            sha: existingFile?.sha, // Для обновления существующего файла
+                            branch: GITHUB_CONFIG.branch
+                        })
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                console.log('✅ Файл сохранен на GitHub:', filePath);
                 return true;
                 
             } catch (error) {
-                console.error('❌ Ошибка обновления бина:', error);
+                console.error('❌ Ошибка сохранения файла:', error);
                 lastError = error.message;
                 updateDebugPanel();
-                throw error;
+                return false;
             }
         }
         
-        // ========== ПОИСК ВСЕХ БИНОВ ПОЛЬЗОВАТЕЛЯ ==========
+        // ========== РАБОТА С ДАННЫМИ ПОЛЬЗОВАТЕЛЯ ==========
         
-        async function findAllUserBins(user) {
+        // Получить путь к файлу пользователя
+        function getUserFilePath(userId) {
+            return `${GITHUB_CONFIG.dataPath}/${userId}.json`;
+        }
+        
+        // Сохранить данные пользователя в GitHub
+        async function saveUserDataToGitHub() {
+            if (!currentUser) return false;
+            
             try {
-                console.log('🔍 Поиск всех бинов пользователя:', user.id);
+                const filePath = getUserFilePath(currentUser.id);
+                const content = JSON.stringify(data, null, 2);
+                const message = `Lab Tracker: Update data for ${currentUser.name}`;
                 
-                // Получаем список всех бинов
-                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY
-                    }
-                });
+                const success = await saveGitHubFile(filePath, content, message);
                 
-                if (!response.ok) {
-                    console.error('❌ Не удалось получить список бинов:', response.status);
-                    return [];
+                if (success) {
+                    console.log('✅ Данные сохранены в GitHub');
+                    return true;
                 }
                 
-                const result = await response.json();
-                const userBins = [];
-                
-                if (result && result.records) {
-                    console.log(`Найдено ${result.records.length} бинов, проверяем...`);
-                    
-                    // Ограничиваем проверку первыми 20 бинами для скорости
-                    const binsToCheck = result.records.slice(0, 20);
-                    
-                    // Проверяем каждый бин на принадлежность пользователю
-                    for (const bin of binsToCheck) {
-                        try {
-                            const binData = await getUserBin(bin.id);
-                            if (binData && binData.user && binData.user.id === user.id) {
-                                console.log(`✅ Найден бин пользователя: ${bin.id}`);
-                                
-                                userBins.push({
-                                    id: bin.id,
-                                    name: bin.name || 'Без имени',
-                                    createdAt: binData.createdAt || 'Неизвестно',
-                                    updatedAt: binData.updatedAt || 'Неизвестно',
-                                    subjectsCount: binData.data?.subjects?.length || 0,
-                                    data: binData
-                                });
-                            }
-                        } catch (e) {
-                            // Пропускаем бины с ошибками доступа
-                            console.log(`Пропускаем бин ${bin.id}: ${e.message}`);
-                        }
-                    }
-                }
-                
-                console.log(`Найдено ${userBins.length} бинов пользователя`);
-                return userBins;
+                return false;
                 
             } catch (error) {
-                console.error('❌ Ошибка поиска бинов:', error);
+                console.error('❌ Ошибка сохранения данных:', error);
                 lastError = error.message;
                 updateDebugPanel();
-                return [];
+                return false;
+            }
+        }
+        
+        // Загрузить данные пользователя из GitHub
+        async function loadUserDataFromGitHub() {
+            if (!currentUser) return false;
+            
+            try {
+                const filePath = getUserFilePath(currentUser.id);
+                const fileData = await getGitHubFile(filePath);
+                
+                if (!fileData) {
+                    console.log('Файл не найден, создаем начальные данные');
+                    return false;
+                }
+                
+                // Декодируем Base64
+                const content = decodeURIComponent(escape(atob(fileData.content)));
+                data = JSON.parse(content);
+                
+                console.log('✅ Данные загружены из GitHub');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Ошибка загрузки данных:', error);
+                lastError = error.message;
+                updateDebugPanel();
+                return false;
             }
         }
         
         // ========== ЗАГРУЗКА ДАННЫХ ==========
         
-        async function loadDataFromServer() {
-            if (!userBinId) {
-                console.warn('Нет ID бина для загрузки');
-                return false;
-            }
-            
+        async function loadUserData() {
             try {
-                const binData = await getUserBin(userBinId);
+                // Пробуем загрузить из GitHub
+                const success = await loadUserDataFromGitHub();
                 
-                if (!binData) {
-                    console.log('Бин не найден, создаем начальные данные');
-                    // Создаем новый бин с начальными данными
+                if (success) {
+                    return true;
+                } else {
+                    // Данных нет в GitHub, создаем начальные
                     const initialData = {
                         educations: [{ id: 1, name: "Бакалавриат" }],
                         currentEducationId: 1,
                         subjects: []
                     };
                     
-                    const newBinId = await createUserBin(currentUser, initialData);
-                    userBinId = newBinId;
-                    localStorage.setItem('lab_tracker_bin_id', newBinId);
-                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, newBinId);
-                    
+                    // Сохраняем начальные данные в GitHub
+                    await saveUserDataToGitHub();
                     data = initialData;
                     return true;
-                }
-                
-                // Проверяем что данные принадлежат текущему пользователю
-                if (binData.user && binData.user.id === currentUser.id) {
-                    data = binData.data || {
-                        educations: [{ id: 1, name: "Бакалавриат" }],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
-                    console.log('✅ Данные загружены с сервера');
-                    return true;
-                } else {
-                    console.error('Несоответствие пользователя');
-                    lastError = 'Несоответствие пользователя';
-                    return false;
                 }
                 
             } catch (error) {
@@ -1542,7 +1445,7 @@
             }
         }
         
-        // ========== УЛУЧШЕННАЯ VK АВТОРИЗАЦИЯ С ВЫБОРОМ АККАУНТА ==========
+        // ========== VK АВТОРИЗАЦИЯ ==========
         
         async function handleVKAuthSuccess(authData) {
             try {
@@ -1575,42 +1478,18 @@
                 
                 updateDebugPanel();
                 
-                // Шаг 1: Проверяем локальное хранилище на текущем устройстве
-                const localBinId = localStorage.getItem(`lab_tracker_bin_${currentUser.id}`);
+                // Загружаем данные пользователя
+                await loadUserData();
                 
-                if (localBinId) {
-                    console.log('✅ Найден бин в локальном хранилище:', localBinId);
-                    userBinId = localBinId;
-                    localStorage.setItem('lab_tracker_bin_id', localBinId);
-                    
-                    // Загружаем данные
-                    await loadUserData();
-                    return;
-                }
+                // Показываем интерфейс
+                showMainInterface();
+                initEducationSelector();
+                renderSubjectsTable();
+                updateStats();
+                updateUserDisplay(currentUser);
                 
-                // Шаг 2: Ищем ВСЕ существующие бины пользователя
-                console.log('🔍 Ищем все существующие бины пользователя...');
-                showMessage('🔍 Поиск ваших аккаунтов в облаке...', 'warning');
-                
-                foundUserBins = await findAllUserBins(currentUser);
-                
-                if (foundUserBins.length === 0) {
-                    // Бинов не найдено - создаем новый
-                    console.log('❌ Существующие бины не найдены, создаем новый');
-                    await createNewUserBin();
-                } else if (foundUserBins.length === 1) {
-                    // Найден только один бин - используем его
-                    console.log('✅ Найден один бин, используем его:', foundUserBins[0].id);
-                    userBinId = foundUserBins[0].id;
-                    localStorage.setItem('lab_tracker_bin_id', userBinId);
-                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, userBinId);
-                    
-                    await loadUserData();
-                } else {
-                    // Найдено несколько бинов - показываем выбор
-                    console.log(`✅ Найдено ${foundUserBins.length} бинов, показываем выбор`);
-                    showAccountSelection();
-                }
+                updateSyncStatus('online', 'Вход выполнен');
+                showMessage('✅ Вход выполнен! Данные синхронизированы', 'success');
                 
                 updateDebugPanel();
                 
@@ -1622,215 +1501,10 @@
             }
         }
         
-        // ========== ПОКАЗ ВЫБОРА АККАУНТА ==========
-        
-        function showAccountSelection() {
-            document.getElementById('accountSelectionModal').style.display = 'flex';
-            const content = document.getElementById('accountSelectionContent');
-            
-            if (foundUserBins.length === 0) {
-                content.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <p>❌ Аккаунты не найдены</p>
-                        <p style="color: #6c757d; font-size: 0.9rem;">
-                            У вас еще нет сохраненных аккаунтов в облаке.
-                        </p>
-                    </div>
-                `;
-                document.getElementById('createNewAccountBtn').style.display = 'block';
-                document.getElementById('useAccountBtn').style.display = 'none';
-                return;
-            }
-            
-            // Сортируем бины по дате создания (новые сверху)
-            foundUserBins.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            let html = `
-                <p>Найдено ${foundUserBins.length} аккаунт(ов) в облаке:</p>
-                <div style="margin: 20px 0; max-height: 300px; overflow-y: auto;">
-            `;
-            
-            foundUserBins.forEach((bin, index) => {
-                const date = new Date(bin.createdAt).toLocaleString('ru-RU');
-                const subjectsCount = bin.subjectsCount;
-                const isSelected = selectedBinId === bin.id;
-                
-                html += `
-                    <div class="account-item ${isSelected ? 'active' : ''}" 
-                         onclick="selectAccount('${bin.id}')"
-                         style="padding: 15px; margin: 10px 0; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <div style="font-weight: 600; font-size: 1.1rem; color: #495057;">
-                                Аккаунт ${index + 1}
-                            </div>
-                            <div style="font-size: 0.85rem; color: #6c757d;">
-                                ${date}
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 15px; font-size: 0.9rem; color: #6c757d;">
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                📚 Предметов: ${subjectsCount}
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                📍 ID: ${bin.id.substring(0, 12)}...
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += `
-                </div>
-                <p style="color: #856404; font-size: 0.9rem; margin-top: 15px;">
-                    ⚠️ Выберите аккаунт, который хотите использовать. 
-                    Рекомендуем выбрать самый новый (верхний в списке).
-                </p>
-            `;
-            
-            content.innerHTML = html;
-            
-            // Автоматически выбираем первый (самый новый) аккаунт
-            if (foundUserBins.length > 0 && !selectedBinId) {
-                selectedBinId = foundUserBins[0].id;
-                updateAccountSelection();
-            }
-            
-            document.getElementById('createNewAccountBtn').style.display = 'block';
-            document.getElementById('useAccountBtn').style.display = 'block';
-        }
-        
-        function selectAccount(binId) {
-            selectedBinId = binId;
-            updateAccountSelection();
-        }
-        
-        function updateAccountSelection() {
-            // Обновляем выделение в UI
-            const accountItems = document.querySelectorAll('.account-item');
-            accountItems.forEach(item => {
-                const binId = item.getAttribute('onclick').match(/'([^']+)'/)[1];
-                if (binId === selectedBinId) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-        }
-        
-        function useSelectedAccount() {
-            if (!selectedBinId) {
-                showMessage('Выберите аккаунт', 'error');
-                return;
-            }
-            
-            userBinId = selectedBinId;
-            localStorage.setItem('lab_tracker_bin_id', userBinId);
-            localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, userBinId);
-            
-            closeModal('accountSelectionModal');
-            loadUserData();
-        }
-        
-        function createNewAccount() {
-            closeModal('accountSelectionModal');
-            createNewUserBin();
-        }
-        
-        // ========== ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ ==========
-        
-        async function loadUserData() {
-            try {
-                if (!userBinId) {
-                    throw new Error('Нет ID бина для загрузки');
-                }
-                
-                console.log('📥 Загружаем данные пользователя из бина:', userBinId);
-                
-                const binData = await getUserBin(userBinId);
-                
-                if (!binData) {
-                    console.log('Бин не найден, создаем начальные данные');
-                    const initialData = {
-                        educations: [{ id: 1, name: "Бакалавриат" }],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
-                    
-                    await updateUserBin(userBinId, currentUser, initialData);
-                    data = initialData;
-                } else {
-                    // Проверяем что данные принадлежат текущему пользователю
-                    if (binData.user && binData.user.id === currentUser.id) {
-                        data = binData.data || {
-                            educations: [{ id: 1, name: "Бакалавриат" }],
-                            currentEducationId: 1,
-                            subjects: []
-                        };
-                        console.log('✅ Данные загружены из облака');
-                    } else {
-                        console.error('Несоответствие пользователя');
-                        showMessage('⚠️ Найденные данные принадлежат другому пользователю', 'warning');
-                        return;
-                    }
-                }
-                
-                // Показываем основной интерфейс
-                showSuccessLogin();
-                showMessage('✅ Данные успешно загружены', 'success');
-                
-            } catch (error) {
-                console.error('Ошибка загрузки данных:', error);
-                showMessage('❌ Ошибка загрузки данных', 'error');
-            }
-        }
-        
-        async function createNewUserBin() {
-            console.log('🆕 Создаем новый бин для пользователя');
-            
-            const initialData = {
-                educations: [{ id: 1, name: "Бакалавриат" }],
-                currentEducationId: 1,
-                subjects: []
-            };
-            
-            try {
-                const isConnected = await testJSONBinConnection();
-                
-                if (isConnected) {
-                    const newBinId = await createUserBin(currentUser, initialData);
-                    userBinId = newBinId;
-                    
-                    // Сохраняем связь пользователь-бин
-                    localStorage.setItem('lab_tracker_bin_id', newBinId);
-                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, newBinId);
-                    
-                    data = initialData;
-                    
-                    showSuccessLogin();
-                    showMessage('✅ Новый аккаунт создан! Данные сохраняются в облако', 'success');
-                } else {
-                    // Облако недоступно, используем локальное
-                    loadLocalData();
-                    
-                    showSuccessLogin();
-                    showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
-                }
-                
-            } catch (error) {
-                console.error('Не удалось создать облачное хранилище:', error);
-                // Используем локальное хранилище
-                loadLocalData();
-                
-                showSuccessLogin();
-                showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
-            }
-        }
-        
         async function getVKUserInfo(accessToken, userId, email) {
             try {
                 // Пробуем получить информацию через VK API
                 return new Promise((resolve) => {
-                    // Создаем функцию обратного вызова
                     window[`vkCallback_${userId}`] = function(data) {
                         if (data.response && data.response[0]) {
                             const user = data.response[0];
@@ -1847,14 +1521,12 @@
                         delete window[`vkCallback_${userId}`];
                     };
                     
-                    // Создаем JSONP запрос
                     const script = document.createElement('script');
                     const callbackName = `vkCallback_${userId}`;
                     script.src = `https://api.vk.com/method/users.get?user_ids=${userId}&fields=first_name,last_name,photo_200&access_token=${accessToken}&v=5.199&callback=${callbackName}`;
                     
                     document.body.appendChild(script);
                     
-                    // Таймаут на случай если запрос не сработает
                     setTimeout(() => {
                         if (document.body.contains(script)) {
                             document.body.removeChild(script);
@@ -1873,20 +1545,6 @@
                     photo: null
                 };
             }
-        }
-        
-        function showSuccessLogin() {
-            // Скрываем секцию восстановления
-            document.getElementById('restoreSection').style.display = 'none';
-            
-            showMainInterface();
-            initEducationSelector();
-            renderSubjectsTable();
-            updateStats();
-            updateUserDisplay(currentUser);
-            
-            updateSyncStatus('online', 'Вход выполнен');
-            updateDebugPanel();
         }
         
         // ========== ЛОКАЛЬНЫЙ РЕЖИМ ==========
@@ -1926,9 +1584,7 @@
                 autoSave();
                 
                 localStorage.removeItem('lab_tracker_user');
-                localStorage.removeItem('lab_tracker_bin_id');
                 currentUser = null;
-                userBinId = null;
                 data = {
                     educations: [{ id: 1, name: "Бакалавриат" }],
                     currentEducationId: 1,
@@ -1940,7 +1596,6 @@
                 document.getElementById('loginContainer').style.display = 'block';
                 document.getElementById('restoreSection').style.display = 'none';
                 
-                // Переинициализируем VK OneTap
                 setTimeout(initVKOneTap, 100);
                 
                 updateSyncStatus('offline', 'Вы вышли из системы');
@@ -1950,16 +1605,13 @@
             }
         }
         
-        // ========== ОЧИСТКА ВСЕХ ДАННЫХ (для отладки) ==========
+        // ========== ОЧИСТКА ВСЕХ ДАННЫХ ==========
         
         function clearAllData() {
             if (confirm('⚠️ ОЧИСТИТЬ ВСЕ ДАННЫЕ?\nЭто удалит все ваши предметы и лабораторные работы!')) {
-                // Очищаем LocalStorage
                 localStorage.clear();
                 
-                // Очищаем переменные
                 currentUser = null;
-                userBinId = null;
                 data = {
                     educations: [{ id: 1, name: "Бакалавриат" }],
                     currentEducationId: 1,
@@ -1967,40 +1619,7 @@
                 };
                 lastError = null;
                 
-                // Перезагружаем страницу
                 location.reload();
-            }
-        }
-        
-        // ========== ДИАГНОСТИЧЕСКИЕ ФУНКЦИИ ==========
-        
-        async function checkUserBins() {
-            if (!currentUser) {
-                showMessage('Сначала войдите в систему', 'error');
-                return;
-            }
-            
-            showMessage('🔍 Проверяю бины пользователя...', 'warning');
-            
-            try {
-                const bins = await findAllUserBins(currentUser);
-                
-                if (bins.length > 0) {
-                    let message = `Найдено ${bins.length} бин(ов):\n`;
-                    bins.forEach((bin, index) => {
-                        const date = new Date(bin.createdAt).toLocaleString('ru-RU');
-                        message += `\n${index + 1}. ${bin.id.substring(0, 15)}... (${date})`;
-                        message += `\n   📚 Предметов: ${bin.subjectsCount}`;
-                        if (bin.id === userBinId) {
-                            message += ' ← ТЕКУЩИЙ';
-                        }
-                    });
-                    alert(message);
-                } else {
-                    alert('Бины пользователя не найдены');
-                }
-            } catch (error) {
-                alert('Ошибка проверки: ' + error.message);
             }
         }
         
@@ -2028,7 +1647,6 @@
                 avatarElement.src = user.photo;
                 avatarElement.style.display = 'block';
             } else {
-                // Генерируем аватар с инициалами
                 const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                 avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
                 avatarElement.style.display = 'block';
@@ -2605,7 +2223,7 @@
                 appData: data,
                 exportDate: new Date().toISOString(),
                 version: '1.0',
-                binId: userBinId
+                githubConfig: GITHUB_CONFIG.username
             };
             
             const dataStr = JSON.stringify(exportData, null, 2);
@@ -2640,46 +2258,17 @@
                         
                         if (importedData.user && importedData.appData) {
                             if (confirm('Заменить текущие данные импортированными?')) {
-                                // Обновляем пользователя
                                 currentUser = importedData.user;
                                 localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
                                 
-                                // Если в бэкапе есть binId, используем его
-                                if (importedData.binId) {
-                                    userBinId = importedData.binId;
-                                    localStorage.setItem('lab_tracker_bin_id', importedData.binId);
-                                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, importedData.binId);
-                                }
-                                
-                                // Обновляем данные
                                 data = importedData.appData;
                                 
-                                // Сохраняем в облако
-                                if (userBinId) {
-                                    try {
-                                        await updateUserBin(userBinId, currentUser, data);
-                                        updateSyncStatus('online', 'Данные восстановлены в облако');
-                                    } catch (error) {
-                                        console.error('Не удалось сохранить в облако:', error);
-                                    }
-                                }
+                                autoSave();
                                 
-                                // Сохраняем локально
-                                saveLocalData();
-                                
-                                // Обновляем интерфейс
-                                if (document.getElementById('mainContainer').style.display === 'block') {
-                                    updateUserDisplay(currentUser);
-                                    initEducationSelector();
-                                    renderSubjectsTable();
-                                    updateStats();
-                                } else {
-                                    showMainInterface();
-                                    initEducationSelector();
-                                    renderSubjectsTable();
-                                    updateStats();
-                                    updateUserDisplay(currentUser);
-                                }
+                                updateUserDisplay(currentUser);
+                                initEducationSelector();
+                                renderSubjectsTable();
+                                updateStats();
                                 
                                 showMessage('✅ Данные успешно восстановлены', 'success');
                                 updateDebugPanel();
@@ -2894,19 +2483,19 @@
         
         // ========== СОХРАНЕНИЕ ДАННЫХ ==========
         
-        async function saveDataToServer() {
-            if (!currentUser || !userBinId) {
-                console.warn('Не могу сохранить: нет пользователя или ID бина');
+        async function saveDataToGitHub() {
+            if (!currentUser) {
+                console.warn('Не могу сохранить: нет пользователя');
                 saveLocalData();
                 return false;
             }
             
             try {
-                console.log('💾 Сохраняем данные в облако...');
-                const success = await updateUserBin(userBinId, currentUser, data);
+                console.log('💾 Сохраняем данные в GitHub...');
+                const success = await saveUserDataToGitHub();
                 
                 if (success) {
-                    console.log('✅ Данные успешно сохранены в облако');
+                    console.log('✅ Данные успешно сохранены в GitHub');
                     lastError = null;
                     updateDebugPanel();
                     return true;
@@ -2915,7 +2504,7 @@
                 return false;
                 
             } catch (error) {
-                console.error('❌ Не удалось сохранить на сервер:', error);
+                console.error('❌ Не удалось сохранить в GitHub:', error);
                 saveLocalData();
                 lastError = error.message;
                 updateDebugPanel();
@@ -2937,11 +2526,11 @@
             // Всегда сохраняем локально
             saveLocalData();
             
-            // Пробуем сохранить в облако если есть интернет
-            if (navigator.onLine && currentUser && userBinId) {
-                saveDataToServer().then(success => {
+            // Пробуем сохранить в GitHub если есть интернет
+            if (navigator.onLine && currentUser) {
+                saveDataToGitHub().then(success => {
                     if (success) {
-                        updateSyncStatus('online', 'Данные сохранены в облако');
+                        updateSyncStatus('online', 'Данные сохранены в GitHub');
                         updateDebugPanel();
                     } else {
                         updateSyncStatus('offline', 'Ошибка синхронизации');
@@ -2956,11 +2545,11 @@
         
         window.addEventListener('online', function() {
             updateSyncStatus('online', 'Сеть восстановлена');
-            if (currentUser && userBinId) {
+            if (currentUser) {
                 // Пробуем синхронизировать
-                saveDataToServer().then(success => {
+                saveDataToGitHub().then(success => {
                     if (success) {
-                        showMessage('✅ Данные синхронизированы с облаком', 'success');
+                        showMessage('✅ Данные синхронизированы с GitHub', 'success');
                     }
                 });
             }
@@ -2991,9 +2580,9 @@
         
         // ========== ГОТОВО! ==========
         console.log('🚀 Трекер лабораторных работ загружен!');
-        console.log('🔑 API Key: JSONBin.io');
-        console.log('💾 Хранилище: Cloud + Local Backup');
-        console.log('🔍 Поиск бинов: Включен (выбор аккаунта)');
+        console.log('🔑 GitHub API: Настроен');
+        console.log('💾 Хранилище: GitHub + Local Backup');
+        console.log('🔍 Синхронизация: Включена');
         console.log('🐛 Отладка: Включена (нажмите 🐛 в левом нижнем углу)');
         
     </script>
