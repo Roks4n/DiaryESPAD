@@ -1329,6 +1329,50 @@
             }
         }
         
+        // ========== ПОИСК СУЩЕСТВУЮЩЕГО БИНА ПО ПОЛЬЗОВАТЕЛЮ ==========
+        async function findExistingUserBin(userId) {
+            try {
+                console.log('🔍 Ищем существующий бин для пользователя:', userId);
+                
+                // Пытаемся найти бин по названию (так как у нас нет поиска по содержимому)
+                // Мы сохраняем бин с именем `lab_tracker_${userId}`
+                const binName = `lab_tracker_${userId}`;
+                
+                // Получаем список всех бинов пользователя (по API ключу)
+                const response = await makeJSONBinRequest(`${JSONBIN_BASE_URL}/b`, {
+                    method: 'GET'
+                });
+                
+                // Поиск бина по имени
+                if (response && response.records) {
+                    const userBin = response.records.find(bin => 
+                        bin.snippet && bin.snippet.user && bin.snippet.user.id === userId
+                    );
+                    
+                    if (userBin) {
+                        console.log('✅ Найден существующий бин:', userBin.id);
+                        return userBin.id;
+                    }
+                }
+                
+                // Если не нашли через поиск, пробуем загрузить из localStorage
+                const savedBinId = localStorage.getItem(`lab_tracker_bin_${userId}`);
+                if (savedBinId) {
+                    console.log('✅ Найден сохраненный бин ID в localStorage:', savedBinId);
+                    return savedBinId;
+                }
+                
+                console.log('❌ Бин не найден');
+                return null;
+                
+            } catch (error) {
+                console.error('❌ Ошибка поиска бина:', error);
+                lastError = error.message;
+                updateDebugPanel();
+                return null;
+            }
+        }
+        
         // ========== ЗАГРУЗКА ДАННЫХ ==========
         
         async function loadDataFromServer() {
@@ -1464,7 +1508,7 @@
             }
         }
         
-        // ========== VK АВТОРИЗАЦИЯ ==========
+        // ========== VK АВТОРИЗАЦИЯ С ПРОВЕРКОЙ СУЩЕСТВУЮЩЕГО АККАУНТА ==========
         
         async function handleVKAuthSuccess(authData) {
             try {
@@ -1497,68 +1541,74 @@
                 
                 updateDebugPanel();
                 
-                // Ищем существующий бин пользователя
-                const userSearchId = `vk_${userId}`;
-                const existingBinId = localStorage.getItem(`lab_tracker_bin_${userSearchId}`);
+                // ПЕРВОЕ: Пробуем найти существующий бин в localStorage
+                const localBinId = localStorage.getItem(`lab_tracker_bin_${currentUser.id}`);
                 
-                if (existingBinId) {
-                    // У пользователя уже есть бин
-                    userBinId = existingBinId;
-                    localStorage.setItem('lab_tracker_bin_id', existingBinId);
+                if (localBinId) {
+                    console.log('✅ Найден существующий бин в localStorage:', localBinId);
+                    userBinId = localBinId;
+                    localStorage.setItem('lab_tracker_bin_id', localBinId);
                     
-                    // Загружаем данные
+                    // Загружаем данные с сервера
                     try {
-                        const success = await loadDataFromServer();
-                        if (success) {
+                        const binData = await getUserBin(localBinId);
+                        
+                        if (binData && binData.user && binData.user.id === currentUser.id) {
+                            // Данные принадлежат текущему пользователю
+                            data = binData.data || {
+                                educations: [{ id: 1, name: "Бакалавриат" }],
+                                currentEducationId: 1,
+                                subjects: []
+                            };
+                            
                             showSuccessLogin();
                             showMessage('✅ Добро пожаловать обратно! Данные загружены из облака', 'success');
                         } else {
-                            loadLocalData();
-                            showSuccessLogin();
-                            showMessage('⚠️ Используем локальные данные', 'warning');
+                            // Данные не принадлежат пользователю или не найдены
+                            console.log('Данные не найдены или не принадлежат пользователю');
+                            await createNewUserBin();
                         }
                     } catch (error) {
-                        console.log('Не удалось загрузить с сервера:', error);
+                        console.error('Не удалось загрузить с сервера:', error);
+                        // Загружаем локальные данные
                         loadLocalData();
                         showSuccessLogin();
                         showMessage('⚠️ Используем локальные данные', 'warning');
                     }
                 } else {
-                    // Новый пользователь - создаем бин
-                    const initialData = {
-                        educations: [{ id: 1, name: "Бакалавриат" }],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
+                    // ВТОРОЕ: Пробуем найти бин через поиск в JSONBin
+                    console.log('Ищем существующий бин через JSONBin поиск...');
+                    const foundBinId = await findExistingUserBin(currentUser.id);
                     
-                    try {
-                        // Тестируем соединение перед созданием бина
-                        const isConnected = await testJSONBinConnection();
+                    if (foundBinId) {
+                        console.log('✅ Найден существующий бин через поиск:', foundBinId);
+                        userBinId = foundBinId;
+                        localStorage.setItem('lab_tracker_bin_id', foundBinId);
+                        localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, foundBinId);
                         
-                        if (isConnected) {
-                            const newBinId = await createUserBin(currentUser, initialData);
-                            userBinId = newBinId;
+                        // Загружаем данные
+                        try {
+                            const binData = await getUserBin(foundBinId);
                             
-                            // Сохраняем связь пользователь-бин
-                            localStorage.setItem('lab_tracker_bin_id', newBinId);
-                            localStorage.setItem(`lab_tracker_bin_${userSearchId}`, newBinId);
-                            
-                            data = initialData;
-                            showSuccessLogin();
-                            showMessage('✅ Аккаунт создан! Данные сохраняются в облако', 'success');
-                        } else {
-                            // Облако недоступно, используем локальное
-                            loadLocalData();
-                            showSuccessLogin();
-                            showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
+                            if (binData && binData.user && binData.user.id === currentUser.id) {
+                                data = binData.data || {
+                                    educations: [{ id: 1, name: "Бакалавриат" }],
+                                    currentEducationId: 1,
+                                    subjects: []
+                                };
+                                
+                                showSuccessLogin();
+                                showMessage('✅ Добро пожаловать обратно! Данные загружены из облака', 'success');
+                            } else {
+                                await createNewUserBin();
+                            }
+                        } catch (error) {
+                            console.error('Не удалось загрузить данные:', error);
+                            await createNewUserBin();
                         }
-                        
-                    } catch (error) {
-                        console.error('Не удалось создать облачное хранилище:', error);
-                        // Используем локальное хранилище
-                        loadLocalData();
-                        showSuccessLogin();
-                        showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
+                    } else {
+                        // ТРЕТЬЕ: Создаем новый бин
+                        await createNewUserBin();
                     }
                 }
                 
@@ -1569,6 +1619,46 @@
                 lastError = error.message;
                 showMessage('❌ Ошибка авторизации. Попробуйте еще раз.', 'error');
                 updateDebugPanel();
+            }
+        }
+        
+        async function createNewUserBin() {
+            console.log('🆕 Создаем новый бин для пользователя');
+            
+            const initialData = {
+                educations: [{ id: 1, name: "Бакалавриат" }],
+                currentEducationId: 1,
+                subjects: []
+            };
+            
+            try {
+                // Тестируем соединение перед созданием бина
+                const isConnected = await testJSONBinConnection();
+                
+                if (isConnected) {
+                    const newBinId = await createUserBin(currentUser, initialData);
+                    userBinId = newBinId;
+                    
+                    // Сохраняем связь пользователь-бин
+                    localStorage.setItem('lab_tracker_bin_id', newBinId);
+                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, newBinId);
+                    
+                    data = initialData;
+                    showSuccessLogin();
+                    showMessage('✅ Аккаунт создан! Данные сохраняются в облако', 'success');
+                } else {
+                    // Облако недоступно, используем локальное
+                    loadLocalData();
+                    showSuccessLogin();
+                    showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Не удалось создать облачное хранилище:', error);
+                // Используем локальное хранилище
+                loadLocalData();
+                showSuccessLogin();
+                showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
             }
         }
         
@@ -2521,7 +2611,7 @@
             document.getElementById('vkid-container').innerHTML = `
                 <button class="social-btn vk-btn" onclick="loginWithVKPopup()" style="margin-bottom: 15px;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                        <path d="M13.162 18.994c.609 0 .858-.406.851-.915-.031-1.917.714-2.949 2.059-1.604 1.488 1.488 1.796 2.519 3.603 2.519h3.2c.808 0 1.126-.26 1.126-.668 0-.863-1.421-2.386-2.625-3.504-1.686-1.565-1.765-1.602-.313-3.486 1.801-2.339 4.157-5.336 2.073-5.336h-3.981c-.772 0-.828.435-1.103 1.083-.995 2.347-2.987 5.387-3.732 4.922-.751-.465-.407-2.406-.35-5.261.015-.754.011-1.271-1.141-1.539-.629-.145-1.241-.205-1.809-.205-2.273 0-3.841.953-2.95 1.119 1.571.293 1.42 3.692 1.054 5.16-.638 2.556-3.036-2.024-4.035-4.305-.241-.548-.315-.974-1.175-.974h-3.255c-.492 0-.787.16-.787.516 0 .602 2.96 6.72 5.786 9.77 2.756 2.975 5.48 2.708 7.376 2.708z"/>
+                        <path d="M13.162 18.994c.609 0 .858-.406.851-.915-.031-1.917.714-2.949 2.059-1.604 1.488 1.488 1.796 2.519 3.603 2.519 h3.2c.808 0 1.126-.26 1.126-.668 0-.863-1.421-2.386-2.625-3.504-1.686-1.565-1.765-1.602-.313-3.486 1.801-2.339 4.157-5.336 2.073-5.336h-3.981c-.772 0-.828.435-1.103 1.083-.995 2.347-2.987 5.387-3.732 4.922-.751-.465-.407-2.406-.35-5.261.015-.754.011-1.271-1.141-1.539-.629-.145-1.241-.205-1.809-.205-2.273 0-3.841.953-2.95 1.119 1.571.293 1.42 3.692 1.054 5.16-.638 2.556-3.036-2.024-4.035-4.305-.241-.548-.315-.974-1.175-.974h-3.255c-.492 0-.787.16-.787.516 0 .602 2.96 6.72 5.786 9.77 2.756 2.975 5.48 2.708 7.376 2.708z"/>
                     </svg>
                     Войти через ВКонтакте
                 </button>
