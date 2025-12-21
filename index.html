@@ -711,6 +711,36 @@
             background: #17a2b8;
         }
         
+        /* === ДИАГНОСТИКА === */
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            z-index: 999;
+            max-width: 300px;
+            display: none;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 1.2rem;
+        }
+        
         /* === АДАПТИВНОСТЬ === */
         @media (max-width: 768px) {
             .controls {
@@ -807,6 +837,22 @@
     <div class="sync-status" id="syncStatus" style="display: none;">
         <div class="sync-icon sync-online" id="syncIcon"></div>
         <span id="syncText">Локальный режим</span>
+    </div>
+    
+    <!-- Кнопка отладки -->
+    <button class="debug-toggle" onclick="toggleDebugPanel()">🐛</button>
+    
+    <!-- Панель отладки -->
+    <div class="debug-panel" id="debugPanel">
+        <div><strong>Отладка:</strong></div>
+        <div>Пользователь: <span id="debugUser">нет</span></div>
+        <div>Бин ID: <span id="debugBinId">нет</span></div>
+        <div>Состояние: <span id="debugState">загрузка...</span></div>
+        <div>Последняя ошибка: <span id="debugError">нет</span></div>
+        <div style="margin-top: 10px; font-size: 0.7rem;">
+            <button onclick="testJSONBinConnection()" style="padding: 3px 8px; font-size: 0.7rem;">Тест API</button>
+            <button onclick="clearAllData()" style="padding: 3px 8px; font-size: 0.7rem; background: #dc3545;">Очистить все</button>
+        </div>
     </div>
     
     <!-- Экран входа -->
@@ -1010,6 +1056,13 @@
             setTimeout(() => {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
+                // Тестируем соединение с JSONBin
+                testJSONBinConnection().then(isConnected => {
+                    if (!isConnected) {
+                        showMessage('⚠️ Облачное хранилище недоступно. Работаем в локальном режиме.', 'warning');
+                    }
+                });
+                
                 // Проверяем сохраненного пользователя
                 const savedUser = localStorage.getItem('lab_tracker_user');
                 const savedBinId = localStorage.getItem('lab_tracker_bin_id');
@@ -1019,127 +1072,175 @@
                         currentUser = JSON.parse(savedUser);
                         userBinId = savedBinId;
                         
-                        // Загружаем данные
-                        loadUserData().then(success => {
+                        updateDebugPanel();
+                        
+                        // Пробуем загрузить данные с сервера
+                        loadDataFromServer().then(success => {
                             if (success) {
                                 showMainInterface();
                                 initEducationSelector();
                                 renderSubjectsTable();
                                 updateStats();
                                 updateUserDisplay(currentUser);
-                                updateSyncStatus('online', 'Данные загружены');
+                                updateSyncStatus('online', 'Данные загружены из облака');
+                                showMessage('✅ Данные успешно загружены из облака', 'success');
                             } else {
-                                showLoginScreen();
+                                // Загружаем локальную копию
+                                loadLocalData();
+                                showMainInterface();
+                                initEducationSelector();
+                                renderSubjectsTable();
+                                updateStats();
+                                updateUserDisplay(currentUser);
+                                updateSyncStatus('offline', 'Локальные данные');
+                                showMessage('⚠️ Используем локальные данные', 'warning');
                             }
                         }).catch(error => {
-                            console.error('Ошибка загрузки данных:', error);
-                            showLoginScreen();
+                            console.error('Не удалось загрузить с сервера:', error);
+                            lastError = error.message;
+                            loadLocalData();
+                            showMainInterface();
+                            initEducationSelector();
+                            renderSubjectsTable();
+                            updateStats();
+                            updateUserDisplay(currentUser);
+                            updateSyncStatus('offline', 'Ошибка загрузки');
+                            updateDebugPanel();
                         });
                         
                     } catch (e) {
                         console.error('Ошибка загрузки пользователя:', e);
+                        lastError = e.message;
                         showLoginScreen();
+                        updateDebugPanel();
                     }
                 } else {
                     showLoginScreen();
                 }
+                
+                updateDebugPanel();
                 
             }, 500);
             
             updateSyncStatus('online', 'Готов к работе');
         });
         
-        // ========== ПОИСК ПОЛЬЗОВАТЕЛЯ ПО VK ID ==========
+        // ========== ОТЛАДКА ==========
         
-        async function findUserByVKId(vkId) {
-            console.log(`🔍 Ищем пользователя с VK ID: ${vkId}`);
+        function toggleDebugPanel() {
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        function updateDebugPanel() {
+            document.getElementById('debugUser').textContent = currentUser ? currentUser.name : 'нет';
+            document.getElementById('debugBinId').textContent = userBinId ? userBinId.substring(0, 10) + '...' : 'нет';
+            document.getElementById('debugState').textContent = navigator.onLine ? 'онлайн' : 'оффлайн';
+            document.getElementById('debugError').textContent = lastError || 'нет';
+        }
+        
+        // ========== ТЕСТИРОВАНИЕ JSONBIN API ==========
+        
+        async function testJSONBinConnection() {
+            console.log('🔧 Тестирование соединения с JSONBin.io...');
             
             try {
-                // Создаем уникальный хэш для поиска
-                const searchHash = `vk_${vkId}`.substring(0, 20);
+                // Создаем тестовые данные
+                const testData = { 
+                    test: 'connection', 
+                    timestamp: new Date().toISOString(),
+                    app: 'lab_tracker'
+                };
                 
-                // Пробуем найти в LocalStorage
-                const localBinId = localStorage.getItem(`lab_tracker_bin_vk_${vkId}`);
-                if (localBinId) {
-                    console.log(`Нашли локальный bin ID: ${localBinId}`);
-                    return {
-                        binId: localBinId,
-                        source: 'local'
-                    };
+                // Пробуем создать тестовый бин
+                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Name': 'test_connection_lab_tracker',
+                        'X-Bin-Private': 'true'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Ошибка JSONBin API:', response.status, errorText);
+                    
+                    if (response.status === 401) {
+                        lastError = 'Неверный API ключ JSONBin';
+                        showMessage('❌ Неверный API ключ облачного хранилища', 'error');
+                    } else if (response.status === 429) {
+                        lastError = 'Лимит запросов превышен';
+                        showMessage('⚠️ Лимит облачного хранилища превышен', 'warning');
+                    } else {
+                        lastError = `Ошибка API: ${response.status}`;
+                    }
+                    
+                    updateDebugPanel();
+                    return false;
                 }
                 
-                // Если не нашли локально, пробуем поиск по всем бинам
-                // (это сложно сделать без сервера, поэтому будем хранить маппинг локально)
-                return null;
+                const result = await response.json();
+                console.log('✅ Соединение с JSONBin.io успешно!');
+                console.log('Создан тестовый бин ID:', result.metadata.id);
+                
+                // Удаляем тестовый бин
+                await fetch(`${JSONBIN_BASE_URL}/b/${result.metadata.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY
+                    }
+                });
+                
+                lastError = null;
+                updateDebugPanel();
+                return true;
                 
             } catch (error) {
-                console.error('Ошибка поиска пользователя:', error);
-                return null;
+                console.error('❌ Ошибка соединения с JSONBin:', error);
+                lastError = error.message;
+                updateDebugPanel();
+                return false;
             }
         }
         
         // ========== JSONBIN.IO API ФУНКЦИИ ==========
-        
-        async function makeJSONBinRequest(url, options = {}) {
-            try {
-                const defaultHeaders = {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': JSONBIN_API_KEY
-                };
-                
-                const requestOptions = {
-                    ...options,
-                    headers: {
-                        ...defaultHeaders,
-                        ...options.headers
-                    }
-                };
-                
-                // Используем CORS прокси
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                const targetUrl = encodeURIComponent(url);
-                
-                const response = await fetch(proxyUrl + targetUrl, requestOptions);
-                
-                if (!response.ok) {
-                    console.error('Ошибка запроса:', response.status, response.statusText);
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
-                return await response.json();
-                
-            } catch (error) {
-                console.error('Ошибка запроса к JSONBin:', error);
-                throw error;
-            }
-        }
         
         // Создание нового бина для пользователя
         async function createUserBin(userData, initialData) {
             try {
                 console.log('Создаем бин для пользователя:', userData.id);
                 
-                const result = await makeJSONBinRequest(`${JSONBIN_BASE_URL}/b`, {
+                const response = await fetch(`${JSONBIN_BASE_URL}/b`, {
                     method: 'POST',
                     headers: {
-                        'X-Bin-Name': `lab_tracker_${userData.id}_${Date.now()}`,
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Name': `lab_tracker_${userData.id}`,
                         'X-Bin-Private': 'true'
                     },
                     body: JSON.stringify({
                         user: userData,
                         data: initialData,
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        vkId: userData.vkId // Добавляем VK ID для поиска
+                        updatedAt: new Date().toISOString()
                     })
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const result = await response.json();
                 console.log('✅ Бин создан:', result.metadata.id);
                 return result.metadata.id;
                 
             } catch (error) {
                 console.error('❌ Ошибка создания бина:', error);
+                lastError = error.message;
+                updateDebugPanel();
                 throw error;
             }
         }
@@ -1149,19 +1250,29 @@
             try {
                 console.log('Загружаем бин:', binId);
                 
-                const result = await makeJSONBinRequest(`${JSONBIN_BASE_URL}/b/${binId}/latest`);
+                const response = await fetch(`${JSONBIN_BASE_URL}/b/${binId}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY
+                    }
+                });
                 
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.log('Бин не найден');
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const result = await response.json();
                 console.log('✅ Бин загружен');
                 return result.record;
                 
             } catch (error) {
                 console.error('❌ Ошибка загрузки бина:', error);
-                
-                if (error.message.includes('404') || error.message.includes('not found')) {
-                    console.log('Бин не найден (404)');
-                    return null;
-                }
-                
+                lastError = error.message;
+                updateDebugPanel();
                 throw error;
             }
         }
@@ -1171,80 +1282,47 @@
             try {
                 console.log('Обновляем бин:', binId);
                 
-                const result = await makeJSONBinRequest(`${JSONBIN_BASE_URL}/b/${binId}`, {
+                const response = await fetch(`${JSONBIN_BASE_URL}/b/${binId}`, {
                     method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY
+                    },
                     body: JSON.stringify({
                         user: userData,
                         data: appData,
-                        updatedAt: new Date().toISOString(),
-                        vkId: userData.vkId
+                        updatedAt: new Date().toISOString()
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
                 
                 console.log('✅ Бин обновлен');
                 return true;
                 
             } catch (error) {
                 console.error('❌ Ошибка обновления бина:', error);
+                lastError = error.message;
+                updateDebugPanel();
                 throw error;
             }
         }
         
-        // ========== ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ ==========
+        // ========== ЗАГРУЗКА ДАННЫХ ==========
         
-        async function loadUserData() {
-            if (!currentUser || !userBinId) {
-                console.warn('Нет пользователя или ID бина');
+        async function loadDataFromServer() {
+            if (!userBinId) {
+                console.warn('Нет ID бина для загрузки');
                 return false;
             }
             
             try {
-                // Сначала проверяем LocalStorage
-                const localData = localStorage.getItem(`lab_tracker_data_${currentUser.id}`);
-                if (localData) {
-                    try {
-                        data = JSON.parse(localData);
-                        console.log('✅ Данные загружены из LocalStorage');
-                        
-                        // После загрузки локальных данных пробуем синхронизировать с облаком
-                        setTimeout(() => {
-                            saveDataToServer().catch(e => console.log('Не удалось синхронизировать:', e));
-                        }, 1000);
-                        
-                        return true;
-                    } catch (e) {
-                        console.error('Ошибка парсинга локальных данных:', e);
-                    }
-                }
-                
-                // Пробуем загрузить из облака
-                console.log('Пробуем загрузить из облака...');
                 const binData = await getUserBin(userBinId);
                 
                 if (!binData) {
-                    console.log('Бин не найден в облаке, создаем новый...');
-                    
-                    // Проверяем, может пользователь уже имеет другой бин
-                    const existingUser = await findUserByVKId(currentUser.vkId);
-                    
-                    if (existingUser && existingUser.binId !== userBinId) {
-                        console.log('Нашли другой бин для этого пользователя:', existingUser.binId);
-                        userBinId = existingUser.binId;
-                        localStorage.setItem('lab_tracker_bin_id', existingUser.binId);
-                        
-                        // Пробуем загрузить из найденного бина
-                        const foundBinData = await getUserBin(existingUser.binId);
-                        if (foundBinData && foundBinData.user && foundBinData.user.vkId === currentUser.vkId) {
-                            data = foundBinData.data || {
-                                educations: [{ id: 1, name: "Бакалавриат" }],
-                                currentEducationId: 1,
-                                subjects: []
-                            };
-                            console.log('✅ Данные загружены из найденного бина');
-                            return true;
-                        }
-                    }
-                    
+                    console.log('Бин не найден, создаем начальные данные');
                     // Создаем новый бин с начальными данными
                     const initialData = {
                         educations: [{ id: 1, name: "Бакалавриат" }],
@@ -1253,17 +1331,12 @@
                     };
                     
                     const newBinId = await createUserBin(currentUser, initialData);
-                    if (newBinId) {
-                        userBinId = newBinId;
-                        localStorage.setItem('lab_tracker_bin_id', newBinId);
-                        localStorage.setItem(`lab_tracker_bin_vk_${currentUser.vkId}`, newBinId);
-                        
-                        data = initialData;
-                        console.log('✅ Создан новый бин с начальными данными');
-                        return true;
-                    }
+                    userBinId = newBinId;
+                    localStorage.setItem('lab_tracker_bin_id', newBinId);
+                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, newBinId);
                     
-                    return false;
+                    data = initialData;
+                    return true;
                 }
                 
                 // Проверяем что данные принадлежат текущему пользователю
@@ -1273,22 +1346,42 @@
                         currentEducationId: 1,
                         subjects: []
                     };
-                    console.log('✅ Данные загружены из облака');
-                    
-                    // Сохраняем связь VK ID -> bin ID
-                    if (currentUser.vkId) {
-                        localStorage.setItem(`lab_tracker_bin_vk_${currentUser.vkId}`, userBinId);
-                    }
-                    
+                    console.log('✅ Данные загружены с сервера');
                     return true;
                 } else {
-                    console.error('Несоответствие пользователя в бине');
+                    console.error('Несоответствие пользователя');
+                    lastError = 'Несоответствие пользователя';
                     return false;
                 }
                 
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
+                lastError = error.message;
                 return false;
+            }
+        }
+        
+        function loadLocalData() {
+            const localData = localStorage.getItem(`lab_tracker_data_${currentUser ? currentUser.id : 'local'}`);
+            if (localData) {
+                try {
+                    data = JSON.parse(localData);
+                    console.log('✅ Данные загружены локально');
+                } catch (e) {
+                    console.error('Ошибка парсинга локальных данных:', e);
+                    data = {
+                        educations: [{ id: 1, name: "Бакалавриат" }],
+                        currentEducationId: 1,
+                        subjects: []
+                    };
+                }
+            } else {
+                console.log('Локальных данных нет, используем начальные');
+                data = {
+                    educations: [{ id: 1, name: "Бакалавриат" }],
+                    currentEducationId: 1,
+                    subjects: []
+                };
             }
         }
         
@@ -1307,8 +1400,8 @@
                 
                 if (success) {
                     console.log('✅ Данные успешно сохранены в облако');
-                    // Также сохраняем локально как резервную копию
-                    saveLocalData();
+                    lastError = null;
+                    updateDebugPanel();
                     return true;
                 }
                 
@@ -1316,8 +1409,9 @@
                 
             } catch (error) {
                 console.error('❌ Не удалось сохранить на сервер:', error);
-                // Сохраняем локально как fallback
                 saveLocalData();
+                lastError = error.message;
+                updateDebugPanel();
                 return false;
             }
         }
@@ -1341,6 +1435,7 @@
                 saveDataToServer().then(success => {
                     if (success) {
                         updateSyncStatus('online', 'Данные сохранены в облако');
+                        updateDebugPanel();
                     } else {
                         updateSyncStatus('offline', 'Ошибка синхронизации');
                     }
@@ -1350,7 +1445,7 @@
             }
         }
         
-        // ========== VK АВТОРИЗАЦИЯ С ПРОВЕРКОЙ СУЩЕСТВУЮЩИХ АККАУНТОВ ==========
+        // ========== VK АВТОРИЗАЦИЯ ==========
         
         async function handleVKAuthSuccess(authData) {
             try {
@@ -1368,7 +1463,7 @@
                 const userInfo = await getVKUserInfo(accessToken, userId, email);
                 
                 // Создаем объект пользователя
-                const newUser = {
+                currentUser = {
                     id: `vk_${userId}`,
                     vkId: userId,
                     email: email || `${userId}@vk.com`,
@@ -1378,102 +1473,106 @@
                     accessToken: accessToken
                 };
                 
-                // Ищем существующего пользователя по VK ID
-                console.log(`🔍 Ищем существующий аккаунт для VK ID: ${userId}`);
+                // Сохраняем пользователя локально
+                localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
                 
-                // Проверяем LocalStorage на наличие сохраненного bin ID для этого VK ID
-                const existingBinId = localStorage.getItem(`lab_tracker_bin_vk_${userId}`);
-                const existingUserData = localStorage.getItem('lab_tracker_user');
+                updateDebugPanel();
                 
-                let existingUser = null;
-                if (existingUserData) {
-                    try {
-                        const parsedUser = JSON.parse(existingUserData);
-                        if (parsedUser.vkId === userId) {
-                            existingUser = parsedUser;
-                            console.log('✅ Нашли существующего пользователя в LocalStorage');
-                        }
-                    } catch (e) {
-                        console.error('Ошибка парсинга пользователя:', e);
-                    }
-                }
+                // Ищем существующий бин в localStorage
+                const existingBinId = localStorage.getItem(`lab_tracker_bin_${currentUser.id}`);
                 
-                if (existingUser && existingBinId) {
-                    // Пользователь уже существует
-                    console.log('✅ Используем существующий аккаунт');
-                    currentUser = existingUser;
+                if (existingBinId) {
+                    // У пользователя уже есть сохраненный бин
+                    console.log('✅ Найден существующий бин:', existingBinId);
                     userBinId = existingBinId;
+                    localStorage.setItem('lab_tracker_bin_id', existingBinId);
                     
-                    // Обновляем данные пользователя (имя могло измениться)
-                    currentUser.name = newUser.name;
-                    currentUser.photo = newUser.photo;
-                    localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
-                    
-                    // Загружаем данные
-                    const success = await loadUserData();
-                    if (success) {
-                        showSuccessLogin();
-                        showMessage(`✅ С возвращением, ${currentUser.name}!`, 'success');
-                    } else {
-                        // Если не удалось загрузить, создаем начальные данные
-                        data = {
-                            educations: [{ id: 1, name: "Бакалавриат" }],
-                            currentEducationId: 1,
-                            subjects: []
-                        };
-                        showSuccessLogin();
-                        showMessage('✅ Создан новый профиль', 'success');
-                    }
-                    
-                } else {
-                    // Новый пользователь
-                    console.log('🆕 Создаем новый аккаунт');
-                    currentUser = newUser;
-                    
-                    // Сохраняем пользователя
-                    localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
-                    
-                    // Создаем новый бин
-                    const initialData = {
-                        educations: [{ id: 1, name: "Бакалавриат" }],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
-                    
+                    // Загружаем данные с сервера
                     try {
-                        const newBinId = await createUserBin(currentUser, initialData);
-                        if (newBinId) {
-                            userBinId = newBinId;
-                            localStorage.setItem('lab_tracker_bin_id', newBinId);
-                            localStorage.setItem(`lab_tracker_bin_vk_${userId}`, newBinId);
+                        const binData = await getUserBin(existingBinId);
+                        
+                        if (binData && binData.user && binData.user.id === currentUser.id) {
+                            data = binData.data || {
+                                educations: [{ id: 1, name: "Бакалавриат" }],
+                                currentEducationId: 1,
+                                subjects: []
+                            };
                             
-                            data = initialData;
                             showSuccessLogin();
-                            showMessage(`✅ Добро пожаловать, ${currentUser.name}! Аккаунт создан.`, 'success');
+                            showMessage('✅ Добро пожаловать обратно! Данные загружены из облака', 'success');
                         } else {
-                            throw new Error('Не удалось создать бин');
+                            // Бин не принадлежит пользователю, создаем новый
+                            console.log('Бин не принадлежит пользователю, создаем новый');
+                            await createNewUserBin();
                         }
                     } catch (error) {
-                        console.error('Не удалось создать облачное хранилище:', error);
-                        // Используем локальное хранилище
-                        data = initialData;
+                        console.error('Не удалось загрузить с сервера:', error);
+                        // Загружаем локальные данные
+                        loadLocalData();
                         showSuccessLogin();
-                        showMessage('✅ Добро пожаловать! Используем локальное хранилище.', 'warning');
+                        showMessage('⚠️ Используем локальные данные', 'warning');
                     }
+                } else {
+                    // Новый пользователь - создаем бин
+                    await createNewUserBin();
                 }
+                
+                updateDebugPanel();
                 
             } catch (error) {
                 console.error('❌ Ошибка VK авторизации:', error);
+                lastError = error.message;
                 showMessage('❌ Ошибка авторизации. Попробуйте еще раз.', 'error');
+                updateDebugPanel();
+            }
+        }
+        
+        async function createNewUserBin() {
+            console.log('🆕 Создаем новый бин для пользователя');
+            
+            const initialData = {
+                educations: [{ id: 1, name: "Бакалавриат" }],
+                currentEducationId: 1,
+                subjects: []
+            };
+            
+            try {
+                // Тестируем соединение перед созданием бина
+                const isConnected = await testJSONBinConnection();
+                
+                if (isConnected) {
+                    const newBinId = await createUserBin(currentUser, initialData);
+                    userBinId = newBinId;
+                    
+                    // Сохраняем связь пользователь-бин
+                    localStorage.setItem('lab_tracker_bin_id', newBinId);
+                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, newBinId);
+                    
+                    data = initialData;
+                    showSuccessLogin();
+                    showMessage('✅ Аккаунт создан! Данные сохраняются в облако', 'success');
+                } else {
+                    // Облако недоступно, используем локальное
+                    loadLocalData();
+                    showSuccessLogin();
+                    showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Не удалось создать облачное хранилище:', error);
+                // Используем локальное хранилище
+                loadLocalData();
+                showSuccessLogin();
+                showMessage('⚠️ Облачное хранилище недоступно, используем локальное', 'warning');
             }
         }
         
         async function getVKUserInfo(accessToken, userId, email) {
             try {
+                // Пробуем получить информацию через VK API
                 return new Promise((resolve) => {
                     // Создаем функцию обратного вызова
-                    const callbackName = `vkCallback_${Date.now()}`;
-                    window[callbackName] = function(data) {
+                    window[`vkCallback_${userId}`] = function(data) {
                         if (data.response && data.response[0]) {
                             const user = data.response[0];
                             resolve({
@@ -1486,16 +1585,17 @@
                                 photo: null
                             });
                         }
-                        delete window[callbackName];
+                        delete window[`vkCallback_${userId}`];
                     };
                     
                     // Создаем JSONP запрос
                     const script = document.createElement('script');
+                    const callbackName = `vkCallback_${userId}`;
                     script.src = `https://api.vk.com/method/users.get?user_ids=${userId}&fields=first_name,last_name,photo_200&access_token=${accessToken}&v=5.199&callback=${callbackName}`;
                     
                     document.body.appendChild(script);
                     
-                    // Таймаут
+                    // Таймаут на случай если запрос не сработает
                     setTimeout(() => {
                         if (document.body.contains(script)) {
                             document.body.removeChild(script);
@@ -1524,6 +1624,7 @@
             updateUserDisplay(currentUser);
             
             updateSyncStatus('online', 'Вход выполнен');
+            updateDebugPanel();
         }
         
         // ========== ЛОКАЛЬНЫЙ РЕЖИМ ==========
@@ -1541,25 +1642,7 @@
             
             localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
             
-            // Загружаем локальные данные или создаем начальные
-            const localData = localStorage.getItem(`lab_tracker_data_${currentUser.id}`);
-            if (localData) {
-                try {
-                    data = JSON.parse(localData);
-                } catch (e) {
-                    data = {
-                        educations: [{ id: 1, name: "Бакалавриат" }],
-                        currentEducationId: 1,
-                        subjects: []
-                    };
-                }
-            } else {
-                data = {
-                    educations: [{ id: 1, name: "Бакалавриат" }],
-                    currentEducationId: 1,
-                    subjects: []
-                };
-            }
+            loadLocalData();
             
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
@@ -1571,6 +1654,8 @@
             
             updateSyncStatus('offline', 'Локальный режим');
             showMessage('✅ Локальный режим активирован', 'success');
+            
+            updateDebugPanel();
         }
         
         function logoutUser() {
@@ -1587,6 +1672,7 @@
                     currentEducationId: 1,
                     subjects: []
                 };
+                lastError = null;
                 
                 document.getElementById('mainContainer').style.display = 'none';
                 document.getElementById('loginContainer').style.display = 'block';
@@ -1597,6 +1683,30 @@
                 
                 updateSyncStatus('offline', 'Вы вышли из системы');
                 showMessage('✅ Выход выполнен', 'success');
+                
+                updateDebugPanel();
+            }
+        }
+        
+        // ========== ОЧИСТКА ВСЕХ ДАННЫХ (для отладки) ==========
+        
+        function clearAllData() {
+            if (confirm('⚠️ ОЧИСТИТЬ ВСЕ ДАННЫЕ?\nЭто удалит все ваши предметы и лабораторные работы!')) {
+                // Очищаем LocalStorage
+                localStorage.clear();
+                
+                // Очищаем переменные
+                currentUser = null;
+                userBinId = null;
+                data = {
+                    educations: [{ id: 1, name: "Бакалавриат" }],
+                    currentEducationId: 1,
+                    subjects: []
+                };
+                lastError = null;
+                
+                // Перезагружаем страницу
+                location.reload();
             }
         }
         
@@ -1606,11 +1716,13 @@
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('backupSection').style.display = 'block';
             setTimeout(initVKOneTap, 100);
+            updateDebugPanel();
         }
         
         function showMainInterface() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
+            updateDebugPanel();
         }
         
         function updateUserDisplay(user) {
@@ -1627,6 +1739,8 @@
                 avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
                 avatarElement.style.display = 'block';
             }
+            
+            updateDebugPanel();
         }
         
         // ========== УПРАВЛЕНИЕ ОБРАЗОВАНИЯМИ ==========
@@ -1660,12 +1774,15 @@
                         renderSubjectsTable();
                         updateStats();
                         autoSave();
+                        updateDebugPanel();
                     }
                 });
                 
                 buttonContainer.appendChild(button);
                 educationSelector.appendChild(buttonContainer);
             });
+            
+            updateDebugPanel();
         }
         
         function showAddEducationModal() {
@@ -1698,6 +1815,8 @@
             
             updateSyncStatus('online', 'Образование добавлено');
             showMessage('✅ Образование добавлено успешно', 'success');
+            
+            updateDebugPanel();
         }
         
         function deleteEducation(educationId, event) {
@@ -1727,6 +1846,8 @@
                 
                 updateSyncStatus('online', 'Образование удалено');
                 showMessage('✅ Образование удалено', 'success');
+                
+                updateDebugPanel();
             }
         }
         
@@ -1778,6 +1899,8 @@
             
             updateSyncStatus('online', 'Предмет добавлен');
             showMessage('✅ Предмет добавлен успешно', 'success');
+            
+            updateDebugPanel();
         }
         
         function renderSubjectsTable() {
@@ -1841,6 +1964,8 @@
                 
                 subjectsBody.appendChild(row);
             });
+            
+            updateDebugPanel();
         }
         
         function calculateDoneLabs(subject) {
@@ -1886,6 +2011,8 @@
                 
                 updateSyncStatus('online', 'Лабораторная работа добавлена');
                 showMessage('✅ Лабораторная работа добавлена', 'success');
+                
+                updateDebugPanel();
             } else {
                 showMessage('Максимальное количество лабораторных работ: 50', 'error');
             }
@@ -1903,6 +2030,8 @@
                     
                     updateSyncStatus('online', 'Предмет удален');
                     showMessage('✅ Предмет удален', 'success');
+                    
+                    updateDebugPanel();
                 }
             }
         }
@@ -1926,6 +2055,8 @@
             renderLabsGrid(subject);
             
             document.getElementById('manageLabsModal').style.display = 'flex';
+            
+            updateDebugPanel();
         }
         
         function renderLabsGrid(subject) {
@@ -1983,6 +2114,8 @@
                 
                 labsGrid.appendChild(labItem);
             });
+            
+            updateDebugPanel();
         }
         
         function toggleLabStatus(labNumber) {
@@ -2007,6 +2140,8 @@
             
             updateLabDisplay(subject);
             autoSave();
+            
+            updateDebugPanel();
         }
         
         function updateLabGrade(labNumber, grade) {
@@ -2020,6 +2155,8 @@
             
             updateLabDisplay(subject);
             autoSave();
+            
+            updateDebugPanel();
         }
         
         function updateLabDisplay(subject) {
@@ -2032,6 +2169,8 @@
             renderLabsGrid(subject);
             renderSubjectsTable();
             updateStats();
+            
+            updateDebugPanel();
         }
         
         function markAllLabsAsDone() {
@@ -2049,6 +2188,8 @@
             
             updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
             showMessage('✅ Все лабораторные работы отмечены как выполненные', 'success');
+            
+            updateDebugPanel();
         }
         
         function markAllLabsAsPassed() {
@@ -2066,6 +2207,8 @@
             
             updateSyncStatus('online', 'Все ЛР отмечены как сданные');
             showMessage('✅ Все лабораторные работы отмечены как сданные', 'success');
+            
+            updateDebugPanel();
         }
         
         function clearAllLabMarks() {
@@ -2083,6 +2226,8 @@
             
             updateSyncStatus('online', 'Все отметки сброшены');
             showMessage('✅ Все отметки сброшены', 'success');
+            
+            updateDebugPanel();
         }
         
         // ========== СТАТИСТИКА ==========
@@ -2133,4 +2278,369 @@
                 }
             });
             
-            const overallAverage =
+            const overallAverage = subjectsWithGrades > 0 ? (totalAverage / subjectsWithGrades) : 0;
+            
+            stats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${totalSubjects}</div>
+                    <div class="stat-label">Предметов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${overallProgress}%</div>
+                    <div class="stat-label">Общий прогресс</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${overallAverage.toFixed(1)}</div>
+                    <div class="stat-label">Средний балл</div>
+                </div>
+            `;
+            
+            updateDebugPanel();
+        }
+        
+        // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
+        
+        function exportBackup() {
+            if (!currentUser) {
+                showMessage('Сначала войдите в систему', 'error');
+                return;
+            }
+            
+            const exportData = {
+                user: currentUser,
+                appData: data,
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                binId: userBinId
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `lab_tracker_backup_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            updateSyncStatus('online', 'Резервная копия создана');
+            showMessage('✅ Резервная копия создана', 'success');
+            
+            updateDebugPanel();
+        }
+        
+        function importBackupFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = async function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        if (importedData.user && importedData.appData) {
+                            if (confirm('Заменить текущие данные импортированными?')) {
+                                // Обновляем пользователя
+                                currentUser = importedData.user;
+                                localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
+                                
+                                // Если в бэкапе есть binId, используем его
+                                if (importedData.binId) {
+                                    userBinId = importedData.binId;
+                                    localStorage.setItem('lab_tracker_bin_id', importedData.binId);
+                                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, importedData.binId);
+                                }
+                                
+                                // Обновляем данные
+                                data = importedData.appData;
+                                
+                                // Сохраняем в облако
+                                if (userBinId) {
+                                    try {
+                                        await updateUserBin(userBinId, currentUser, data);
+                                        updateSyncStatus('online', 'Данные восстановлены в облако');
+                                    } catch (error) {
+                                        console.error('Не удалось сохранить в облако:', error);
+                                    }
+                                }
+                                
+                                // Сохраняем локально
+                                saveLocalData();
+                                
+                                // Обновляем интерфейс
+                                if (document.getElementById('mainContainer').style.display === 'block') {
+                                    updateUserDisplay(currentUser);
+                                    initEducationSelector();
+                                    renderSubjectsTable();
+                                    updateStats();
+                                } else {
+                                    showMainInterface();
+                                    initEducationSelector();
+                                    renderSubjectsTable();
+                                    updateStats();
+                                    updateUserDisplay(currentUser);
+                                }
+                                
+                                showMessage('✅ Данные успешно восстановлены', 'success');
+                                updateDebugPanel();
+                            }
+                        } else {
+                            showMessage('Файл имеет неверный формат', 'error');
+                        }
+                    } catch (error) {
+                        showMessage('Ошибка при чтении файла: ' + error.message, 'error');
+                        lastError = error.message;
+                        updateDebugPanel();
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function updateSyncStatus(status, text) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            if (syncStatus && syncIcon && syncText) {
+                syncText.textContent = text;
+                syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
+                syncStatus.style.display = 'flex';
+                
+                if (status !== 'offline') {
+                    setTimeout(() => {
+                        syncText.textContent = 'Синхронизировано';
+                        syncIcon.className = 'sync-icon sync-online';
+                    }, 3000);
+                }
+            }
+            
+            updateDebugPanel();
+        }
+        
+        function showMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '80px';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translateX(-50%)';
+            messageDiv.style.zIndex = '1001';
+            messageDiv.style.maxWidth = '90%';
+            messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+            
+            updateDebugPanel();
+        }
+        
+        // ========== VK ONETAP ИНИЦИАЛИЗАЦИЯ ==========
+        
+        function initVKOneTap() {
+            if ('VKIDSDK' in window) {
+                try {
+                    const VKID = window.VKIDSDK;
+                    
+                    VKID.Config.init({
+                        app: 54404407,
+                        redirectUrl: window.location.origin,
+                        responseMode: VKID.ConfigResponseMode.Callback,
+                        source: VKID.ConfigSource.LOWCODE,
+                        scope: 'email',
+                    });
+
+                    const oneTap = new VKID.OneTap();
+
+                    oneTap.render({
+                        container: document.getElementById('vkid-container'),
+                        scheme: 'dark',
+                        showAlternativeLogin: true,
+                        oauthList: [
+                            'mail_ru',
+                            'ok_ru'
+                        ]
+                    })
+                    .on(VKID.WidgetEvents.ERROR, function(error) {
+                        console.error('VK OneTap Error:', error);
+                        showVKButton();
+                    })
+                    .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function(payload) {
+                        console.log('VK OneTap Login Success:', payload);
+                        const code = payload.code;
+                        const deviceId = payload.device_id;
+
+                        try {
+                            const authData = await VKID.Auth.exchangeCode(code, deviceId);
+                            handleVKAuthSuccess(authData);
+                        } catch (error) {
+                            console.error('VK Auth exchange error:', error);
+                            showVKButton();
+                        }
+                    });
+                    
+                    console.log('✅ VK OneTap инициализирован');
+                    
+                } catch (error) {
+                    console.error('VK OneTap init error:', error);
+                    showVKButton();
+                }
+            } else {
+                console.log('VK SDK not loaded, showing fallback button');
+                showVKButton();
+            }
+            
+            updateDebugPanel();
+        }
+        
+        function showVKButton() {
+            document.getElementById('vkid-container').innerHTML = `
+                <button class="social-btn vk-btn" onclick="loginWithVKPopup()" style="margin-bottom: 15px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                        <path d="M13.162 18.994c.609 0 .858-.406.851-.915-.031-1.917.714-2.949 2.059-1.604 1.488 1.488 1.796 2.519 3.603 2.519 h3.2c.808 0 1.126-.26 1.126-.668 0-.863-1.421-2.386-2.625-3.504-1.686-1.565-1.765-1.602-.313-3.486 1.801-2.339 4.157-5.336 2.073-5.336h-3.981c-.772 0-.828.435-1.103 1.083-.995 2.347-2.987 5.387-3.732 4.922-.751-.465-.407-2.406-.35-5.261.015-.754.011-1.271-1.141-1.539-.629-.145-1.241-.205-1.809-.205-2.273 0-3.841.953-2.95 1.119 1.571.293 1.42 3.692 1.054 5.16-.638 2.556-3.036-2.024-4.035-4.305-.241-.548-.315-.974-1.175-.974h-3.255c-.492 0-.787.16-.787.516 0 .602 2.96 6.72 5.786 9.77 2.756 2.975 5.48 2.708 7.376 2.708z"/>
+                    </svg>
+                    Войти через ВКонтакте
+                </button>
+            `;
+            
+            updateDebugPanel();
+        }
+        
+        function loginWithVKPopup() {
+            const vkAppId = 54404407;
+            const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${vkAppId}&display=popup&redirect_uri=${redirectUri}&scope=email&response_type=token&v=5.199&state=lab_tracker`;
+            
+            const width = 600;
+            const height = 600;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            
+            const popup = window.open(vkAuthUrl, 'VK Auth', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+            
+            if (!popup) {
+                alert('Пожалуйста, разрешите всплывающие окна для этого сайта!');
+                return;
+            }
+            
+            const checkPopup = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopup);
+                    return;
+                }
+                
+                try {
+                    const popupUrl = popup.location.href;
+                    
+                    if (popupUrl.includes('access_token=')) {
+                        clearInterval(checkPopup);
+                        
+                        let hash;
+                        if (popupUrl.includes('#')) {
+                            hash = popupUrl.split('#')[1];
+                        } else if (popupUrl.includes('?')) {
+                            const urlParams = new URL(popupUrl).searchParams;
+                            const accessToken = urlParams.get('access_token');
+                            const userId = urlParams.get('user_id');
+                            const email = urlParams.get('email');
+                            
+                            if (accessToken && userId) {
+                                handleVKAuthSuccess({
+                                    access_token: accessToken,
+                                    user_id: userId,
+                                    email: email
+                                });
+                                popup.close();
+                                return;
+                            }
+                        }
+                        
+                        if (hash) {
+                            const params = new URLSearchParams(hash);
+                            const accessToken = params.get('access_token');
+                            const userId = params.get('user_id');
+                            const email = params.get('email');
+                            
+                            if (accessToken && userId) {
+                                handleVKAuthSuccess({
+                                    access_token: accessToken,
+                                    user_id: userId,
+                                    email: email
+                                });
+                                popup.close();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Игнорируем ошибки доступа
+                }
+            }, 500);
+            
+            updateDebugPanel();
+        }
+        
+        // ========== СИНХРОНИЗАЦИЯ ПРИ ВОССТАНОВЛЕНИИ СЕТИ ==========
+        
+        window.addEventListener('online', function() {
+            updateSyncStatus('online', 'Сеть восстановлена');
+            if (currentUser && userBinId) {
+                // Пробуем синхронизировать
+                saveDataToServer().then(success => {
+                    if (success) {
+                        showMessage('✅ Данные синхронизированы с облаком', 'success');
+                    }
+                });
+            }
+            updateDebugPanel();
+        });
+        
+        window.addEventListener('offline', function() {
+            updateSyncStatus('offline', 'Нет соединения');
+            showMessage('⚠️ Работаем в оффлайн режиме', 'warning');
+            updateDebugPanel();
+        });
+        
+        // ========== АВТОСОХРАНЕНИЕ ==========
+        
+        // Сохраняем при закрытии страницы
+        window.addEventListener('beforeunload', function() {
+            if (currentUser) {
+                autoSave();
+            }
+        });
+        
+        // Автосохранение каждые 30 секунд
+        setInterval(() => {
+            if (currentUser && data.subjects.length > 0) {
+                autoSave();
+            }
+        }, 30000);
+        
+        // ========== ГОТОВО! ==========
+        console.log('🚀 Трекер лабораторных работ загружен!');
+        console.log('🔑 API Key: JSONBin.io');
+        console.log('💾 Хранилище: Cloud + Local Backup');
+        console.log('🐛 Отладка: Включена (нажмите 🐛 в левом нижнем углу)');
+        
+    </script>
+</body>
+</html>
