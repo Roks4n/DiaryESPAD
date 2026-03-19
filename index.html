@@ -601,36 +601,6 @@
             background: #17a2b8;
         }
         
-        /* === ДИАГНОСТИКА === */
-        .debug-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            z-index: 999;
-            max-width: 300px;
-            display: none;
-        }
-        
-        .debug-toggle {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            z-index: 1000;
-            font-size: 1.2rem;
-        }
-        
         /* === АДАПТИВНОСТЬ === */
         @media (max-width: 768px) {
             .controls {
@@ -1087,13 +1057,11 @@
         function showLoginScreen() {
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('backupSection').style.display = 'block';
-            updateDebugPanel();
         }
         
         function showMainInterface() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
-            updateDebugPanel();
         }
         
         function updateUserDisplay(user) {
@@ -1110,8 +1078,6 @@
                 avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
                 avatarElement.style.display = 'block';
             }
-            
-            updateDebugPanel();
         }
         
         // ========== УПРАВЛЕНИЕ ОБРАЗОВАНИЯМИ ==========
@@ -1145,7 +1111,6 @@
                         renderSubjectsTable();
                         updateStats();
                         autoSave();
-                        updateDebugPanel();
                     }
                 });
                 
@@ -1153,7 +1118,6 @@
                 educationSelector.appendChild(buttonContainer);
             });
             
-            updateDebugPanel();
         }
         
         function showAddEducationModal() {
@@ -1187,7 +1151,6 @@
             updateSyncStatus('online', 'Образование добавлено');
             showMessage('✅ Образование добавлено успешно', 'success');
             
-            updateDebugPanel();
         }
         
         function deleteEducation(educationId, event) {
@@ -1218,7 +1181,6 @@
                 updateSyncStatus('online', 'Образование удалено');
                 showMessage('✅ Образование удалено', 'success');
                 
-                updateDebugPanel();
             }
         }
         
@@ -1271,7 +1233,6 @@
             updateSyncStatus('online', 'Предмет добавлен');
             showMessage('✅ Предмет добавлен успешно', 'success');
             
-            updateDebugPanel();
         }
         
         function renderSubjectsTable() {
@@ -1336,7 +1297,6 @@
                 subjectsBody.appendChild(row);
             });
             
-            updateDebugPanel();
         }
         
         function calculateDoneLabs(subject) {
@@ -1383,7 +1343,6 @@
                 updateSyncStatus('online', 'Лабораторная работа добавлена');
                 showMessage('✅ Лабораторная работа добавлена', 'success');
                 
-                updateDebugPanel();
             } else {
                 showMessage('Максимальное количество лабораторных работ: 50', 'error');
             }
@@ -1402,7 +1361,6 @@
                     updateSyncStatus('online', 'Предмет удален');
                     showMessage('✅ Предмет удален', 'success');
                     
-                    updateDebugPanel();
                 }
             }
         }
@@ -1427,7 +1385,6 @@
             
             document.getElementById('manageLabsModal').style.display = 'flex';
             
-            updateDebugPanel();
         }
         
         function renderLabsGrid(subject) {
@@ -1486,7 +1443,6 @@
                 labsGrid.appendChild(labItem);
             });
             
-            updateDebugPanel();
         }
         
         function toggleLabStatus(labNumber) {
@@ -1512,7 +1468,6 @@
             updateLabDisplay(subject);
             autoSave();
             
-            updateDebugPanel();
         }
         
         function updateLabGrade(labNumber, grade) {
@@ -1527,7 +1482,6 @@
             updateLabDisplay(subject);
             autoSave();
             
-            updateDebugPanel();
         }
         
         function updateLabDisplay(subject) {
@@ -1541,7 +1495,6 @@
             renderSubjectsTable();
             updateStats();
             
-            updateDebugPanel();
         }
         
         function markAllLabsAsDone() {
@@ -1560,7 +1513,6 @@
             updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
             showMessage('✅ Все лабораторные работы отмечены как выполненные', 'success');
             
-            updateDebugPanel();
         }
         
         function markAllLabsAsPassed() {
@@ -1579,7 +1531,6 @@
             updateSyncStatus('online', 'Все ЛР отмечены как сданные');
             showMessage('✅ Все лабораторные работы отмечены как сданные', 'success');
             
-            updateDebugPanel();
         }
         
         function clearAllLabMarks() {
@@ -1598,7 +1549,6 @@
             updateSyncStatus('online', 'Все отметки сброшены');
             showMessage('✅ Все отметки сброшены', 'success');
             
-            updateDebugPanel();
         }
         
         // ========== СТАТИСТИКА ==========
@@ -1666,7 +1616,6 @@
                 </div>
             `;
             
-            updateDebugPanel();
         }
         
         // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
@@ -1698,7 +1647,6 @@
             updateSyncStatus('online', 'Резервная копия создана');
             showMessage('✅ Резервная копия создана', 'success');
             
-            updateDebugPanel();
         }
         
         function importBackupFile() {
@@ -1759,7 +1707,6 @@
                                 }
                                 
                                 showMessage('✅ Данные успешно восстановлены', 'success');
-                                updateDebugPanel();
                             }
                         } else {
                             showMessage('Файл имеет неверный формат', 'error');
@@ -1767,7 +1714,6 @@
                     } catch (error) {
                         showMessage('Ошибка при чтении файла: ' + error.message, 'error');
                         lastError = error.message;
-                        updateDebugPanel();
                     }
                 };
                 
@@ -1801,7 +1747,6 @@
                 }
             }
             
-            updateDebugPanel();
         }
         
         function showMessage(text, type) {
@@ -1822,7 +1767,6 @@
                 messageDiv.remove();
             }, 5000);
             
-            updateDebugPanel();
         }
         
         // ========== СИНХРОНИЗАЦИЯ ПРИ ВОССТАНОВЛЕНИИ СЕТИ ==========
@@ -1837,13 +1781,11 @@
                     }
                 });
             }
-            updateDebugPanel();
         });
         
         window.addEventListener('offline', function() {
             updateSyncStatus('offline', 'Нет соединения');
             showMessage('⚠️ Работаем в оффлайн режиме', 'warning');
-            updateDebugPanel();
         });
         
         // ========== АВТОСОХРАНЕНИЕ ==========
