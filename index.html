@@ -919,11 +919,51 @@
             });
         });
 
-        async function initUserSession() {
+           async function initUserSession() {
             document.getElementById('loadingOverlay').style.display = 'flex';
             try {
                 document.getElementById('displayName').textContent = currentUser.email.split('@')[0];
                 
+                // Пробуем загрузить данные
+                const { data: dbData, error } = await supabase
+                    .from('user_data')
+                    .select('state_json')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        console.log("Запись не найдена, создаем новую...");
+                        const { error: insertError } = await supabase
+                            .from('user_data')
+                            .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
+                            
+                        if (insertError) {
+                            console.error("Ошибка при создании записи:", insertError);
+                        }
+                    } else {
+                        console.error("Ошибка при чтении БД:", error);
+                    }
+                } else if (dbData && dbData.state_json) {
+                    data = JSON.parse(dbData.state_json);
+                }
+                
+                showMainInterface();
+                initEducationSelector();
+                renderSubjectsTable();
+                updateStats();
+                updateSyncStatus('online', 'Синхронизировано');
+                
+            } catch (error) {
+                console.error('Критическая ошибка инициализации:', error);
+                showMainInterface();
+                initEducationSelector();
+                renderSubjectsTable();
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
                 // Пробуем загрузить данные
                 const { data: dbData, error } = await supabase
                     .from('user_data')
