@@ -1045,14 +1045,6 @@
             if (error) console.error("Ошибка создания БД:", error);
         }
 
-        async function loadDataFromSupabase() {
-            const { data: dbData, error } = await supabase
-                .from('user_data')
-                .select('state_json')
-                .eq('id', currentUser.id)
-                .single();
-
-            if (error) {
                 // Если запись не найдена, создаем её
                 if (error.code === 'PGRST116') {
                     await createInitialDbRecord(currentUser.id);
