@@ -1057,8 +1057,15 @@
 
                 sb.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session?.user) {
-                        currentUser = session.user;
-                        await initUserSession();
+                        // Только если это новый вход (пользователь поменялся или еще не загружен)
+                        if (!currentUser || currentUser.id !== session.user.id) {
+                            currentUser = session.user;
+                            await initUserSession();
+                        } else {
+                            // Если пользователь тот же (например, мы просто вернулись во вкладку и токен обновился),
+                            // мы не перезапускаем весь интерфейс и не показываем экран загрузки.
+                            currentUser = session.user;
+                        }
                     } else if (event === 'SIGNED_OUT') {
                         currentUser = null;
                         data = getDefaultData();
