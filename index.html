@@ -1047,11 +1047,9 @@
 
                 if (error) {
                     console.error('Ошибка чтения БД:', error);
-                    // Грузим локально если упала БД
                     const local = loadLocalData(currentUser.id);
                     data = local ? normalizeData(local) : getDefaultData();
                 } else if (!dbData) {
-                    // Строка вообще не найдена в Supabase
                     const local = loadLocalData(currentUser.id);
                     data = local ? normalizeData(local) : getDefaultData();
 
@@ -1061,7 +1059,7 @@
                     }
                 } else if (dbData.state_json) {
                     data = safeParseState(dbData.state_json);
-                    saveLocalData(); // Дублируем свежие облачные данные локально
+                    saveLocalData(); 
                 } else {
                     data = getDefaultData();
                 }
@@ -1166,21 +1164,36 @@
             }
         }
 
+        // ==========================================
+        // НОВЫЕ ФУНКЦИИ ЗАПИСИ (С ДИАГНОСТИКОЙ)
+        // ==========================================
         async function createInitialDbRecord(userId) {
             try {
-                const { error } = await sb
+                console.log('Попытка INSERT...');
+                const { data: insertedRow, error } = await sb
                     .from('user_data')
-                    .insert([{ id: userId, state_json: JSON.stringify(data) }]);
+                    .insert([{ id: userId, state_json: JSON.stringify(data) }])
+                    .select('id')
+                    .maybeSingle();
 
                 if (error) {
                     console.error('Ошибка создания записи БД:', error);
+                    updateSyncStatus('offline', 'INSERT ошибка (см. консоль)');
+                    return false;
+                }
+
+                if (!insertedRow) {
+                    console.error('INSERT выполнен без ошибок, но СТРОКА НЕ ВЕРНУЛАСЬ. Это значит, что политика RLS заблокировала запись!');
+                    updateSyncStatus('offline', 'RLS блокирует INSERT');
                     return false;
                 }
 
                 saveLocalData();
+                updateSyncStatus('online', 'Запись создана в облаке');
                 return true;
             } catch (error) {
                 console.error('Ошибка createInitialDbRecord:', error);
+                updateSyncStatus('offline', 'Исключение при INSERT');
                 return false;
             }
         }
@@ -1188,45 +1201,83 @@
         async function saveDataToServer() {
             if (!currentUser) return false;
 
-            saveLocalData(); // Всегда сохраняем в localStorage перед отправкой в облако
-            updateSyncStatus('online', 'Сохранение...');
+            saveLocalData(); // Обязательно сохраняем локально, чтобы не потерять
+            updateSyncStatus('online', 'Сохранение в облако...');
 
             try {
-                const { data: existsRow, error: existsError } = await sb
+                // Получаем свежего юзера из auth (на случай протухшего токена)
+                const { data: sessionInfo } = await sb.auth.getUser();
+                
+                if (!sessionInfo?.user?.id) {
+                    console.error('Нет активного auth user в момент сохранения');
+                    updateSyncStatus('offline', 'Нет активной сессии');
+                    return false;
+                }
+
+                const userId = sessionInfo.user.id;
+
+                const { data: existingRow, error: selectError } = await sb
                     .from('user_data')
                     .select('id')
-                    .eq('id', currentUser.id)
+                    .eq('id', userId)
                     .maybeSingle();
 
-                if (existsError) {
-                    console.error('Ошибка проверки записи:', existsError);
-                    updateSyncStatus('offline', 'Ошибка сохранения');
+                if (selectError) {
+                    console.error('Ошибка проверки записи:', selectError);
+                    updateSyncStatus('offline', 'Ошибка SELECT');
                     return false;
                 }
 
-                let result;
-                if (!existsRow) {
-                    result = await sb
+                if (!existingRow) {
+                    console.log('Строка не найдена, пытаемся сделать INSERT...');
+                    const { data: insertedRow, error: insertError } = await sb
                         .from('user_data')
-                        .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
-                } else {
-                    result = await sb
-                        .from('user_data')
-                        .update({ state_json: JSON.stringify(data) })
-                        .eq('id', currentUser.id);
+                        .insert([{ id: userId, state_json: JSON.stringify(data) }])
+                        .select('id')
+                        .maybeSingle();
+
+                    if (insertError) {
+                        console.error('Ошибка INSERT:', insertError);
+                        updateSyncStatus('offline', 'Ошибка INSERT');
+                        return false;
+                    }
+
+                    if (!insertedRow) {
+                        console.error('INSERT не вернул строку! Данные не записаны из-за RLS.');
+                        updateSyncStatus('offline', 'RLS блокирует INSERT');
+                        return false;
+                    }
+
+                    updateSyncStatus('online', 'Синхронизировано');
+                    return true;
                 }
 
-                if (result.error) {
-                    console.error('Ошибка сохранения:', result.error);
-                    updateSyncStatus('offline', 'Ошибка сохранения (временно сохранено локально)');
+                console.log('Строка найдена, пытаемся сделать UPDATE...');
+                const { data: updatedRow, error: updateError } = await sb
+                    .from('user_data')
+                    .update({ state_json: JSON.stringify(data) })
+                    .eq('id', userId)
+                    .select('id')
+                    .maybeSingle();
+
+                if (updateError) {
+                    console.error('Ошибка UPDATE:', updateError);
+                    updateSyncStatus('offline', 'Ошибка UPDATE');
                     return false;
                 }
 
+                if (!updatedRow) {
+                    console.error('UPDATE не изменил ни одной строки! Данные не сохранены из-за RLS.');
+                    updateSyncStatus('offline', 'UPDATE = 0 строк (RLS)');
+                    return false;
+                }
+
+                console.log('Данные успешно сохранены в БД.');
                 updateSyncStatus('online', 'Синхронизировано');
                 return true;
             } catch (error) {
-                console.error('Ошибка сохранения:', error);
-                updateSyncStatus('offline', 'Ошибка сохранения (временно сохранено локально)');
+                console.error('Общая ошибка сохранения:', error);
+                updateSyncStatus('offline', 'Сбой сохранения (сохранено локально)');
                 return false;
             }
         }
@@ -1309,7 +1360,6 @@
             updateStats();
             autoSave();
 
-            updateSyncStatus('online', 'Образование добавлено');
             showMessage('✅ Образование добавлено успешно', 'success');
         }
 
@@ -1337,7 +1387,6 @@
             updateStats();
             autoSave();
 
-            updateSyncStatus('online', 'Образование удалено');
             showMessage('✅ Образование удалено', 'success');
         }
 
@@ -1386,7 +1435,6 @@
             updateStats();
             autoSave();
 
-            updateSyncStatus('online', 'Предмет добавлен');
             showMessage('✅ Предмет добавлен успешно', 'success');
         }
 
@@ -1506,7 +1554,6 @@
             updateStats();
             autoSave();
 
-            updateSyncStatus('online', 'Лабораторная работа добавлена');
             showMessage('✅ Лабораторная работа добавлена', 'success');
         }
 
@@ -1522,7 +1569,6 @@
             updateStats();
             autoSave();
 
-            updateSyncStatus('online', 'Предмет удален');
             showMessage('✅ Предмет удален', 'success');
         }
 
@@ -1647,8 +1693,6 @@
 
             updateLabDisplay(subject);
             autoSave();
-
-            updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
             showMessage('✅ Все лабораторные работы отмечены как выполненные', 'success');
         }
 
@@ -1666,8 +1710,6 @@
 
             updateLabDisplay(subject);
             autoSave();
-
-            updateSyncStatus('online', 'Все ЛР отмечены как сданные');
             showMessage('✅ Все лабораторные работы отмечены как сданные', 'success');
         }
 
@@ -1685,8 +1727,6 @@
 
             updateLabDisplay(subject);
             autoSave();
-
-            updateSyncStatus('online', 'Все отметки сброшены');
             showMessage('✅ Все отметки сброшены', 'success');
         }
 
@@ -1762,7 +1802,6 @@
             link.setAttribute('download', fileName);
             link.click();
 
-            updateSyncStatus('online', 'Резервная копия создана');
             showMessage('✅ Резервная копия создана', 'success');
         }
 
