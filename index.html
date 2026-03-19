@@ -862,11 +862,11 @@
         
         <!-- VK OneTap Widget -->
         
-<button class="social-btn vk-btn" onclick="loginWithVK()">
+<button class="social-btn" style="background: #fc3f1d; color: white;" onclick="loginWithYandex()">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-        <path d="M15.077 7.234c.154-.51.018-.89-.7-.89h-2.31c-.596 0-.877.315-1.016.666 0 0-1.173 2.858-2.83 4.708-.538.538-.782.706-1.08.706-.15 0-.38-.168-.38-.646V7.234c0-.613-.177-.89-.693-.89H4.34c-.38 0-.61.282-.61.547 0 .567.848.697.933 2.29v3.453c0 .776-.14.914-.44.914-.8 0-2.75-2.875-3.904-6.173-.23-.62-.464-.89-1.066-.89H-3.05c-.687 0-.825.315-.825.666 0 .633.824 3.827 3.84 8.046 2.01 2.873 4.84 4.437 7.41 4.437 1.54 0 1.73-.346 1.73-.94v-2.17c0-.687.145-.823.63-.823.36 0 .984.18 2.43 1.565 1.65 1.65 1.92 2.368 2.837 2.368h2.31c.688 0 .344-.688-.165-1.192-.416-.416-.957-1.004-1.745-1.884-.89-1.006-1.068-1.284-.63-1.792.002 0 1.156-1.636 1.744-2.618z"/>
+        <path d="M12.63 2H9.25L4 14.54h3.19l1.1-2.73h5.45l1.1 2.73h3.18L12.63 2zm-3 8l1.83-4.5h.04L13.33 10H9.63z"/>
     </svg>
-    Вход через ВКонтакте
+    Вход через Яндекс
 </button>
 
         
@@ -1043,8 +1043,8 @@
         // ========== НАСТРОЙКИ APPWRITE ==========
         const { Client, Account, Databases, ID, Permission, Role } = Appwrite;
 
-        // ЗАМЕНИТЕ ЭТИ ЗНАЧЕНИЯ НА СВОИ ИЗ ПАНЕЛИ APPWRITE
-        const APPWRITE_PROJECT_ID = '69bbbf84002bd5bfcf09';
+        // ВАЖНО: ВСТАВЬТЕ СЮДА ВАШ PROJECT ID ИЗ APPWRITE
+        const APPWRITE_PROJECT_ID = '69bbbf84002bd5bfcf09'; 
         const APPWRITE_DB_ID = 'tracker_db';
         const APPWRITE_COL_ID = 'user_data';
 
@@ -1115,13 +1115,17 @@
             document.getElementById('debugError').textContent = lastError || 'нет';
         }
 
-        // ========== АВТОРИЗАЦИЯ APPWRITE ==========
-        function loginWithVK() {
+        // ========== АВТОРИЗАЦИЯ APPWRITE (ЯНДЕКС) ==========
+        function loginWithYandex() {
             document.getElementById('loadingOverlay').style.display = 'flex';
+
+            // Ваш точный адрес на GitHub Pages
+            const redirectUrl = 'https://roks4n.github.io/DiaryESPAD/'; 
+
             account.createOAuth2Session(
-                'vk', 
-                window.location.href, 
-                window.location.href
+                'yandex', 
+                redirectUrl, 
+                redirectUrl  
             );
         }
 
@@ -1228,7 +1232,7 @@
             localStorage.setItem('lab_tracker_data', JSON.stringify(data));
         }
 
-        // Функция-заглушка для совместимости с существующим кодом (там вызывается autoSave)
+        // Функция-заглушка для совместимости с вашим существующим кодом 
         function saveDataToServer() {
             autoSave();
         }
