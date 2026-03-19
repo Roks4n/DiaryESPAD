@@ -4,22 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трекер лабораторных работ</title>
-    
+
     <style>
-        /* === ОСНОВНЫЕ СТИЛИ === */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -29,7 +28,7 @@
             overflow: hidden;
             display: none;
         }
-        
+
         .login-container {
             max-width: 500px;
             margin: 50px auto;
@@ -39,20 +38,19 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             text-align: center;
         }
-        
+
         .login-title {
             color: #667eea;
             margin-bottom: 10px;
             font-size: 2rem;
         }
-        
+
         .login-subtitle {
             color: #6c757d;
             margin-bottom: 30px;
             font-size: 1rem;
         }
-        
-        /* === ОСНОВНОЙ ИНТЕРФЕЙС === */
+
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -60,7 +58,7 @@
             text-align: center;
             position: relative;
         }
-        
+
         .user-info {
             position: absolute;
             top: 20px;
@@ -69,7 +67,7 @@
             align-items: center;
             gap: 15px;
         }
-        
+
         .username-display {
             background: rgba(255, 255, 255, 0.2);
             padding: 8px 15px;
@@ -80,7 +78,7 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .user-avatar {
             width: 24px;
             height: 24px;
@@ -88,8 +86,9 @@
             object-fit: cover;
             background: white;
             padding: 2px;
+            display: none;
         }
-        
+
         .logout-btn {
             background: rgba(255, 255, 255, 0.2);
             border: none;
@@ -101,27 +100,27 @@
             backdrop-filter: blur(10px);
             transition: background 0.3s ease;
         }
-        
+
         .logout-btn:hover {
             background: rgba(255, 255, 255, 0.3);
         }
-        
+
         h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
         }
-        
+
         .subtitle {
             font-size: 1.1rem;
             opacity: 0.9;
         }
-        
+
         .welcome-message {
             margin-top: 10px;
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
-        
+
         .controls {
             padding: 20px;
             background: #f8f9fa;
@@ -131,13 +130,13 @@
             gap: 15px;
             align-items: center;
         }
-        
+
         .education-selector {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        
+
         .education-btn {
             padding: 10px 20px;
             border: none;
@@ -151,40 +150,39 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .education-btn.active {
             background: #667eea;
             color: white;
             transform: scale(1.05);
         }
-        
+
         .education-btn:hover:not(.active) {
             background: #dee2e6;
         }
-        
-        /* СТИЛИ ДЛЯ КНОПКИ УДАЛЕНИЯ ОБРАЗОВАНИЯ */
+
         .delete-education-btn {
             background: none;
             border: none;
             color: #dc3545;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             padding: 0;
             width: 20px;
             height: 20px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            opacity: 0.7;
+            opacity: 0.8;
             transition: all 0.2s ease;
         }
-        
+
         .delete-education-btn:hover {
             opacity: 1;
             background: rgba(220, 53, 69, 0.1);
         }
-        
+
         .add-btn {
             padding: 10px 20px;
             background: #28a745;
@@ -195,32 +193,26 @@
             font-weight: 600;
             transition: background 0.3s ease;
         }
-        
+
         .add-btn:hover {
             background: #218838;
         }
-        
-        .education-btn.add-education {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        /* === ТАБЛИЦА ПРЕДМЕТОВ === */
+
         .table-container {
             padding: 20px;
             overflow-x: auto;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
             min-width: 800px;
         }
-        
+
         thead {
             background: #f8f9fa;
         }
-        
+
         th {
             padding: 15px;
             text-align: left;
@@ -228,27 +220,27 @@
             font-weight: 600;
             color: #495057;
         }
-        
+
         td {
             padding: 15px;
             border-bottom: 1px solid #e0e0e0;
             vertical-align: middle;
         }
-        
+
         tr.completed {
             background-color: #f8f9fa;
         }
-        
+
         .subject-name {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
-        
+
         .lab-count {
             font-weight: 600;
             color: #667eea;
         }
-        
+
         .status-badge {
             display: inline-block;
             padding: 5px 12px;
@@ -256,28 +248,28 @@
             font-size: 0.85rem;
             font-weight: 600;
         }
-        
+
         .status-pending {
             background: #fff3cd;
             color: #856404;
         }
-        
+
         .status-done {
             background: #d1ecf1;
             color: #0c5460;
         }
-        
+
         .status-passed {
             background: #d4edda;
             color: #155724;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
-        
+
         .action-btn {
             padding: 8px 12px;
             border: none;
@@ -287,65 +279,66 @@
             transition: all 0.2s ease;
             white-space: nowrap;
         }
-        
+
         .manage-labs-btn {
             background: #6f42c1;
             color: white;
         }
-        
+
         .manage-labs-btn:hover {
             background: #5a32a3;
         }
-        
+
         .lab-btn {
             background: #6c757d;
             color: white;
         }
-        
+
         .lab-btn:hover {
             background: #545b62;
         }
-        
+
         .delete-btn {
             background: #dc3545;
             color: white;
         }
-        
+
         .delete-btn:hover {
             background: #c82333;
         }
-        
-        /* === СТАТИСТИКА === */
+
         .stats {
             display: flex;
             justify-content: space-between;
             padding: 20px;
             background: #f8f9fa;
             border-top: 1px solid #e0e0e0;
+            gap: 15px;
+            flex-wrap: wrap;
         }
-        
+
         .stat-item {
             text-align: center;
+            flex: 1;
+            min-width: 140px;
         }
-        
+
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
             color: #667eea;
         }
-        
+
         .stat-label {
             font-size: 0.9rem;
             color: #6c757d;
             margin-top: 5px;
         }
-        
-        /* === МОДАЛЬНЫЕ ОКНА === */
+
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.5);
@@ -355,34 +348,34 @@
             overflow-y: auto;
             padding: 20px;
         }
-        
+
         .modal-content {
             background: white;
             padding: 30px;
             border-radius: 10px;
             width: 90%;
-            max-width: 500px;
+            max-width: 540px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             max-height: 90vh;
             overflow-y: auto;
         }
-        
+
         .modal h2 {
             margin-bottom: 20px;
             color: #495057;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #495057;
         }
-        
+
         .form-group input {
             width: 100%;
             padding: 12px;
@@ -390,14 +383,15 @@
             border-radius: 5px;
             font-size: 1rem;
         }
-        
+
         .modal-buttons {
             display: flex;
             gap: 10px;
             justify-content: flex-end;
             margin-top: 30px;
+            flex-wrap: wrap;
         }
-        
+
         .save-btn {
             padding: 10px 20px;
             background: #667eea;
@@ -407,7 +401,7 @@
             cursor: pointer;
             font-weight: 600;
         }
-        
+
         .cancel-btn {
             padding: 10px 20px;
             background: #6c757d;
@@ -417,15 +411,14 @@
             cursor: pointer;
             font-weight: 600;
         }
-        
-        /* === УПРАВЛЕНИЕ ЛАБОРАТОРНЫМИ === */
+
         .labs-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
             gap: 10px;
             margin-top: 20px;
         }
-        
+
         .lab-item {
             display: flex;
             flex-direction: column;
@@ -436,41 +429,43 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
+            background: #fff;
         }
-        
+
         .lab-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        
+
         .lab-number {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 5px;
         }
-        
+
         .lab-status {
             font-size: 0.8rem;
             padding: 3px 8px;
             border-radius: 10px;
             font-weight: 600;
+            text-align: center;
         }
-        
+
         .lab-not-done {
             background: #f8f9fa;
             color: #6c757d;
         }
-        
+
         .lab-done {
             background: #d1ecf1;
             color: #0c5460;
         }
-        
+
         .lab-passed {
             background: #d4edda;
             color: #155724;
         }
-        
+
         .grade-selector {
             margin-top: 8px;
             width: 100%;
@@ -479,13 +474,14 @@
             border-radius: 5px;
             font-size: 0.8rem;
             text-align: center;
+            cursor: pointer;
         }
-        
+
         .grade-5 { background: #d4edda; color: #155724; }
         .grade-4 { background: #fff3cd; color: #856404; }
         .grade-3 { background: #f8d7da; color: #721c24; }
         .grade-2 { background: #dc3545; color: white; }
-        
+
         .subject-info-header {
             background: #f8f9fa;
             padding: 15px;
@@ -493,35 +489,35 @@
             margin-bottom: 20px;
             border-left: 4px solid #667eea;
         }
-        
+
         .subject-info-title {
             font-weight: 600;
             color: #495057;
             font-size: 1.2rem;
         }
-        
+
         .subject-info-details {
             display: flex;
             gap: 20px;
             margin-top: 10px;
             flex-wrap: wrap;
         }
-        
+
         .subject-info-item {
             display: flex;
             flex-direction: column;
         }
-        
+
         .subject-info-label {
             font-size: 0.85rem;
             color: #6c757d;
         }
-        
+
         .subject-info-value {
             font-weight: 600;
             color: #495057;
         }
-        
+
         .status-controls {
             display: flex;
             gap: 10px;
@@ -529,35 +525,22 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .status-control-btn {
             padding: 8px 16px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-weight: 600;
-            background: #6c757d;
             color: white;
         }
-        
-        .status-control-btn:hover {
-            opacity: 0.9;
-        }
-        
-        .mark-all-done {
-            background: #17a2b8;
-        }
-        
-        .mark-all-passed {
-            background: #28a745;
-        }
-        
-        .clear-all {
-            background: #dc3545;
-        }
-        
+
+        .mark-all-done { background: #17a2b8; }
+        .mark-all-passed { background: #28a745; }
+        .clear-all { background: #dc3545; }
+
         .average-grade {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: #667eea;
             margin-top: 10px;
@@ -566,16 +549,15 @@
             background: #f8f9fa;
             border-radius: 8px;
         }
-        
-        /* === БЭКАП === */
+
         .backup-section {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
-            margin-top: 20px;
+            margin: 20px;
             text-align: center;
         }
-        
+
         .backup-buttons {
             display: flex;
             gap: 10px;
@@ -583,7 +565,7 @@
             margin-top: 15px;
             flex-wrap: wrap;
         }
-        
+
         .backup-btn {
             padding: 10px 20px;
             border: none;
@@ -592,58 +574,23 @@
             font-weight: 600;
             color: white;
         }
-        
-        .export-btn {
-            background: #28a745;
-        }
-        
-        .import-btn {
-            background: #17a2b8;
-        }
-        
-        /* === АДАПТИВНОСТЬ === */
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .add-btn {
-                margin-left: 0;
-                margin-top: 10px;
-            }
-            
-            .stats {
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .user-info {
-                position: static;
-                justify-content: center;
-                margin-top: 15px;
-            }
-            
-            .social-buttons {
-                flex-direction: column;
-            }
-        }
-        
-        /* === ЗАГРУЗКА === */
+
+        .export-btn { background: #28a745; }
+        .import-btn { background: #17a2b8; }
+
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 2000;
         }
-        
+
         .spinner {
             width: 50px;
             height: 50px;
@@ -653,81 +600,131 @@
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* === Стили для сообщений === */
+
+        .sync-status {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            color: #495057;
+            padding: 10px 16px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1500;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .sync-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .sync-online {
+            background: #28a745;
+        }
+
+        .sync-offline {
+            background: #dc3545;
+        }
+
         .message {
             padding: 12px 16px;
             border-radius: 8px;
-            margin: 10px 0;
             font-size: 0.9rem;
         }
-        
+
         .error-message {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        
+
         .success-message {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        
+
         .warning-message {
             background: #fff3cd;
             color: #856404;
             border: 1px solid #ffeaa7;
         }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+
+            .user-info {
+                position: static;
+                justify-content: center;
+                margin-bottom: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Экран загрузки -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
         <div>Загрузка приложения...</div>
     </div>
-    
-    <!-- Статус синхронизации -->
-    <div class="sync-status" id="syncStatus" style="display: none;">
+
+    <div class="sync-status" id="syncStatus">
         <div class="sync-icon sync-online" id="syncIcon"></div>
-        <span id="syncText">Локальный режим</span>
+        <span id="syncText">Синхронизировано</span>
     </div>
-    
-    <!-- Экран входа -->
-    <div class="login-container" id="loginContainer">
+
+    <div class="login-container" id="loginContainer" style="display:none;">
         <h2 class="login-title">Трекер лабораторных работ</h2>
         <p class="login-subtitle">Версия для работы без VPN в России</p>
-        
-        <!-- Форма входа Supabase -->
+
         <div id="auth-form" style="margin-top: 20px; text-align: left;">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #495057; font-weight: 600;">Email</label>
-                <input type="email" id="authEmail" style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1rem;" placeholder="student@example.com">
+                <label style="display:block; margin-bottom:5px; color:#495057; font-weight:600;">Email</label>
+                <input type="email" id="authEmail" style="width:100%; padding:12px; border:1px solid #ced4da; border-radius:5px; font-size:1rem;" placeholder="student@example.com">
             </div>
+
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 5px; color: #495057; font-weight: 600;">Пароль</label>
-                <input type="password" id="authPassword" style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1rem;" placeholder="Минимум 6 символов">
+                <label style="display:block; margin-bottom:5px; color:#495057; font-weight:600;">Пароль</label>
+                <input type="password" id="authPassword" style="width:100%; padding:12px; border:1px solid #ced4da; border-radius:5px; font-size:1rem;" placeholder="Минимум 6 символов">
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="handleLogin()" style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Войти</button>
-                <button onclick="handleSignup()" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Регистрация</button>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="handleLogin()" style="flex:1; padding:12px; background:#667eea; color:white; border:none; border-radius:5px; font-weight:600; cursor:pointer;">Войти</button>
+                <button onclick="handleSignup()" style="flex:1; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:600; cursor:pointer;">Регистрация</button>
             </div>
-            <div id="authError" style="color: #dc3545; margin-top: 15px; text-align: center; font-size: 0.9rem;"></div>
+
+            <div id="authError" style="color:#dc3545; margin-top:15px; text-align:center; font-size:0.9rem;"></div>
         </div>
 
-        
-        
-        
-        <!-- Секция бэкапа -->
-        <div class="backup-section" id="backupSection" style="display: none;">
+        <div class="backup-section" id="backupSection" style="display:none; margin:20px 0 0 0;">
             <h4>💾 Восстановление данных</h4>
-            <p style="font-size: 0.9rem; color: #6c757d; margin: 10px 0;">
+            <p style="font-size:0.9rem; color:#6c757d; margin:10px 0;">
                 У вас есть сохраненные данные? Импортируйте их:
             </p>
             <div class="backup-buttons">
@@ -735,31 +732,28 @@
             </div>
         </div>
     </div>
-    
-    <!-- Основной интерфейс -->
+
     <div class="container" id="mainContainer">
         <header>
             <div class="user-info">
-                <div class="username-display" id="currentUsername">
-                    <img src="" alt="Аватар" class="user-avatar" id="userAvatar" style="display: none;">
+                <div class="username-display">
+                    <img src="" alt="Аватар" class="user-avatar" id="userAvatar">
                     <span id="displayName"></span>
                 </div>
-                <button class="logout-btn" id="logoutBtn" onclick="logoutUser()">Выйти</button>
+                <button class="logout-btn" onclick="logoutUser()">Выйти</button>
             </div>
+
             <h1>Трекер лабораторных работ</h1>
             <p class="subtitle">Данные сохраняются в облаке и доступны с любого устройства</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
-        
+
         <div class="controls">
-            <!-- Кнопки выбора образования с кнопками удаления -->
-            <div class="education-selector" id="educationSelector">
-                <!-- Образования будут добавлены через JS -->
-            </div>
-            <button class="add-btn" id="addSubjectBtn" onclick="showAddSubjectModal()">+ Добавить предмет</button>
-            <button class="add-btn" style="background: #17a2b8;" onclick="showAddEducationModal()">+ Добавить образование</button>
+            <div class="education-selector" id="educationSelector"></div>
+            <button class="add-btn" onclick="showAddSubjectModal()">+ Добавить предмет</button>
+            <button class="add-btn" style="background:#17a2b8;" onclick="showAddEducationModal()">+ Добавить образование</button>
         </div>
-        
+
         <div class="table-container">
             <table id="subjectsTable">
                 <thead>
@@ -772,42 +766,38 @@
                         <th width="15%">Действия</th>
                     </tr>
                 </thead>
-                <tbody id="subjectsBody">
-                    <!-- Данные будут добавлены через JS -->
-                </tbody>
+                <tbody id="subjectsBody"></tbody>
             </table>
         </div>
-        
-        <!-- Секция бэкапа в основном интерфейсе -->
+
         <div class="backup-section">
             <h4>💾 Резервное копирование</h4>
-            <p style="font-size: 0.9rem; color: #6c757d; margin: 10px 0;">
-                Экспортируйте данные, чтобы не потерять при очистке браузера
+            <p style="font-size:0.9rem; color:#6c757d; margin:10px 0;">
+                Экспортируйте данные, чтобы не потерять их при очистке браузера
             </p>
             <div class="backup-buttons">
                 <button class="backup-btn export-btn" onclick="exportBackup()">📥 Экспорт данных</button>
                 <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт данных</button>
             </div>
         </div>
-        
-        <div class="stats" id="stats">
-            <!-- Статистика будет обновляться через JS -->
-        </div>
+
+        <div class="stats" id="stats"></div>
     </div>
-    
-    <!-- Модальные окна -->
+
     <div class="modal" id="addSubjectModal">
         <div class="modal-content">
             <h2>Добавить новый предмет</h2>
-            <form id="subjectForm" onsubmit="addNewSubject(event)">
+            <form onsubmit="addNewSubject(event)">
                 <div class="form-group">
                     <label for="subjectName">Название предмета</label>
                     <input type="text" id="subjectName" required>
                 </div>
+
                 <div class="form-group">
                     <label for="totalLabs">Количество лабораторных работ</label>
                     <input type="number" id="totalLabs" min="1" max="50" required>
                 </div>
+
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeModal('addSubjectModal')">Отмена</button>
                     <button type="submit" class="save-btn">Сохранить</button>
@@ -815,15 +805,16 @@
             </form>
         </div>
     </div>
-    
+
     <div class="modal" id="addEducationModal">
         <div class="modal-content">
             <h2>Добавить новое образование</h2>
-            <form id="educationForm" onsubmit="addNewEducation(event)">
+            <form onsubmit="addNewEducation(event)">
                 <div class="form-group">
                     <label for="educationName">Название образования</label>
                     <input type="text" id="educationName" placeholder="Например: Бакалавриат, Магистратура" required>
                 </div>
+
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeModal('addEducationModal')">Отмена</button>
                     <button type="submit" class="save-btn">Сохранить</button>
@@ -831,10 +822,11 @@
             </form>
         </div>
     </div>
-    
+
     <div class="modal" id="manageLabsModal">
         <div class="modal-content">
             <h2>Управление лабораторными работами</h2>
+
             <div class="subject-info-header">
                 <div class="subject-info-title" id="currentSubjectName"></div>
                 <div class="subject-info-details">
@@ -852,426 +844,473 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="labs-grid" id="labsGrid">
-                <!-- Лабораторные работы будут добавлены через JS -->
-            </div>
-            
+
+            <div class="labs-grid" id="labsGrid"></div>
+
             <div class="status-controls">
                 <button class="status-control-btn mark-all-done" onclick="markAllLabsAsDone()">Отметить все как выполненные</button>
                 <button class="status-control-btn mark-all-passed" onclick="markAllLabsAsPassed()">Отметить все как сданные</button>
                 <button class="status-control-btn clear-all" onclick="clearAllLabMarks()">Сбросить все отметки</button>
             </div>
-            
-            <div class="average-grade" id="averageGradeSection">
+
+            <div class="average-grade">
                 Средний балл: <span id="averageGradeValue">0</span>
             </div>
-            
+
             <div class="modal-buttons">
                 <button type="button" class="cancel-btn" onclick="closeModal('manageLabsModal')">Закрыть</button>
             </div>
         </div>
     </div>
 
-    <!--  OneTap SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script nonce="csp_nonce" type="text/javascript">
-        // ========== НАСТРОЙКИ SUPABASE ==========
+    <script>
         const SUPABASE_URL = 'https://sxiwtcsrwrmqvpavokss.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_FA1cnR2WHBE2_fTDZXMQbQ_1y-Ri6zO';
-        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let currentUser = null;
-        let data = {
-            educations: [
-                { id: 1, name: "Бакалавриат" }
-            ],
-            currentEducationId: 1,
-            subjects: []
-        };
         let currentSubjectId = null;
 
-        // ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
-        document.addEventListener('DOMContentLoaded', async function() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+        let data = getDefaultData();
 
-            // Проверяем текущую сессию
-            const { data: { session }, error } = await supabase.auth.getSession();
+        function getDefaultData() {
+            return {
+                educations: [
+                    { id: 1, name: 'Бакалавриат' }
+                ],
+                currentEducationId: 1,
+                subjects: []
+            };
+        }
 
-            if (session) {
-                currentUser = session.user;
-                await initUserSession();
-            } else {
-                showLoginScreen();
-                document.getElementById('loadingOverlay').style.display = 'none';
+        function normalizeData(raw) {
+            const fallback = getDefaultData();
+            if (!raw || typeof raw !== 'object') return fallback;
+
+            const normalized = {
+                educations: Array.isArray(raw.educations) && raw.educations.length
+                    ? raw.educations.map((e, index) => ({
+                        id: Number.isFinite(Number(e.id)) ? Number(e.id) : index + 1,
+                        name: String(e.name || `Образование ${index + 1}`)
+                    }))
+                    : fallback.educations,
+                currentEducationId: Number.isFinite(Number(raw.currentEducationId))
+                    ? Number(raw.currentEducationId)
+                    : fallback.currentEducationId,
+                subjects: Array.isArray(raw.subjects)
+                    ? raw.subjects.map((s, index) => normalizeSubject(s, index + 1))
+                    : []
+            };
+
+            const hasCurrentEducation = normalized.educations.some(e => e.id === normalized.currentEducationId);
+            if (!hasCurrentEducation) {
+                normalized.currentEducationId = normalized.educations[0].id;
             }
 
-            // Слушаем изменения статуса авторизации
-            supabase.auth.onAuthStateChange(async (event, session) => {
-                if (event === 'SIGNED_IN' && session) {
-                    currentUser = session.user;
-                    await initUserSession();
-                } else if (event === 'SIGNED_OUT') {
-                    currentUser = null;
-                    showLoginScreen();
+            return normalized;
+        }
+
+        function normalizeSubject(subject, fallbackId) {
+            const totalLabs = Math.max(1, Math.min(50, Number(subject?.totalLabs) || 1));
+            const labs = Array.isArray(subject?.labs) ? subject.labs : [];
+
+            const normalizedLabs = [];
+            for (let i = 1; i <= totalLabs; i++) {
+                const existing = labs.find(l => Number(l.number) === i);
+                normalizedLabs.push({
+                    number: i,
+                    done: !!existing?.done,
+                    passed: !!existing?.passed,
+                    grade: existing?.grade === null || existing?.grade === undefined
+                        ? null
+                        : Number(existing.grade)
+                });
+            }
+
+            normalizedLabs.forEach(lab => {
+                if (!lab.done) {
+                    lab.passed = false;
+                    lab.grade = null;
+                } else if (!lab.passed) {
+                    lab.grade = null;
+                } else if (![2,3,4,5].includes(lab.grade)) {
+                    lab.grade = 5;
                 }
             });
-        });
 
-           async function initUserSession() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            return {
+                id: Number.isFinite(Number(subject?.id)) ? Number(subject.id) : fallbackId,
+                educationId: Number.isFinite(Number(subject?.educationId)) ? Number(subject.educationId) : 1,
+                name: String(subject?.name || 'Без названия'),
+                totalLabs,
+                labs: normalizedLabs
+            };
+        }
+
+        function safeParseState(jsonText) {
             try {
-                document.getElementById('displayName').textContent = currentUser.email.split('@')[0];
-                
-                // Пробуем загрузить данные
+                return normalizeData(JSON.parse(jsonText));
+            } catch (e) {
+                console.error('Ошибка JSON.parse(state_json):', e);
+                return getDefaultData();
+            }
+        }
+
+        function updateUserHeader() {
+            const displayName = document.getElementById('displayName');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const avatar = document.getElementById('userAvatar');
+
+            const name = currentUser?.email ? currentUser.email.split('@')[0] : 'Пользователь';
+
+            displayName.textContent = name;
+            welcomeMessage.textContent = `Добро пожаловать, ${name}!`;
+
+            const initials = name.substring(0, 2).toUpperCase();
+            avatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="11" fill="white" text-anchor="middle">${initials}</text></svg>`;
+            avatar.style.display = 'block';
+        }
+
+        async function initApp() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                const { data: sessionData, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('Ошибка получения сессии:', error);
+                    showLoginScreen();
+                    return;
+                }
+
+                if (sessionData?.session?.user) {
+                    currentUser = sessionData.session.user;
+                    await initUserSession();
+                } else {
+                    showLoginScreen();
+                }
+
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (event === 'SIGNED_IN' && session?.user) {
+                        currentUser = session.user;
+                        await initUserSession();
+                    } else if (event === 'SIGNED_OUT') {
+                        currentUser = null;
+                        data = getDefaultData();
+                        showLoginScreen();
+                    }
+                });
+            } catch (error) {
+                console.error('Критическая ошибка запуска:', error);
+                showLoginScreen();
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        async function initUserSession() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                updateUserHeader();
+
                 const { data: dbData, error } = await supabase
                     .from('user_data')
                     .select('state_json')
                     .eq('id', currentUser.id)
                     .single();
-                
+
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        console.log("Запись не найдена, создаем новую...");
-                        const { error: insertError } = await supabase
-                            .from('user_data')
-                            .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
-                            
-                        if (insertError) {
-                            console.error("Ошибка при создании записи:", insertError);
+                        console.log('Запись не найдена, создаем новую...');
+                        data = getDefaultData();
+
+                        const created = await createInitialDbRecord(currentUser.id);
+                        if (!created) {
+                            console.warn('Не удалось создать запись, продолжаем с локальными данными.');
                         }
                     } else {
-                        console.error("Ошибка при чтении БД:", error);
+                        console.error('Ошибка при чтении БД:', error);
                     }
-                } else if (dbData && dbData.state_json) {
-                    data = JSON.parse(dbData.state_json);
+                } else if (dbData?.state_json) {
+                    data = safeParseState(dbData.state_json);
+                } else {
+                    data = getDefaultData();
                 }
-                
+
                 showMainInterface();
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
                 updateSyncStatus('online', 'Синхронизировано');
-                
             } catch (error) {
                 console.error('Критическая ошибка инициализации:', error);
-                showMainInterface();
-                initEducationSelector();
-                renderSubjectsTable();
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
-                // Пробуем загрузить данные
-                const { data: dbData, error } = await supabase
-                    .from('user_data')
-                    .select('state_json')
-                    .eq('id', currentUser.id)
-                    .single();
-                
-                if (error) {
-                    // Если записи нет (ошибка PGRST116), создаем её
-                    if (error.code === 'PGRST116') {
-                        console.log("Запись не найдена, создаем новую...");
-                        const { error: insertError } = await supabase
-                            .from('user_data')
-                            .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
-                            
-                        if (insertError) {
-                            console.error("Ошибка при создании записи:", insertError);
-                            // Если не удалось создать (например, из-за RLS), продолжаем с локальными данными
-                        }
-                    } else {
-                        console.error("Ошибка при чтении БД:", error);
-                    }
-                } else if (dbData && dbData.state_json) {
-                    // Данные успешно найдены
-                    data = JSON.parse(dbData.state_json);
-                }
-                
-                // В любом случае показываем интерфейс (даже если БД пустая)
                 showMainInterface();
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
-                updateSyncStatus('online', 'Синхронизировано');
-                
-            } catch (error) {
-                console.error('Критическая ошибка инициализации:', error);
-                // Даже при критической ошибке пускаем пользователя в интерфейс
-                showMainInterface();
-                initEducationSelector();
-                renderSubjectsTable();
             } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
-                console.error('Ошибка инициализации:', error);
-                showMessage('Ошибка загрузки данных', 'error');
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
-        // ========== АВТОРИЗАЦИЯ SUPABASE ==========
         function showError(msg) {
-            document.getElementById('authError').textContent = msg;
+            document.getElementById('authError').textContent = msg || '';
         }
 
         async function handleLogin() {
-            const email = document.getElementById('authEmail').value;
+            const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
 
-            if (!email || !password) return showError("Введите Email и пароль");
+            if (!email || !password) {
+                showError('Введите Email и пароль');
+                return;
+            }
 
+            showError('');
             document.getElementById('loadingOverlay').style.display = 'flex';
-            showError("");
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            try {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-            if (error) {
-                showError("Ошибка входа: " + error.message);
+                if (error) {
+                    showError('Ошибка входа: ' + error.message);
+                }
+            } catch (error) {
+                showError('Ошибка входа: ' + error.message);
+            } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
         async function handleSignup() {
-            const email = document.getElementById('authEmail').value;
+            const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
 
-            if (!email || !password) return showError("Введите Email и пароль");
-            if (password.length < 6) return showError("Пароль должен быть минимум 6 символов");
+            if (!email || !password) {
+                showError('Введите Email и пароль');
+                return;
+            }
 
+            if (password.length < 6) {
+                showError('Пароль должен быть минимум 6 символов');
+                return;
+            }
+
+            showError('');
             document.getElementById('loadingOverlay').style.display = 'flex';
-            showError("");
 
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-            });
+            try {
+                const { data: authData, error } = await supabase.auth.signUp({ email, password });
 
-            if (error) {
-                showError("Ошибка регистрации: " + error.message);
-                document.getElementById('loadingOverlay').style.display = 'none';
-            } else {
-                showError("Регистрация успешна! Теперь вы можете войти.");
-                // Создаем пустую запись в БД для нового пользователя
-                await createInitialDbRecord(data.user.id);
+                if (error) {
+                    showError('Ошибка регистрации: ' + error.message);
+                    return;
+                }
+
+                if (authData?.user?.id) {
+                    await createInitialDbRecord(authData.user.id);
+                }
+
+                showMessage('✅ Регистрация успешна! Теперь войдите в аккаунт.', 'success');
+            } catch (error) {
+                showError('Ошибка регистрации: ' + error.message);
+            } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
         async function logoutUser() {
             document.getElementById('loadingOverlay').style.display = 'flex';
-            const { error } = await supabase.auth.signOut();
-            if (error) console.error('Ошибка выхода:', error);
-            location.reload();
-        }
 
-        // ========== БАЗА ДАННЫХ SUPABASE ==========
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Ошибка выхода:', error);
+                }
+                location.reload();
+            } catch (error) {
+                console.error('Ошибка выхода:', error);
+                location.reload();
+            }
+        }
 
         async function createInitialDbRecord(userId) {
-            const { error } = await supabase
-                .from('user_data')
-                .insert([
-                    { id: userId, state_json: JSON.stringify(data) }
-                ]);
-            if (error) console.error("Ошибка создания БД:", error);
-        }
+            try {
+                const { error } = await supabase
+                    .from('user_data')
+                    .upsert(
+                        [{ id: userId, state_json: JSON.stringify(data) }],
+                        { onConflict: 'id' }
+                    );
 
-                // Если запись не найдена, создаем её
-                if (error.code === 'PGRST116') {
-                    await createInitialDbRecord(currentUser.id);
-                } else {
-                    throw error;
+                if (error) {
+                    console.error('Ошибка создания записи БД:', error);
+                    return false;
                 }
-            } else if (dbData && dbData.state_json) {
-                data = JSON.parse(dbData.state_json);
+
+                return true;
+            } catch (error) {
+                console.error('Ошибка createInitialDbRecord:', error);
+                return false;
             }
         }
 
         async function saveDataToServer() {
-            if (!currentUser) return;
+            if (!currentUser) return false;
 
             updateSyncStatus('online', 'Сохранение...');
 
-            const { error } = await supabase
-                .from('user_data')
-                .update({ state_json: JSON.stringify(data) })
-                .eq('id', currentUser.id);
+            try {
+                const { error } = await supabase
+                    .from('user_data')
+                    .upsert(
+                        [{ id: currentUser.id, state_json: JSON.stringify(data) }],
+                        { onConflict: 'id' }
+                    );
 
-            if (error) {
-                console.error('Ошибка сохранения:', error);
-                updateSyncStatus('offline', 'Ошибка');
-            } else {
+                if (error) {
+                    console.error('Ошибка сохранения:', error);
+                    updateSyncStatus('offline', 'Ошибка сохранения');
+                    return false;
+                }
+
                 updateSyncStatus('online', 'Синхронизировано');
+                return true;
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                updateSyncStatus('offline', 'Ошибка сохранения');
+                return false;
             }
         }
 
-        // Подменяем старые функции, чтобы не ломать UI
         function autoSave() {
-            saveDataToServer();
+            void saveDataToServer();
         }
-        
 
-        // ========== ОСНОВНЫЕ ФУНКЦИИ ИНТЕРФЕЙСА ==========
-        
         function showLoginScreen() {
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('backupSection').style.display = 'block';
+            document.getElementById('mainContainer').style.display = 'none';
         }
-        
+
         function showMainInterface() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainContainer').style.display = 'block';
         }
-        
-        function updateUserDisplay(user) {
-            document.getElementById('displayName').textContent = user.name;
-            document.getElementById('welcomeMessage').textContent = `Добро пожаловать, ${user.name}!`;
-            
-            const avatarElement = document.getElementById('userAvatar');
-            if (user.photo) {
-                avatarElement.src = user.photo;
-                avatarElement.style.display = 'block';
-            } else {
-                // Генерируем аватар с инициалами
-                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle">${initials}</text></svg>`;
-                avatarElement.style.display = 'block';
-            }
-        }
-        
-        // ========== УПРАВЛЕНИЕ ОБРАЗОВАНИЯМИ ==========
-        
+
         function initEducationSelector() {
             const educationSelector = document.getElementById('educationSelector');
             educationSelector.innerHTML = '';
-            
+
             data.educations.forEach(education => {
-                const buttonContainer = document.createElement('div');
-                buttonContainer.style.position = 'relative';
-                buttonContainer.style.display = 'inline-block';
-                
                 const button = document.createElement('button');
                 button.className = `education-btn ${education.id === data.currentEducationId ? 'active' : ''}`;
+
                 button.innerHTML = `
-                    ${education.name}
-                    ${data.educations.length > 1 ? '<span class="delete-education-btn" onclick="deleteEducation(' + education.id + ', event)">×</span>' : ''}
+                    <span>${escapeHtml(education.name)}</span>
+                    ${data.educations.length > 1 ? `<span class="delete-education-btn" onclick="deleteEducation(${education.id}, event)">×</span>` : ''}
                 `;
-                button.dataset.educationId = education.id;
-                
-                button.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('delete-education-btn')) {
-                        document.querySelectorAll('.education-btn').forEach(btn => {
-                            btn.classList.remove('active');
-                        });
-                        
-                        this.classList.add('active');
-                        data.currentEducationId = parseInt(this.dataset.educationId);
-                        
-                        renderSubjectsTable();
-                        updateStats();
-                        autoSave();
-                    }
+
+                button.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('delete-education-btn')) return;
+
+                    data.currentEducationId = education.id;
+                    initEducationSelector();
+                    renderSubjectsTable();
+                    updateStats();
+                    autoSave();
                 });
-                
-                buttonContainer.appendChild(button);
-                educationSelector.appendChild(buttonContainer);
+
+                educationSelector.appendChild(button);
             });
-            
         }
-        
+
         function showAddEducationModal() {
             document.getElementById('addEducationModal').style.display = 'flex';
         }
-        
+
         function addNewEducation(event) {
             event.preventDefault();
-            
+
             const educationName = document.getElementById('educationName').value.trim();
-            
+
             if (!educationName) {
                 showMessage('Введите название образования', 'error');
                 return;
             }
-            
-            const newId = data.educations.length > 0 ? 
-                Math.max(...data.educations.map(e => e.id)) + 1 : 1;
-            
+
+            const newId = data.educations.length
+                ? Math.max(...data.educations.map(e => e.id)) + 1
+                : 1;
+
             data.educations.push({
                 id: newId,
                 name: educationName
             });
-            
+
+            data.currentEducationId = newId;
+
             closeModal('addEducationModal');
             document.getElementById('educationName').value = '';
-            
+
             initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
             autoSave();
-            
+
             updateSyncStatus('online', 'Образование добавлено');
             showMessage('✅ Образование добавлено успешно', 'success');
-            
         }
-        
+
         function deleteEducation(educationId, event) {
             event.stopPropagation();
-            
+
             if (data.educations.length <= 1) {
                 showMessage('Нельзя удалить последнее образование!', 'error');
                 return;
             }
-            
-            if (confirm('Удалить это образование? Все предметы в нём также будут удалены!')) {
-                const educationIndex = data.educations.findIndex(e => e.id === educationId);
-                if (educationIndex > -1) {
-                    data.educations.splice(educationIndex, 1);
-                }
-                
-                data.subjects = data.subjects.filter(subject => subject.educationId !== educationId);
-                
-                if (data.currentEducationId === educationId) {
-                    data.currentEducationId = data.educations[0].id;
-                }
-                
-                initEducationSelector();
-                renderSubjectsTable();
-                updateStats();
-                autoSave();
-                
-                updateSyncStatus('online', 'Образование удалено');
-                showMessage('✅ Образование удалено', 'success');
-                
+
+            if (!confirm('Удалить это образование? Все предметы в нём также будут удалены!')) {
+                return;
             }
+
+            data.educations = data.educations.filter(e => e.id !== educationId);
+            data.subjects = data.subjects.filter(s => s.educationId !== educationId);
+
+            if (data.currentEducationId === educationId) {
+                data.currentEducationId = data.educations[0].id;
+            }
+
+            initEducationSelector();
+            renderSubjectsTable();
+            updateStats();
+            autoSave();
+
+            updateSyncStatus('online', 'Образование удалено');
+            showMessage('✅ Образование удалено', 'success');
         }
-        
-        // ========== УПРАВЛЕНИЕ ПРЕДМЕТАМИ ==========
-        
+
         function showAddSubjectModal() {
             document.getElementById('addSubjectModal').style.display = 'flex';
         }
-        
+
         function addNewSubject(event) {
             event.preventDefault();
-            
-            const subjectName = document.getElementById('subjectName').value;
-            const totalLabs = parseInt(document.getElementById('totalLabs').value);
-            
-            if (!subjectName || !totalLabs || totalLabs < 1) {
+
+            const subjectName = document.getElementById('subjectName').value.trim();
+            const totalLabs = parseInt(document.getElementById('totalLabs').value, 10);
+
+            if (!subjectName || !totalLabs || totalLabs < 1 || totalLabs > 50) {
                 showMessage('Пожалуйста, заполните все поля корректно', 'error');
                 return;
             }
-            
-            const newId = data.subjects.length > 0 ? 
-                Math.max(...data.subjects.map(s => s.id)) + 1 : 1;
-            
+
+            const newId = data.subjects.length
+                ? Math.max(...data.subjects.map(s => s.id)) + 1
+                : 1;
+
             const labs = [];
             for (let i = 1; i <= totalLabs; i++) {
                 labs.push({
@@ -1281,63 +1320,58 @@
                     grade: null
                 });
             }
-            
+
             data.subjects.push({
                 id: newId,
                 educationId: data.currentEducationId,
                 name: subjectName,
-                totalLabs: totalLabs,
-                labs: labs
+                totalLabs,
+                labs
             });
-            
+
             closeModal('addSubjectModal');
             document.getElementById('subjectName').value = '';
             document.getElementById('totalLabs').value = '';
-            
+
             renderSubjectsTable();
             updateStats();
             autoSave();
-            
+
             updateSyncStatus('online', 'Предмет добавлен');
             showMessage('✅ Предмет добавлен успешно', 'success');
-            
         }
-        
+
         function renderSubjectsTable() {
             const subjectsBody = document.getElementById('subjectsBody');
             subjectsBody.innerHTML = '';
-            
-            const currentSubjects = data.subjects.filter(subject => 
-                subject.educationId === data.currentEducationId
-            );
-            
+
+            const currentSubjects = data.subjects.filter(subject => subject.educationId === data.currentEducationId);
+
             if (currentSubjects.length === 0) {
                 subjectsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <td colspan="6" style="text-align:center; padding:40px; color:#6c757d;">
                             Нет предметов для этого образования. Добавьте первый предмет.
                         </td>
                     </tr>
                 `;
                 return;
             }
-            
+
             currentSubjects.forEach(subject => {
+                ensureLabsExist(subject);
+
                 const doneLabsCount = calculateDoneLabs(subject);
                 const passedLabsCount = calculatePassedLabs(subject);
                 const averageGrade = calculateAverageGrade(subject);
-                const isCompleted = doneLabsCount === subject.totalLabs && 
-                                   passedLabsCount === subject.totalLabs;
-                
+                const isCompleted = doneLabsCount === subject.totalLabs && passedLabsCount === subject.totalLabs;
+
                 const row = document.createElement('tr');
                 row.className = isCompleted ? 'completed' : '';
+
                 row.innerHTML = `
-                    <td>
-                        <div class="subject-name">${subject.name}</div>
-                    </td>
-                    <td>
-                        <span class="lab-count">${subject.totalLabs}</span>
-                    </td>
+                    <td><div class="subject-name">${escapeHtml(subject.name)}</div></td>
+                    <td><span class="lab-count">${subject.totalLabs}</span></td>
                     <td>
                         <span class="status-badge ${doneLabsCount === subject.totalLabs ? 'status-done' : 'status-pending'}">
                             ${doneLabsCount} из ${subject.totalLabs}
@@ -1349,7 +1383,7 @@
                         </span>
                     </td>
                     <td>
-                        <div style="font-weight: 600; color: #495057; font-size: 1.1rem;">
+                        <div style="font-weight:600; color:#495057; font-size:1.1rem;">
                             ${averageGrade.toFixed(1)}
                         </div>
                     </td>
@@ -1361,107 +1395,18 @@
                         </div>
                     </td>
                 `;
-                
+
                 subjectsBody.appendChild(row);
             });
-            
         }
-        
-        function calculateDoneLabs(subject) {
-            if (!subject.labs || subject.labs.length === 0) return 0;
-            return subject.labs.filter(lab => lab.done).length;
-        }
-        
-        function calculatePassedLabs(subject) {
-            if (!subject.labs || subject.labs.length === 0) return 0;
-            return subject.labs.filter(lab => lab.passed).length;
-        }
-        
-        function calculateAverageGrade(subject) {
-            if (!subject.labs || subject.labs.length === 0) return 0;
-            
-            const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
-            if (passedLabs.length === 0) return 0;
-            
-            const sum = passedLabs.reduce((total, lab) => total + lab.grade, 0);
-            return sum / passedLabs.length;
-        }
-        
-        function incrementLabCount(subjectId) {
-            const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
-            
-            if (subjectIndex !== -1 && data.subjects[subjectIndex].totalLabs < 50) {
-                data.subjects[subjectIndex].totalLabs++;
-                
-                if (!data.subjects[subjectIndex].labs) {
-                    data.subjects[subjectIndex].labs = [];
-                }
-                
-                data.subjects[subjectIndex].labs.push({
-                    number: data.subjects[subjectIndex].totalLabs,
-                    done: false,
-                    passed: false,
-                    grade: null
-                });
-                
-                renderSubjectsTable();
-                updateStats();
-                autoSave();
-                
-                updateSyncStatus('online', 'Лабораторная работа добавлена');
-                showMessage('✅ Лабораторная работа добавлена', 'success');
-                
-            } else {
-                showMessage('Максимальное количество лабораторных работ: 50', 'error');
-            }
-        }
-        
-        function deleteSubject(subjectId) {
-            if (confirm('Удалить этот предмет?')) {
-                const subjectIndex = data.subjects.findIndex(s => s.id === subjectId);
-                if (subjectIndex !== -1) {
-                    data.subjects.splice(subjectIndex, 1);
-                    
-                    renderSubjectsTable();
-                    updateStats();
-                    autoSave();
-                    
-                    updateSyncStatus('online', 'Предмет удален');
-                    showMessage('✅ Предмет удален', 'success');
-                    
-                }
-            }
-        }
-        
-        // ========== УПРАВЛЕНИЕ ЛАБОРАТОРНЫМИ РАБОТАМИ ==========
-        
-        function openManageLabsModal(subjectId) {
-            currentSubjectId = subjectId;
-            const subject = data.subjects.find(s => s.id === subjectId);
-            
-            if (!subject) return;
-            
-            document.getElementById('currentSubjectName').textContent = subject.name;
-            document.getElementById('totalLabsCount').textContent = subject.totalLabs;
-            document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
-            document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
-            
-            const averageGrade = calculateAverageGrade(subject);
-            document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
-            
-            renderLabsGrid(subject);
-            
-            document.getElementById('manageLabsModal').style.display = 'flex';
-            
-        }
-        
-        function renderLabsGrid(subject) {
-            const labsGrid = document.getElementById('labsGrid');
-            labsGrid.innerHTML = '';
-            
-            if (!subject.labs || subject.labs.length === 0) {
+
+        function ensureLabsExist(subject) {
+            if (!Array.isArray(subject.labs)) {
                 subject.labs = [];
-                for (let i = 1; i <= subject.totalLabs; i++) {
+            }
+
+            for (let i = 1; i <= subject.totalLabs; i++) {
+                if (!subject.labs.find(l => l.number === i)) {
                     subject.labs.push({
                         number: i,
                         done: false,
@@ -1470,17 +1415,98 @@
                     });
                 }
             }
-            
-            const sortedLabs = [...subject.labs].sort((a, b) => a.number - b.number);
-            
-            sortedLabs.forEach(lab => {
+
+            subject.labs = subject.labs
+                .filter(l => l.number >= 1 && l.number <= subject.totalLabs)
+                .sort((a, b) => a.number - b.number);
+        }
+
+        function calculateDoneLabs(subject) {
+            ensureLabsExist(subject);
+            return subject.labs.filter(lab => lab.done).length;
+        }
+
+        function calculatePassedLabs(subject) {
+            ensureLabsExist(subject);
+            return subject.labs.filter(lab => lab.passed).length;
+        }
+
+        function calculateAverageGrade(subject) {
+            ensureLabsExist(subject);
+
+            const passedLabs = subject.labs.filter(lab => lab.passed && lab.grade !== null);
+            if (passedLabs.length === 0) return 0;
+
+            const sum = passedLabs.reduce((total, lab) => total + Number(lab.grade || 0), 0);
+            return sum / passedLabs.length;
+        }
+
+        function incrementLabCount(subjectId) {
+            const subject = data.subjects.find(s => s.id === subjectId);
+            if (!subject) return;
+
+            if (subject.totalLabs >= 50) {
+                showMessage('Максимальное количество лабораторных работ: 50', 'error');
+                return;
+            }
+
+            subject.totalLabs += 1;
+            ensureLabsExist(subject);
+
+            renderSubjectsTable();
+            updateStats();
+            autoSave();
+
+            updateSyncStatus('online', 'Лабораторная работа добавлена');
+            showMessage('✅ Лабораторная работа добавлена', 'success');
+        }
+
+        function deleteSubject(subjectId) {
+            if (!confirm('Удалить этот предмет?')) return;
+
+            const index = data.subjects.findIndex(s => s.id === subjectId);
+            if (index === -1) return;
+
+            data.subjects.splice(index, 1);
+
+            renderSubjectsTable();
+            updateStats();
+            autoSave();
+
+            updateSyncStatus('online', 'Предмет удален');
+            showMessage('✅ Предмет удален', 'success');
+        }
+
+        function openManageLabsModal(subjectId) {
+            currentSubjectId = subjectId;
+            const subject = data.subjects.find(s => s.id === subjectId);
+            if (!subject) return;
+
+            ensureLabsExist(subject);
+
+            document.getElementById('currentSubjectName').textContent = subject.name;
+            document.getElementById('totalLabsCount').textContent = subject.totalLabs;
+            document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
+            document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
+            document.getElementById('averageGradeValue').textContent = calculateAverageGrade(subject).toFixed(1);
+
+            renderLabsGrid(subject);
+            document.getElementById('manageLabsModal').style.display = 'flex';
+        }
+
+        function renderLabsGrid(subject) {
+            const labsGrid = document.getElementById('labsGrid');
+            labsGrid.innerHTML = '';
+
+            ensureLabsExist(subject);
+
+            subject.labs.forEach(lab => {
                 const labItem = document.createElement('div');
                 labItem.className = 'lab-item';
-                labItem.dataset.labNumber = lab.number;
-                
+
                 let statusClass = 'lab-not-done';
                 let statusText = 'Не выполнена';
-                
+
                 if (lab.passed && lab.done) {
                     statusClass = 'lab-passed';
                     statusText = 'Сдана';
@@ -1488,12 +1514,14 @@
                     statusClass = 'lab-done';
                     statusText = 'Выполнена';
                 }
-                
+
                 labItem.innerHTML = `
                     <div class="lab-number">ЛР ${lab.number}</div>
                     <div class="lab-status ${statusClass}">${statusText}</div>
                     ${lab.passed ? `
-                        <select class="grade-selector grade-${lab.grade || 5}" onchange="updateLabGrade(${lab.number}, this.value)">
+                        <select class="grade-selector grade-${lab.grade || 5}"
+                                onclick="event.stopPropagation()"
+                                onchange="updateLabGrade(${lab.number}, this.value)">
                             <option value="5" ${lab.grade === 5 ? 'selected' : ''}>5 (Отлично)</option>
                             <option value="4" ${lab.grade === 4 ? 'selected' : ''}>4 (Хорошо)</option>
                             <option value="3" ${lab.grade === 3 ? 'selected' : ''}>3 (Удовл.)</option>
@@ -1501,25 +1529,21 @@
                         </select>
                     ` : ''}
                 `;
-                
-                labItem.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('grade-selector')) {
-                        toggleLabStatus(lab.number);
-                    }
-                });
-                
+
+                labItem.addEventListener('click', () => toggleLabStatus(lab.number));
                 labsGrid.appendChild(labItem);
             });
-            
         }
-        
+
         function toggleLabStatus(labNumber) {
             const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
-            
+
+            ensureLabsExist(subject);
+
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
-            
+
             if (!lab.done) {
                 lab.done = true;
                 lab.passed = false;
@@ -1532,102 +1556,95 @@
                 lab.passed = false;
                 lab.grade = null;
             }
-            
+
             updateLabDisplay(subject);
             autoSave();
-            
         }
-        
+
         function updateLabGrade(labNumber, grade) {
             const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
-            
+
             const lab = subject.labs.find(l => l.number === labNumber);
             if (!lab) return;
-            
-            lab.grade = parseInt(grade);
-            
+
+            lab.grade = parseInt(grade, 10);
+
             updateLabDisplay(subject);
             autoSave();
-            
         }
-        
+
         function updateLabDisplay(subject) {
             document.getElementById('doneLabsCount').textContent = calculateDoneLabs(subject);
             document.getElementById('passedLabsCount').textContent = calculatePassedLabs(subject);
-            
-            const averageGrade = calculateAverageGrade(subject);
-            document.getElementById('averageGradeValue').textContent = averageGrade.toFixed(1);
-            
+            document.getElementById('averageGradeValue').textContent = calculateAverageGrade(subject).toFixed(1);
+
             renderLabsGrid(subject);
             renderSubjectsTable();
             updateStats();
-            
         }
-        
+
         function markAllLabsAsDone() {
             const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
-            
+
+            ensureLabsExist(subject);
+
             subject.labs.forEach(lab => {
                 lab.done = true;
                 lab.passed = false;
                 lab.grade = null;
             });
-            
+
             updateLabDisplay(subject);
             autoSave();
-            
+
             updateSyncStatus('online', 'Все ЛР отмечены как выполненные');
             showMessage('✅ Все лабораторные работы отмечены как выполненные', 'success');
-            
         }
-        
+
         function markAllLabsAsPassed() {
             const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
-            
+
+            ensureLabsExist(subject);
+
             subject.labs.forEach(lab => {
                 lab.done = true;
                 lab.passed = true;
                 lab.grade = lab.grade || 5;
             });
-            
+
             updateLabDisplay(subject);
             autoSave();
-            
+
             updateSyncStatus('online', 'Все ЛР отмечены как сданные');
             showMessage('✅ Все лабораторные работы отмечены как сданные', 'success');
-            
         }
-        
+
         function clearAllLabMarks() {
             const subject = data.subjects.find(s => s.id === currentSubjectId);
             if (!subject) return;
-            
+
+            ensureLabsExist(subject);
+
             subject.labs.forEach(lab => {
                 lab.done = false;
                 lab.passed = false;
                 lab.grade = null;
             });
-            
+
             updateLabDisplay(subject);
             autoSave();
-            
+
             updateSyncStatus('online', 'Все отметки сброшены');
             showMessage('✅ Все отметки сброшены', 'success');
-            
         }
-        
-        // ========== СТАТИСТИКА ==========
-        
+
         function updateStats() {
             const stats = document.getElementById('stats');
-            
-            const currentSubjects = data.subjects.filter(subject => 
-                subject.educationId === data.currentEducationId
-            );
-            
+            const currentSubjects = data.subjects.filter(subject => subject.educationId === data.currentEducationId);
+
             if (currentSubjects.length === 0) {
                 stats.innerHTML = `
                     <div class="stat-item">
@@ -1639,26 +1656,21 @@
                         <div class="stat-label">Общий прогресс</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value">0</div>
+                        <div class="stat-value">0.0</div>
                         <div class="stat-label">Средний балл</div>
                     </div>
                 `;
                 return;
             }
-            
+
             const totalSubjects = currentSubjects.length;
-            const completedSubjects = currentSubjects.filter(subject => 
-                calculateDoneLabs(subject) === subject.totalLabs && 
-                calculatePassedLabs(subject) === subject.totalLabs
-            ).length;
-            
             const totalLabs = currentSubjects.reduce((sum, subject) => sum + subject.totalLabs, 0);
             const passedLabs = currentSubjects.reduce((sum, subject) => sum + calculatePassedLabs(subject), 0);
             const overallProgress = totalLabs > 0 ? Math.round((passedLabs / totalLabs) * 100) : 0;
-            
+
             let totalAverage = 0;
             let subjectsWithGrades = 0;
-            
+
             currentSubjects.forEach(subject => {
                 const avg = calculateAverageGrade(subject);
                 if (avg > 0) {
@@ -1666,9 +1678,9 @@
                     subjectsWithGrades++;
                 }
             });
-            
-            const overallAverage = subjectsWithGrades > 0 ? (totalAverage / subjectsWithGrades) : 0;
-            
+
+            const overallAverage = subjectsWithGrades > 0 ? totalAverage / subjectsWithGrades : 0;
+
             stats.innerHTML = `
                 <div class="stat-item">
                     <div class="stat-value">${totalSubjects}</div>
@@ -1683,140 +1695,98 @@
                     <div class="stat-label">Средний балл</div>
                 </div>
             `;
-            
         }
-        
-        // ========== ЭКСПОРТ/ИМПОРТ ДАННЫХ ==========
-        
+
         function exportBackup() {
-            if (!currentUser) {
-                showMessage('Сначала войдите в систему', 'error');
-                return;
-            }
-            
             const exportData = {
-                user: currentUser,
                 appData: data,
                 exportDate: new Date().toISOString(),
-                version: '1.0',
-                binId: userBinId
+                version: '2.0-supabase'
             };
-            
+
             const dataStr = JSON.stringify(exportData, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `lab_tracker_backup_${new Date().toISOString().slice(0,10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const fileName = `lab_tracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', fileName);
+            link.click();
+
             updateSyncStatus('online', 'Резервная копия создана');
             showMessage('✅ Резервная копия создана', 'success');
-            
         }
-        
+
         function importBackupFile() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
-            
+
             input.onchange = async function(event) {
                 const file = event.target.files[0];
                 if (!file) return;
-                
+
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     try {
-                        const importedData = JSON.parse(e.target.result);
-                        
-                        if (importedData.user && importedData.appData) {
-                            if (confirm('Заменить текущие данные импортированными?')) {
-                                // Обновляем пользователя
-                                currentUser = importedData.user;
-                                localStorage.setItem('lab_tracker_user', JSON.stringify(currentUser));
-                                
-                                // Если в бэкапе есть binId, используем его
-                                if (importedData.binId) {
-                                    userBinId = importedData.binId;
-                                    localStorage.setItem('lab_tracker_bin_id', importedData.binId);
-                                    localStorage.setItem(`lab_tracker_bin_${currentUser.id}`, importedData.binId);
-                                }
-                                
-                                // Обновляем данные
-                                data = importedData.appData;
-                                
-                                // Сохраняем в облако
-                                if (userBinId) {
-                                    try {
-                                        await updateUserBin(userBinId, currentUser, data);
-                                        updateSyncStatus('online', 'Данные восстановлены в облако');
-                                    } catch (error) {
-                                        console.error('Не удалось сохранить в облако:', error);
-                                    }
-                                }
-                                
-                                // Сохраняем локально
-                                saveLocalData();
-                                
-                                // Обновляем интерфейс
-                                if (document.getElementById('mainContainer').style.display === 'block') {
-                                    updateUserDisplay(currentUser);
-                                    initEducationSelector();
-                                    renderSubjectsTable();
-                                    updateStats();
-                                } else {
-                                    showMainInterface();
-                                    initEducationSelector();
-                                    renderSubjectsTable();
-                                    updateStats();
-                                    updateUserDisplay(currentUser);
-                                }
-                                
-                                showMessage('✅ Данные успешно восстановлены', 'success');
+                        const imported = JSON.parse(e.target.result);
+
+                        const importedData = imported.appData ? imported.appData : imported;
+                        const normalized = normalizeData(importedData);
+
+                        if (!confirm('Заменить текущие данные импортированными?')) {
+                            return;
+                        }
+
+                        data = normalized;
+
+                        renderSubjectsTable();
+                        updateStats();
+                        initEducationSelector();
+
+                        if (currentUser) {
+                            const saved = await saveDataToServer();
+                            if (saved) {
+                                showMessage('✅ Данные импортированы и сохранены в облако', 'success');
+                            } else {
+                                showMessage('⚠️ Данные импортированы локально, но не сохранены в облако', 'warning');
                             }
                         } else {
-                            showMessage('Файл имеет неверный формат', 'error');
+                            showMessage('✅ Данные импортированы', 'success');
                         }
                     } catch (error) {
+                        console.error('Ошибка импорта:', error);
                         showMessage('Ошибка при чтении файла: ' + error.message, 'error');
-                        lastError = error.message;
                     }
                 };
-                
+
                 reader.readAsText(file);
             };
-            
+
             input.click();
         }
-        
-        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-        
+
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
-        
+
         function updateSyncStatus(status, text) {
             const syncStatus = document.getElementById('syncStatus');
             const syncIcon = document.getElementById('syncIcon');
             const syncText = document.getElementById('syncText');
-            
-            if (syncStatus && syncIcon && syncText) {
-                syncText.textContent = text;
-                syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
-                syncStatus.style.display = 'flex';
-                
-                if (status !== 'offline') {
-                    setTimeout(() => {
-                        syncText.textContent = 'Синхронизировано';
-                        syncIcon.className = 'sync-icon sync-online';
-                    }, 3000);
-                }
+
+            syncText.textContent = text;
+            syncIcon.className = `sync-icon ${status === 'online' ? 'sync-online' : 'sync-offline'}`;
+            syncStatus.style.display = 'flex';
+
+            if (status !== 'offline') {
+                setTimeout(() => {
+                    syncText.textContent = 'Синхронизировано';
+                    syncIcon.className = 'sync-icon sync-online';
+                }, 3000);
             }
-            
         }
-        
+
         function showMessage(text, type) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}-message`;
@@ -1828,21 +1798,34 @@
             messageDiv.style.zIndex = '1001';
             messageDiv.style.maxWidth = '90%';
             messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-            
+
             document.body.appendChild(messageDiv);
-            
+
             setTimeout(() => {
                 messageDiv.remove();
-            }, 5000);
-            
+            }, 4000);
         }
-        
-        // ========== СИНХРОНИЗАЦИЯ ПРИ ВОССТАНОВЛЕНИИ СЕТИ ==========
-        
+
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        window.addEventListener('click', function(event) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
         window.addEventListener('online', function() {
             updateSyncStatus('online', 'Сеть восстановлена');
-            if (currentUser && userBinId) {
-                // Пробуем синхронизировать
+            if (currentUser) {
                 saveDataToServer().then(success => {
                     if (success) {
                         showMessage('✅ Данные синхронизированы с облаком', 'success');
@@ -1850,34 +1833,25 @@
                 });
             }
         });
-        
+
         window.addEventListener('offline', function() {
             updateSyncStatus('offline', 'Нет соединения');
-            showMessage('⚠️ Работаем в оффлайн режиме', 'warning');
+            showMessage('⚠️ Работаем в офлайн режиме', 'warning');
         });
-        
-        // ========== АВТОСОХРАНЕНИЕ ==========
-        
-        // Сохраняем при закрытии страницы
+
         window.addEventListener('beforeunload', function() {
             if (currentUser) {
                 autoSave();
             }
         });
-        
-        // Автосохранение каждые 30 секунд
+
         setInterval(() => {
             if (currentUser && data.subjects.length > 0) {
                 autoSave();
             }
         }, 30000);
-        
-        // ========== ГОТОВО! ==========
-        console.log('🚀 Трекер лабораторных работ загружен!');
-        console.log('🔑 API Key: JSONBin.io');
-        console.log('💾 Хранилище: Cloud + Local Backup');
-        console.log('🐛 Отладка: Включена (нажмите 🐛 в левом нижнем углу)');
-        
+
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
