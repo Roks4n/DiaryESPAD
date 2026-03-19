@@ -922,17 +922,53 @@
         async function initUserSession() {
             document.getElementById('loadingOverlay').style.display = 'flex';
             try {
-                // Отображаем Email вместо имени
                 document.getElementById('displayName').textContent = currentUser.email.split('@')[0];
-
-                await loadDataFromSupabase();
-
+                
+                // Пробуем загрузить данные
+                const { data: dbData, error } = await supabase
+                    .from('user_data')
+                    .select('state_json')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error) {
+                    // Если записи нет (ошибка PGRST116), создаем её
+                    if (error.code === 'PGRST116') {
+                        console.log("Запись не найдена, создаем новую...");
+                        const { error: insertError } = await supabase
+                            .from('user_data')
+                            .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
+                            
+                        if (insertError) {
+                            console.error("Ошибка при создании записи:", insertError);
+                            // Если не удалось создать (например, из-за RLS), продолжаем с локальными данными
+                        }
+                    } else {
+                        console.error("Ошибка при чтении БД:", error);
+                    }
+                } else if (dbData && dbData.state_json) {
+                    // Данные успешно найдены
+                    data = JSON.parse(dbData.state_json);
+                }
+                
+                // В любом случае показываем интерфейс (даже если БД пустая)
                 showMainInterface();
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
                 updateSyncStatus('online', 'Синхронизировано');
+                
             } catch (error) {
+                console.error('Критическая ошибка инициализации:', error);
+                // Даже при критической ошибке пускаем пользователя в интерфейс
+                showMainInterface();
+                initEducationSelector();
+                renderSubjectsTable();
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
                 console.error('Ошибка инициализации:', error);
                 showMessage('Ошибка загрузки данных', 'error');
             } finally {
