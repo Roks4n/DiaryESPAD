@@ -40,7 +40,7 @@
         }
 
         .login-title {
-            color: #667eea;
+            color: #e0e0e0;
             margin-bottom: 10px;
             font-size: 2rem;
         }
@@ -692,10 +692,10 @@
     <style>
         
         /* LIGHT THEME OVERRIDES */
-        body.light-theme header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        body.light-theme header h1, body.light-theme header .subtitle, body.light-theme header .welcome-message { color: white; }
+        body.light-theme header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; }
+        body.light-theme header h1, body.light-theme header .subtitle, body.light-theme header .welcome-message { color: white !important; }
         body.light-theme .login-container { background: white; color: #495057; }
-        body.light-theme .login-title { color: #667eea; }
+        body.light-theme .login-title { color: #667eea !important; }
 
         body.light-theme { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #333; }
         body.light-theme .container, body.light-theme .login-container, body.light-theme .modal-content, body.light-theme .lab-item { background: white; color: #495057; }
@@ -726,6 +726,7 @@
     </div>
 
     <div class="login-container" id="loginContainer" style="display:none;">
+        <img src="Espad.png" alt="Логотип Espad" style="display: block; margin: 0 auto 20px auto; height: 90px; width: auto; object-fit: contain;">
         <h2 class="login-title">Трекер лабораторных работ</h2>
         <p class="login-subtitle">Версия для работы без VPN в России</p>
 
@@ -770,7 +771,10 @@
                 <button class="logout-btn" onclick="logoutUser()">Выйти</button>
             </div>
 
-            <h1>Трекер лабораторных работ</h1>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                <img src="Espad.png" alt="Логотип Espad" style="height: 45px; width: auto; object-fit: contain;">
+                <h1 style="margin-bottom: 0;">Трекер лабораторных работ</h1>
+            </div>
             <p class="subtitle">Данные сохраняются локально и в облаке</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
