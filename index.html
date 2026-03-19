@@ -14,7 +14,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #111; color: #fff;
             min-height: 100vh;
             padding: 20px;
         }
@@ -22,7 +22,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: #1e1e1e; color: #fff;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             overflow: hidden;
@@ -32,7 +32,7 @@
         .login-container {
             max-width: 500px;
             margin: 50px auto;
-            background: white;
+            background: #1e1e1e; color: #fff;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -46,13 +46,13 @@
         }
 
         .login-subtitle {
-            color: #6c757d;
+            color: #b0b0b0;
             margin-bottom: 30px;
             font-size: 1rem;
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #111; color: #fff;
             color: white;
             padding: 30px;
             text-align: center;
@@ -84,7 +84,7 @@
             height: 24px;
             border-radius: 50%;
             object-fit: cover;
-            background: white;
+            background: #1e1e1e; color: #fff;
             padding: 2px;
             display: none;
         }
@@ -123,8 +123,8 @@
 
         .controls {
             padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
@@ -140,7 +140,7 @@
         .education-btn {
             padding: 10px 20px;
             border: none;
-            background: #e9ecef;
+            background: #333; color: #fff;
             border-radius: 50px;
             cursor: pointer;
             font-weight: 600;
@@ -158,7 +158,7 @@
         }
 
         .education-btn:hover:not(.active) {
-            background: #dee2e6;
+            background: #444;
         }
 
         .delete-education-btn {
@@ -210,20 +210,20 @@
         }
 
         thead {
-            background: #f8f9fa;
+            background: #2a2a2a;
         }
 
         th {
             padding: 15px;
             text-align: left;
-            border-bottom: 2px solid #dee2e6;
+            border-bottom: 2px solid #555;
             font-weight: 600;
-            color: #495057;
+            color: #e0e0e0;
         }
 
         td {
             padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #444;
             vertical-align: middle;
         }
 
@@ -250,18 +250,18 @@
         }
 
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
+            background: #4a3f15;
+            color: #fce28b;
         }
 
         .status-done {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: #15454f;
+            color: #92e1f0;
         }
 
         .status-passed {
-            background: #d4edda;
-            color: #155724;
+            background: #174223;
+            color: #8fed9f;
         }
 
         .action-buttons {
@@ -311,8 +311,8 @@
             display: flex;
             justify-content: space-between;
             padding: 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
+            background: #2a2a2a;
+            border-top: 1px solid #444;
             gap: 15px;
             flex-wrap: wrap;
         }
@@ -331,7 +331,7 @@
 
         .stat-label {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #b0b0b0;
             margin-top: 5px;
         }
 
@@ -350,7 +350,7 @@
         }
 
         .modal-content {
-            background: white;
+            background: #1e1e1e; color: #fff;
             padding: 30px;
             border-radius: 10px;
             width: 90%;
@@ -362,7 +362,7 @@
 
         .modal h2 {
             margin-bottom: 20px;
-            color: #495057;
+            color: #e0e0e0;
         }
 
         .form-group {
@@ -373,13 +373,13 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #495057;
+            color: #e0e0e0;
         }
 
         .form-group input {
             width: 100%;
             padding: 12px;
-            border: 1px solid #ced4da;
+            border: 1px solid #555; background: #333; color: white;
             border-radius: 5px;
             font-size: 1rem;
         }
@@ -424,12 +424,12 @@
             flex-direction: column;
             align-items: center;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #444;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            background: #fff;
+            background: #1e1e1e;
         }
 
         .lab-item:hover {
@@ -452,38 +452,38 @@
         }
 
         .lab-not-done {
-            background: #f8f9fa;
-            color: #6c757d;
+            background: #2a2a2a;
+            color: #b0b0b0;
         }
 
         .lab-done {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: #15454f;
+            color: #92e1f0;
         }
 
         .lab-passed {
-            background: #d4edda;
-            color: #155724;
+            background: #174223;
+            color: #8fed9f;
         }
 
         .grade-selector {
             margin-top: 8px;
             width: 100%;
             padding: 5px;
-            border: 1px solid #ced4da;
+            border: 1px solid #555; background: #333; color: white;
             border-radius: 5px;
             font-size: 0.8rem;
             text-align: center;
             cursor: pointer;
         }
 
-        .grade-5 { background: #d4edda; color: #155724; }
-        .grade-4 { background: #fff3cd; color: #856404; }
-        .grade-3 { background: #f8d7da; color: #721c24; }
+        .grade-5 { background: #174223; color: #8fed9f; }
+        .grade-4 { background: #4a3f15; color: #fce28b; }
+        .grade-3 { background: #4a191e; color: #fc9fa7; }
         .grade-2 { background: #dc3545; color: white; }
 
         .subject-info-header {
-            background: #f8f9fa;
+            background: #2a2a2a;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -492,7 +492,7 @@
 
         .subject-info-title {
             font-weight: 600;
-            color: #495057;
+            color: #e0e0e0;
             font-size: 1.2rem;
         }
 
@@ -510,12 +510,12 @@
 
         .subject-info-label {
             font-size: 0.85rem;
-            color: #6c757d;
+            color: #b0b0b0;
         }
 
         .subject-info-value {
             font-weight: 600;
-            color: #495057;
+            color: #e0e0e0;
         }
 
         .status-controls {
@@ -546,12 +546,12 @@
             margin-top: 10px;
             text-align: center;
             padding: 10px;
-            background: #f8f9fa;
+            background: #2a2a2a;
             border-radius: 8px;
         }
 
         .backup-section {
-            background: #f8f9fa;
+            background: #2a2a2a;
             padding: 20px;
             border-radius: 10px;
             margin: 20px;
@@ -583,7 +583,7 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(17, 17, 17, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -611,8 +611,8 @@
             top: 15px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255,255,255,0.95);
-            color: #495057;
+            background: rgba(30, 30, 30, 0.95);
+            color: #e0e0e0;
             padding: 10px 16px;
             border-radius: 30px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
@@ -645,21 +645,21 @@
         }
 
         .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #4a191e;
+            color: #fc9fa7;
+            border: 1px solid #752830;
         }
 
         .success-message {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #174223;
+            color: #8fed9f;
+            border: 1px solid #246b38;
         }
 
         .warning-message {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+            background: #4a3f15;
+            color: #fce28b;
+            border: 1px solid #756525;
         }
 
         @media (max-width: 768px) {
@@ -689,6 +689,8 @@
     </style>
 </head>
 <body>
+    <canvas id="psBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none;"></canvas>
+
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
         <div>Загрузка приложения...</div>
@@ -1941,5 +1943,65 @@
 
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
+
+    <script>
+        const canvas = document.getElementById('psBackground');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const symbols = ['×', '○', '□', '△'];
+        const particles = [];
+        const maxParticles = 60;
+
+        class Particle {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height;
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = -50;
+                this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                this.size = Math.random() * 20 + 15;
+                this.speed = Math.random() * 0.6 + 0.15;
+                this.opacity = Math.random() * 0.4 + 0.1;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.015;
+            }
+            update() {
+                this.y += this.speed;
+                this.rotation += this.rotationSpeed;
+                if (this.y > height + 50) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.font = `${this.size}px 'Segoe UI', Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.symbol, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        for(let i=0; i<maxParticles; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+
 </body>
 </html>
