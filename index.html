@@ -744,7 +744,7 @@
             </div>
 
             <h1>Трекер лабораторных работ</h1>
-            <p class="subtitle">Данные сохраняются в облаке и доступны с любого устройства</p>
+            <p class="subtitle">Данные сохраняются локально и в облаке</p>
             <div class="welcome-message" id="welcomeMessage">Добро пожаловать!</div>
         </header>
 
@@ -867,7 +867,7 @@
     <script>
         const SUPABASE_URL = 'https://sxiwtcsrwrmqvpavokss.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_FA1cnR2WHBE2_fTDZXMQbQ_1y-Ri6zO';
-        var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
         let currentSubjectId = null;
@@ -884,6 +884,27 @@
             };
         }
 
+        // ==========================================
+        // ЛОКАЛЬНОЕ СОХРАНЕНИЕ 
+        // ==========================================
+        function saveLocalData() {
+            if (!currentUser) return;
+            localStorage.setItem(`lab_tracker_data_${currentUser.id}`, JSON.stringify(data));
+        }
+
+        function loadLocalData(userId) {
+            try {
+                const raw = localStorage.getItem(`lab_tracker_data_${userId}`);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // ==========================================
+        // НОРМАЛИЗАЦИЯ
+        // ==========================================
         function normalizeData(raw) {
             const fallback = getDefaultData();
             if (!raw || typeof raw !== 'object') return fallback;
@@ -957,6 +978,9 @@
             }
         }
 
+        // ==========================================
+        // ИНИЦИАЛИЗАЦИЯ И SUPABASE
+        // ==========================================
         function updateUserHeader() {
             const displayName = document.getElementById('displayName');
             const welcomeMessage = document.getElementById('welcomeMessage');
@@ -976,7 +1000,7 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             try {
-                const { data: sessionData, error } = await supabase.auth.getSession();
+                const { data: sessionData, error } = await sb.auth.getSession();
 
                 if (error) {
                     console.error('Ошибка получения сессии:', error);
@@ -991,7 +1015,7 @@
                     showLoginScreen();
                 }
 
-                supabase.auth.onAuthStateChange(async (event, session) => {
+                sb.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session?.user) {
                         currentUser = session.user;
                         await initUserSession();
@@ -1015,26 +1039,29 @@
             try {
                 updateUserHeader();
 
-                const { data: dbData, error } = await supabase
+                const { data: dbData, error } = await sb
                     .from('user_data')
-                    .select('state_json')
+                    .select('id, state_json')
                     .eq('id', currentUser.id)
-                    .single();
+                    .maybeSingle();
 
                 if (error) {
-                    if (error.code === 'PGRST116') {
-                        console.log('Запись не найдена, создаем новую...');
-                        data = getDefaultData();
+                    console.error('Ошибка чтения БД:', error);
+                    // Грузим локально если упала БД
+                    const local = loadLocalData(currentUser.id);
+                    data = local ? normalizeData(local) : getDefaultData();
+                } else if (!dbData) {
+                    // Строка вообще не найдена в Supabase
+                    const local = loadLocalData(currentUser.id);
+                    data = local ? normalizeData(local) : getDefaultData();
 
-                        const created = await createInitialDbRecord(currentUser.id);
-                        if (!created) {
-                            console.warn('Не удалось создать запись, продолжаем с локальными данными.');
-                        }
-                    } else {
-                        console.error('Ошибка при чтении БД:', error);
+                    const created = await createInitialDbRecord(currentUser.id);
+                    if (!created) {
+                        console.warn('Не удалось создать запись в БД, работаем с локальными данными');
                     }
-                } else if (dbData?.state_json) {
+                } else if (dbData.state_json) {
                     data = safeParseState(dbData.state_json);
+                    saveLocalData(); // Дублируем свежие облачные данные локально
                 } else {
                     data = getDefaultData();
                 }
@@ -1046,6 +1073,9 @@
                 updateSyncStatus('online', 'Синхронизировано');
             } catch (error) {
                 console.error('Критическая ошибка инициализации:', error);
+                const local = currentUser ? loadLocalData(currentUser.id) : null;
+                data = local ? normalizeData(local) : getDefaultData();
+
                 showMainInterface();
                 initEducationSelector();
                 renderSubjectsTable();
@@ -1072,7 +1102,7 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             try {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                const { error } = await sb.auth.signInWithPassword({ email, password });
 
                 if (error) {
                     showError('Ошибка входа: ' + error.message);
@@ -1102,7 +1132,7 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             try {
-                const { data: authData, error } = await supabase.auth.signUp({ email, password });
+                const { data: authData, error } = await sb.auth.signUp({ email, password });
 
                 if (error) {
                     showError('Ошибка регистрации: ' + error.message);
@@ -1125,7 +1155,7 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             try {
-                const { error } = await supabase.auth.signOut();
+                const { error } = await sb.auth.signOut();
                 if (error) {
                     console.error('Ошибка выхода:', error);
                 }
@@ -1138,18 +1168,16 @@
 
         async function createInitialDbRecord(userId) {
             try {
-                const { error } = await supabase
+                const { error } = await sb
                     .from('user_data')
-                    .upsert(
-                        [{ id: userId, state_json: JSON.stringify(data) }],
-                        { onConflict: 'id' }
-                    );
+                    .insert([{ id: userId, state_json: JSON.stringify(data) }]);
 
                 if (error) {
                     console.error('Ошибка создания записи БД:', error);
                     return false;
                 }
 
+                saveLocalData();
                 return true;
             } catch (error) {
                 console.error('Ошибка createInitialDbRecord:', error);
@@ -1160,19 +1188,37 @@
         async function saveDataToServer() {
             if (!currentUser) return false;
 
+            saveLocalData(); // Всегда сохраняем в localStorage перед отправкой в облако
             updateSyncStatus('online', 'Сохранение...');
 
             try {
-                const { error } = await supabase
+                const { data: existsRow, error: existsError } = await sb
                     .from('user_data')
-                    .upsert(
-                        [{ id: currentUser.id, state_json: JSON.stringify(data) }],
-                        { onConflict: 'id' }
-                    );
+                    .select('id')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
 
-                if (error) {
-                    console.error('Ошибка сохранения:', error);
+                if (existsError) {
+                    console.error('Ошибка проверки записи:', existsError);
                     updateSyncStatus('offline', 'Ошибка сохранения');
+                    return false;
+                }
+
+                let result;
+                if (!existsRow) {
+                    result = await sb
+                        .from('user_data')
+                        .insert([{ id: currentUser.id, state_json: JSON.stringify(data) }]);
+                } else {
+                    result = await sb
+                        .from('user_data')
+                        .update({ state_json: JSON.stringify(data) })
+                        .eq('id', currentUser.id);
+                }
+
+                if (result.error) {
+                    console.error('Ошибка сохранения:', result.error);
+                    updateSyncStatus('offline', 'Ошибка сохранения (временно сохранено локально)');
                     return false;
                 }
 
@@ -1180,7 +1226,7 @@
                 return true;
             } catch (error) {
                 console.error('Ошибка сохранения:', error);
-                updateSyncStatus('offline', 'Ошибка сохранения');
+                updateSyncStatus('offline', 'Ошибка сохранения (временно сохранено локально)');
                 return false;
             }
         }
@@ -1189,6 +1235,9 @@
             void saveDataToServer();
         }
 
+        // ==========================================
+        // ИНТЕРФЕЙС И ЛОГИКА ПРИЛОЖЕНИЯ
+        // ==========================================
         function showLoginScreen() {
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('backupSection').style.display = 'block';
