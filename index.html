@@ -840,11 +840,10 @@
     </div>
     
     <!-- Кнопка отладки -->
-    <button class="debug-toggle" onclick="toggleDebugPanel()">🐛</button>
+    
     
     <!-- Панель отладки -->
-    <div class="debug-panel" id="debugPanel">
-        <div><strong>Отладка:</strong></div>
+    
         <div>Пользователь: <span id="debugUser">нет</span></div>
         <div>Бин ID: <span id="debugBinId">нет</span></div>
         <div>Состояние: <span id="debugState">загрузка...</span></div>
@@ -862,31 +861,25 @@
         
         <!-- VK OneTap Widget -->
         
-<button class="social-btn" style="background: #fc3f1d; color: white;" onclick="loginWithYandex()">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-        <path d="M12.63 2H9.25L4 14.54h3.19l1.1-2.73h5.45l1.1 2.73h3.18L12.63 2zm-3 8l1.83-4.5h.04L13.33 10H9.63z"/>
-    </svg>
-    Вход через Яндекс
-</button>
+        <!-- Форма входа Supabase -->
+        <div id="auth-form" style="margin-top: 20px; text-align: left;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #495057; font-weight: 600;">Email</label>
+                <input type="email" id="authEmail" style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1rem;" placeholder="student@example.com">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; color: #495057; font-weight: 600;">Пароль</label>
+                <input type="password" id="authPassword" style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1rem;" placeholder="Минимум 6 символов">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="handleLogin()" style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Войти</button>
+                <button onclick="handleSignup()" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Регистрация</button>
+            </div>
+            <div id="authError" style="color: #dc3545; margin-top: 15px; text-align: center; font-size: 0.9rem;"></div>
+        </div>
 
         
-        <div class="divider">
-            <span>или</span>
-        </div>
         
-        <div class="social-buttons">
-            <button class="social-btn local-btn" onclick="startLocalMode()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                </svg>
-                Начать без входа (локально)
-            </button>
-        </div>
-        
-        <div class="offline-notice">
-            <strong>⚠️ Работает без интернета!</strong>
-            <p>Все данные сохраняются в облаке и доступны с любого устройства</p>
-        </div>
         
         <!-- Секция бэкапа -->
         <div class="backup-section" id="backupSection" style="display: none;">
@@ -1038,26 +1031,15 @@
     </div>
 
     <!-- VK OneTap SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script nonce="csp_nonce" type="text/javascript">
-        // ========== НАСТРОЙКИ APPWRITE ==========
-        const { Client, Account, Databases, ID, Permission, Role } = Appwrite;
-
-        // ВАЖНО: ВСТАВЬТЕ СЮДА ВАШ PROJECT ID ИЗ APPWRITE
-        const APPWRITE_PROJECT_ID = '69bbba63001d3505db05'; 
-        const APPWRITE_DB_ID = 'tracker_db';
-        const APPWRITE_COL_ID = 'user_data';
-
-        const client = new Client()
-            .setEndpoint('https://cloud.appwrite.io/v1')
-            .setProject(APPWRITE_PROJECT_ID);
-
-        const account = new Account(client);
-        const databases = new Databases(client);
+        // ========== НАСТРОЙКИ SUPABASE ==========
+        const SUPABASE_URL = 'https://sxiwtcsrwrmqvpavokss.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_FA1cnR2WHBE2_fTDZXMQbQ_1y-Ri6zO';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let currentUser = null;
-        let currentDocId = null;
         let data = {
             educations: [
                 { id: 1, name: "Бакалавриат" }
@@ -1066,191 +1048,165 @@
             subjects: []
         };
         let currentSubjectId = null;
-        let lastError = null;
 
         // ========== ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ==========
         document.addEventListener('DOMContentLoaded', async function() {
-            setTimeout(async () => {
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                try {
-                    // Проверяем авторизацию
-                    currentUser = await account.get();
-                    updateUserDisplay(currentUser);
-
-                    // Загружаем данные
-                    await loadDataFromServer();
-
-                    showMainInterface();
-                    initEducationSelector();
-                    renderSubjectsTable();
-                    updateStats();
-                    updateSyncStatus('online', 'Синхронизировано');
-                    showMessage('✅ Данные успешно загружены', 'success');
-                } catch (error) {
-                    console.log('Пользователь не авторизован или оффлайн', error);
-                    // Пробуем загрузить локальную копию
-                    const localData = localStorage.getItem('lab_tracker_data');
-                    if (localData) {
-                        data = JSON.parse(localData);
-                    }
-                    showLoginScreen();
-                    updateSyncStatus('offline', 'Требуется вход');
-                } finally {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    updateDebugPanel();
-                }
-            }, 500);
-        });
-
-        // ========== ОТЛАДКА ==========
-        function toggleDebugPanel() {
-            const panel = document.getElementById('debugPanel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function updateDebugPanel() {
-            document.getElementById('debugUser').textContent = currentUser ? currentUser.name : 'нет';
-            document.getElementById('debugBinId').textContent = currentDocId ? currentDocId : 'нет';
-            document.getElementById('debugState').textContent = navigator.onLine ? 'онлайн' : 'оффлайн';
-            document.getElementById('debugError').textContent = lastError || 'нет';
-        }
-
-        // ========== АВТОРИЗАЦИЯ APPWRITE (ЯНДЕКС) ==========
-        function loginWithYandex() {
             document.getElementById('loadingOverlay').style.display = 'flex';
 
-            // Ваш точный адрес на GitHub Pages
-            const redirectUrl = 'https://roks4n.github.io/DiaryESPAD/'; 
+            // Проверяем текущую сессию
+            const { data: { session }, error } = await supabase.auth.getSession();
 
-            account.createOAuth2Session(
-                'yandex', 
-                redirectUrl, 
-                redirectUrl  
-            );
-        }
+            if (session) {
+                currentUser = session.user;
+                await initUserSession();
+            } else {
+                showLoginScreen();
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
 
-        async function logoutUser() {
+            // Слушаем изменения статуса авторизации
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    currentUser = session.user;
+                    await initUserSession();
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    showLoginScreen();
+                }
+            });
+        });
+
+        async function initUserSession() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
             try {
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                await account.deleteSession('current');
-                localStorage.removeItem('lab_tracker_data');
-                location.reload();
+                // Отображаем Email вместо имени
+                document.getElementById('displayName').textContent = currentUser.email.split('@')[0];
+
+                await loadDataFromSupabase();
+
+                showMainInterface();
+                initEducationSelector();
+                renderSubjectsTable();
+                updateStats();
+                updateSyncStatus('online', 'Синхронизировано');
             } catch (error) {
-                console.error('Ошибка выхода:', error);
-                lastError = error.message;
-                updateDebugPanel();
+                console.error('Ошибка инициализации:', error);
+                showMessage('Ошибка загрузки данных', 'error');
+            } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
-        function startLocalMode() {
-            currentUser = { name: "Гость (Локально)", id: "local" };
-            loadLocalData();
-            showMainInterface();
-            initEducationSelector();
-            renderSubjectsTable();
-            updateStats();
-            updateUserDisplay(currentUser);
-            updateSyncStatus('offline', 'Локальный режим');
-            showMessage('Вы вошли в локальный режим. Данные сохраняются только в браузере.', 'warning');
+        // ========== АВТОРИЗАЦИЯ SUPABASE ==========
+        function showError(msg) {
+            document.getElementById('authError').textContent = msg;
         }
 
-        // ========== ЗАГРУЗКА И СОХРАНЕНИЕ ДАННЫХ ==========
-        async function loadDataFromServer() {
-            try {
-                const response = await databases.listDocuments(APPWRITE_DB_ID, APPWRITE_COL_ID);
+        async function handleLogin() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
 
-                if (response.documents.length > 0) {
-                    const doc = response.documents[0];
-                    currentDocId = doc.$id;
-                    if (doc.state_json) {
-                        data = JSON.parse(doc.state_json);
-                    }
+            if (!email || !password) return showError("Введите Email и пароль");
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            showError("");
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                showError("Ошибка входа: " + error.message);
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        async function handleSignup() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+
+            if (!email || !password) return showError("Введите Email и пароль");
+            if (password.length < 6) return showError("Пароль должен быть минимум 6 символов");
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            showError("");
+
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                showError("Ошибка регистрации: " + error.message);
+                document.getElementById('loadingOverlay').style.display = 'none';
+            } else {
+                showError("Регистрация успешна! Теперь вы можете войти.");
+                // Создаем пустую запись в БД для нового пользователя
+                await createInitialDbRecord(data.user.id);
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        async function logoutUser() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            const { error } = await supabase.auth.signOut();
+            if (error) console.error('Ошибка выхода:', error);
+            location.reload();
+        }
+
+        // ========== БАЗА ДАННЫХ SUPABASE ==========
+
+        async function createInitialDbRecord(userId) {
+            const { error } = await supabase
+                .from('user_data')
+                .insert([
+                    { id: userId, state_json: JSON.stringify(data) }
+                ]);
+            if (error) console.error("Ошибка создания БД:", error);
+        }
+
+        async function loadDataFromSupabase() {
+            const { data: dbData, error } = await supabase
+                .from('user_data')
+                .select('state_json')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (error) {
+                // Если запись не найдена, создаем её
+                if (error.code === 'PGRST116') {
+                    await createInitialDbRecord(currentUser.id);
                 } else {
-                    // Создаем пустой документ для нового пользователя
-                    const newDoc = await databases.createDocument(
-                        APPWRITE_DB_ID, 
-                        APPWRITE_COL_ID, 
-                        ID.unique(),
-                        { state_json: JSON.stringify(data) },
-                        [
-                            Permission.read(Role.user(currentUser.$id)),
-                            Permission.update(Role.user(currentUser.$id)),
-                            Permission.delete(Role.user(currentUser.$id))
-                        ]
-                    );
-                    currentDocId = newDoc.$id;
+                    throw error;
                 }
-                saveLocalData(); // Бэкап в localStorage
-            } catch (error) {
-                console.error('Ошибка загрузки Appwrite:', error);
-                lastError = error.message;
-                throw error;
+            } else if (dbData && dbData.state_json) {
+                data = JSON.parse(dbData.state_json);
             }
         }
 
-        async function autoSave() {
-            saveLocalData();
-            if (currentUser && currentUser.id !== 'local') {
-                try {
-                    updateSyncStatus('online', 'Сохранение...');
+        async function saveDataToServer() {
+            if (!currentUser) return;
 
-                    if (!currentDocId) {
-                        await loadDataFromServer(); // Пытаемся получить ID если его нет
-                    }
+            updateSyncStatus('online', 'Сохранение...');
 
-                    if (currentDocId) {
-                        await databases.updateDocument(
-                            APPWRITE_DB_ID, 
-                            APPWRITE_COL_ID, 
-                            currentDocId,
-                            { state_json: JSON.stringify(data) }
-                        );
-                        updateSyncStatus('online', 'Синхронизировано');
-                    }
-                } catch (error) {
-                    console.error('Ошибка сохранения Appwrite:', error);
-                    updateSyncStatus('offline', 'Ошибка синхронизации');
-                    lastError = error.message;
-                    updateDebugPanel();
-                }
+            const { error } = await supabase
+                .from('user_data')
+                .update({ state_json: JSON.stringify(data) })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                console.error('Ошибка сохранения:', error);
+                updateSyncStatus('offline', 'Ошибка');
+            } else {
+                updateSyncStatus('online', 'Синхронизировано');
             }
         }
 
-        function loadLocalData() {
-            const savedData = localStorage.getItem('lab_tracker_data');
-            if (savedData) {
-                try {
-                    data = JSON.parse(savedData);
-                } catch (e) {
-                    console.error('Ошибка парсинга локальных данных', e);
-                }
-            }
+        // Подменяем старые функции, чтобы не ломать UI
+        function autoSave() {
+            saveDataToServer();
         }
-
-        function saveLocalData() {
-            localStorage.setItem('lab_tracker_data', JSON.stringify(data));
-        }
-
-        // Функция-заглушка для совместимости с вашим существующим кодом 
-        function saveDataToServer() {
-            autoSave();
-        }
-
-        function clearAllData() {
-            if (confirm("Вы уверены? Это удалит все данные без возможности восстановления!")) {
-                data = {
-                    educations: [{ id: 1, name: "Бакалавриат" }],
-                    currentEducationId: 1,
-                    subjects: []
-                };
-                autoSave();
-                renderSubjectsTable();
-                updateStats();
-                showMessage('Все данные очищены', 'success');
-            }
-        }
-
         
 
         // ========== ОСНОВНЫЕ ФУНКЦИИ ИНТЕРФЕЙСА ==========
