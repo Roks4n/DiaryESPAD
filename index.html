@@ -2370,26 +2370,42 @@
         }
     }
 
+    let chatChannel = null;
+
     async function initChatSystem() {
         document.getElementById('chatFab').style.display = 'flex';
 
+        if (chatChannel) {
+            sb.removeChannel(chatChannel);
+        }
+
         // Подписка на новые сообщения в реальном времени
-        sb.channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                const newMessage = payload.new;
+        chatChannel = sb.channel('custom-all-channel')
+            .on(
+                'postgres_changes', 
+                { event: 'INSERT', schema: 'public', table: 'messages' }, 
+                (payload) => {
+                    console.log('Realtime событие получено:', payload);
+                    const newMessage = payload.new;
 
-                // Если мы сейчас в этом чате - добавляем сообщение на экран
-                if (currentActiveChatId === newMessage.chat_id) {
-                    appendMessageToUI(newMessage);
-                    scrollToBottom();
-                }
+                    // Если мы сейчас в этом чате и сообщение НЕ наше (наши мы рисуем сразу оптимистично)
+                    if (currentActiveChatId === newMessage.chat_id && newMessage.sender_id !== currentUser.id) {
+                        appendMessageToUI(newMessage);
+                        scrollToBottom();
+                    }
 
-                // В любом случае обновляем список чатов (чтобы обновить сортировку)
-                if (chatSidebarOpen) {
-                    loadChatList();
+                    // В любом случае обновляем список чатов
+                    if (chatSidebarOpen) {
+                        loadChatList();
+                    }
                 }
-            })
-            .subscribe();
+            )
+            .subscribe((status) => {
+                console.log('Статус подписки на Realtime:', status);
+                if(status === 'SUBSCRIBED') {
+                    console.log('Успешно подключено к живым обновлениям!');
+                }
+            });
     }
 
     // Загрузка списка чатов с сортировкой по updated_at
