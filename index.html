@@ -866,8 +866,8 @@
 
         
         /* LIGHT THEME FOR CHAT */
-        body.light-theme .chat-sidebar { background: #f8f9fa; border-left: 1px solid #ced4da; }
-        body.light-theme .chat-header { background: #e9ecef; border-bottom: 1px solid #ced4da; }
+        body.light-theme .chat-sidebar, body.light-theme .active-chat-view { background: #f8f9fa; border-left: 1px solid #ced4da; }
+        body.light-theme .chat-header, body.light-theme #messagesContainer { background: #e9ecef; border-bottom: 1px solid #ced4da; }
         body.light-theme .active-chat-header { background: #e9ecef; border-bottom: 1px solid #ced4da; }
         body.light-theme .chat-input-area { background: #e9ecef; border-top: 1px solid #ced4da; }
         body.light-theme .chat-input-wrapper { background: #fff; border-color: #ced4da; }
@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.37
+        v1.0.38
     </div>
 
     
@@ -3453,7 +3453,7 @@
                 textDiv.style.flexDirection = 'column';
 
                 const nameEl = document.createElement('strong');
-                nameEl.style.color = 'white';
+                nameEl.className = 'search-result-name';
                 nameEl.textContent = name;
 
                 const emailEl = document.createElement('span');
