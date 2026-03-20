@@ -1204,13 +1204,13 @@
                     if (event === 'PASSWORD_RECOVERY') {
                         document.getElementById('resetPasswordModal').style.display = 'flex';
                     } else if (event === 'SIGNED_IN' && session?.user) {
-                        // Только если это новый вход (пользователь поменялся или еще не загружен)
-                        if (!currentUser || currentUser.id !== session.user.id) {
+                        // Если пользователь вошел, но интерфейс еще не переключился (мы на экране логина)
+                        const loginScreenVisible = document.getElementById('loginContainer').style.display !== 'none';
+
+                        if (!currentUser || currentUser.id !== session.user.id || loginScreenVisible) {
                             currentUser = session.user;
                             await initUserSession();
                         } else {
-                            // Если пользователь тот же (например, мы просто вернулись во вкладку и токен обновился),
-                            // мы не перезапускаем весь интерфейс и не показываем экран загрузки.
                             currentUser = session.user;
                         }
                     } else if (event === 'SIGNED_OUT') {
@@ -1335,14 +1335,23 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             try {
-                const { error } = await sb.auth.signInWithPassword({ email, password });
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
                 if (error) {
                     showError('Ошибка входа: ' + error.message);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    return;
                 }
+
+                // Если вход успешен, вручную форсируем загрузку интерфейса, 
+                // не дожидаясь ответа от слушателя событий
+                if (data?.session?.user) {
+                    currentUser = data.session.user;
+                    await initUserSession();
+                }
+
             } catch (error) {
                 showError('Ошибка входа: ' + error.message);
-            } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
@@ -2378,7 +2387,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.16
+        v1.0.17
     </div>
 
     <!-- CHAT UI -->
