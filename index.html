@@ -870,6 +870,14 @@
         <h2 class="login-title">Трекер лабораторных работ</h2>
         <p class="login-subtitle">Версия для работы без VPN в России</p>
 
+        
+        <div id="authSuccessMessage" style="display:none; margin-top: 20px; background: rgba(40, 167, 69, 0.1); border: 2px solid #28a745; padding: 25px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">✉️</div>
+            <h3 style="color: #28a745; margin-bottom: 10px; font-size: 1.3rem;">Почти готово!</h3>
+            <p id="authSuccessText" style="color: #e0e0e0; font-size: 1rem; line-height: 1.5; margin-bottom: 15px;">Мы отправили письмо с подтверждением на вашу почту. Пожалуйста, перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
+            <button onclick="document.getElementById('authSuccessMessage').style.display='none'; document.getElementById('auth-form').style.display='block';" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:600; cursor:pointer;">Понятно, иду проверять</button>
+        </div>
+
         <div id="auth-form" style="margin-top: 20px; text-align: left;">
             <div style="margin-bottom: 15px;">
                 <label style="display:block; margin-bottom:5px; color:#495057; font-weight:600;">Email</label>
@@ -877,7 +885,10 @@
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display:block; margin-bottom:5px; color:#495057; font-weight:600;">Пароль</label>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <label style="color:#e0e0e0; font-weight:600; margin:0;">Пароль</label>
+                    <a href="#" onclick="handleResetPassword()" style="color:#667eea; text-decoration:none; font-size:0.85rem; font-weight:600;">Забыли пароль?</a>
+                </div>
                 <input type="password" id="authPassword" style="background: #111; color: #b0b0b0; width:100%; padding:12px; border:1px solid #555; border-radius:5px; font-size:1rem;" placeholder="Минимум 6 символов">
             </div>
 
@@ -1196,7 +1207,19 @@
                 }
 
                 sb.auth.onAuthStateChange(async (event, session) => {
-                    if (event === 'SIGNED_IN' && session?.user) {
+                    if (event === 'PASSWORD_RECOVERY') {
+                        const newPassword = prompt('🔑 Восстановление пароля\n\nВведите новый пароль (минимум 6 символов):');
+                        if (newPassword && newPassword.length >= 6) {
+                            const { error } = await sb.auth.updateUser({ password: newPassword });
+                            if (error) {
+                                alert('Ошибка обновления пароля: ' + error.message);
+                            } else {
+                                alert('✅ Пароль успешно изменен!');
+                            }
+                        } else {
+                            alert('Сброс отменен. Пароль слишком короткий.');
+                        }
+                    } else if (event === 'SIGNED_IN' && session?.user) {
                         // Только если это новый вход (пользователь поменялся или еще не загружен)
                         if (!currentUser || currentUser.id !== session.user.id) {
                             currentUser = session.user;
@@ -1287,6 +1310,34 @@
             document.getElementById('authError').textContent = msg || '';
         }
 
+        
+        async function handleResetPassword() {
+            const email = document.getElementById('authEmail').value.trim();
+            if (!email) {
+                showError('Пожалуйста, введите ваш Email в поле выше для сброса пароля');
+                return;
+            }
+
+            showError('');
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            try {
+                const { error } = await sb.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+
+                if (error) throw error;
+
+                document.getElementById('auth-form').style.display = 'none';
+                document.getElementById('authSuccessText').innerHTML = `Инструкция по восстановлению пароля отправлена на <b>${email}</b>.<br><br>Пожалуйста, проверьте папку <b>«Входящие»</b> и <b>«Спам»</b>, и перейдите по ссылке в письме!`;
+                document.getElementById('authSuccessMessage').style.display = 'block';
+
+            } catch (error) {
+                showError('Ошибка сброса: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
         async function handleLogin() {
             const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
@@ -1341,7 +1392,9 @@
                     await createInitialDbRecord(authData.user.id);
                 }
 
-                showMessage('✅ Регистрация успешна! Теперь войдите в аккаунт.', 'success');
+                document.getElementById('auth-form').style.display = 'none';
+                document.getElementById('authSuccessText').innerHTML = `Мы отправили письмо с подтверждением на <b>${email}</b>.<br><br>Пожалуйста, проверьте папку <b>«Входящие»</b> и <b>«Спам»</b>, и перейдите по ссылке в письме для активации аккаунта!`;
+                document.getElementById('authSuccessMessage').style.display = 'block';
             } catch (error) {
                 showError('Ошибка регистрации: ' + error.message);
             } finally {
