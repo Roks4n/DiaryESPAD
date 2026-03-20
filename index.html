@@ -763,6 +763,23 @@
     <style>
         
         
+        
+        /* PROFILE MODAL STYLES */
+        .profile-avatar-container {
+            width: 100px; height: 100px; margin: 0 auto 20px auto; position: relative; cursor: pointer;
+        }
+        .profile-avatar-container img {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #667eea;
+        }
+        .profile-avatar-container .overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; color: white; opacity: 0;
+            transition: opacity 0.2s; font-size: 0.8rem; font-weight: 600; text-align: center;
+        }
+        .profile-avatar-container:hover .overlay { opacity: 1; }
+
+        .profile-quote-display { font-style: italic; color: #b0b0b0; font-size: 0.9rem; text-align: center; margin-top: -10px; margin-bottom: 20px; }
+
         /* LIGHT THEME OVERRIDES FOR BADGES */
         body.light-theme .status-pending { background: #fff3cd !important; color: #856404 !important; }
         body.light-theme .status-done { background: #d1ecf1 !important; color: #0c5460 !important; }
@@ -914,7 +931,7 @@
         <header>
             <div class="user-info">
                 <button class="theme-toggle-btn" onclick="toggleTheme()" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; backdrop-filter: blur(10px); transition: background 0.3s ease; display: flex; align-items: center; gap: 5px;">🌓 Тема</button>
-                <div class="username-display">
+                <div class="username-display" onclick="openProfileSettings()" style="cursor:pointer; transition:background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'" title="Настройки профиля">
                     <img src="" alt="Аватар" class="user-avatar" id="userAvatar">
                     <span id="displayName"></span>
                 </div>
@@ -1171,21 +1188,6 @@
         // ==========================================
         // ИНИЦИАЛИЗАЦИЯ И SUPABASE
         // ==========================================
-        function updateUserHeader() {
-            const displayName = document.getElementById('displayName');
-            const welcomeMessage = document.getElementById('welcomeMessage');
-            const avatar = document.getElementById('userAvatar');
-
-            const name = currentUser?.email ? currentUser.email.split('@')[0] : 'Пользователь';
-
-            displayName.textContent = name;
-            welcomeMessage.textContent = `Добро пожаловать, ${name}!`;
-
-            const initials = name.substring(0, 2).toUpperCase();
-            avatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="11" fill="white" text-anchor="middle">${initials}</text></svg>`;
-            avatar.style.display = 'block';
-        }
-
         async function initApp() {
             document.getElementById('loadingOverlay').style.display = 'flex';
 
@@ -1273,7 +1275,9 @@
 
                 
                 
+                
                 showMainInterface();
+                await loadUserProfile(); // Загружаем профиль
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
@@ -1291,7 +1295,9 @@
                 data = local ? normalizeData(local) : getDefaultData();
 
                 
+                
                 showMainInterface();
+                await loadUserProfile(); // Загружаем профиль
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
@@ -2400,7 +2406,40 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.19
+        v1.0.20
+    </div>
+
+    
+    <!-- PROFILE SETTINGS MODAL -->
+    <div class="modal" id="profileSettingsModal" style="display:none; z-index: 2500;">
+        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; max-width: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #667eea; margin: 0;">Профиль</h2>
+                <button onclick="document.getElementById('profileSettingsModal').style.display='none'" style="background:none; border:none; color:#b0b0b0; font-size:1.5rem; cursor:pointer;">×</button>
+            </div>
+
+            <div class="profile-avatar-container" onclick="document.getElementById('avatarUpload').click()">
+                <img id="profileModalAvatar" src="" alt="Avatar">
+                <div class="overlay">Изменить<br>фото</div>
+                <input type="file" id="avatarUpload" style="display:none" accept="image/png, image/jpeg, image/gif, image/webp" onchange="handleAvatarUpload(event)">
+            </div>
+
+            <div class="profile-quote-display" id="profileModalQuoteDisplay"></div>
+
+            <div class="form-group">
+                <label style="color: #e0e0e0; font-size: 0.9rem;">Отображаемое имя (Никнейм)</label>
+                <input type="text" id="profileUsername" style="background: #111; color: white; border: 1px solid #555;">
+            </div>
+
+            <div class="form-group">
+                <label style="color: #e0e0e0; font-size: 0.9rem;">Любимая цитата или статус</label>
+                <input type="text" id="profileQuote" placeholder="Например: Люблю кодить по ночам" style="background: #111; color: white; border: 1px solid #555;">
+            </div>
+
+            <div id="profileSaveStatus" style="text-align: center; margin-bottom: 15px; font-size: 0.9rem; display:none;"></div>
+
+            <button onclick="saveProfileSettings()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Сохранить изменения</button>
+        </div>
     </div>
 
     <!-- CHAT UI -->
@@ -2578,7 +2617,7 @@
         myChatsData.forEach(chat => {
             // Находим собеседника (участника, который НЕ мы)
             const otherParticipant = chat.chat_participants.find(p => p.user_id !== currentUser.id);
-            const chatName = chat.is_group ? chat.name : (otherParticipant?.profiles?.email || 'Неизвестный пользователь');
+            const chatName = chat.is_group ? chat.name : (otherParticipant?.profiles?.username || otherParticipant?.profiles?.email || 'Неизвестный пользователь');
             const dateObj = new Date(chat.updated_at);
             const timeStr = isNaN(dateObj) ? '' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
@@ -2627,8 +2666,8 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
-                div.textContent = u.email;
-                div.onclick = () => startDirectChat(u.id, u.email);
+                div.innerHTML = `<strong>${escapeHTML(u.username || u.email.split('@')[0])}</strong> <span style="font-size:0.8rem; color:#6c757d;">(${escapeHTML(u.email)})</span>`;
+                div.onclick = () => startDirectChat(u.id, u.username || u.email);
                 resultsDiv.appendChild(div);
             });
         } else {
