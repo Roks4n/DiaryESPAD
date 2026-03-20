@@ -2449,25 +2449,34 @@
     // Поиск пользователей
     function debounceSearch(query) {
         clearTimeout(searchTimeout);
-        if (!query.trim()) {
-            document.getElementById('searchResults').innerHTML = '';
-            return;
-        }
         searchTimeout = setTimeout(() => performSearch(query.trim()), 500);
     }
 
     async function performSearch(query) {
-        const { data: users } = await sb
-            .from('profiles')
-            .select('id, email')
-            .ilike('email', `%${query}%`)
-            .neq('id', currentUser.id)
-            .limit(5);
+        let req = sb.from('profiles').select('id, email').neq('id', currentUser.id).limit(10);
+
+        if (query) {
+            req = req.ilike('email', `%${query}%`);
+        }
+
+        const { data: users, error } = await req;
 
         const resultsDiv = document.getElementById('searchResults');
         resultsDiv.innerHTML = '';
 
+        if (error) {
+            console.error('Search error:', error);
+            resultsDiv.innerHTML = `<div style="padding:10px; color:#dc3545; font-size:0.85rem;">Ошибка поиска: ${error.message}</div>`;
+            return;
+        }
+
         if (users && users.length > 0) {
+            if (!query) {
+                const header = document.createElement('div');
+                header.style = "padding:5px 15px; font-size:0.8rem; color:#6c757d; background:rgba(0,0,0,0.2);";
+                header.textContent = "Все пользователи:";
+                resultsDiv.appendChild(header);
+            }
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
@@ -2476,7 +2485,11 @@
                 resultsDiv.appendChild(div);
             });
         } else {
-            resultsDiv.innerHTML = '<div style="padding:10px; color:#6c757d;">Не найдено</div>';
+            if (query) {
+                resultsDiv.innerHTML = '<div style="padding:10px; color:#6c757d; font-size:0.9rem;">Пользователь не найден. Он точно зарегистрирован в трекере?</div>';
+            } else {
+                resultsDiv.innerHTML = '<div style="padding:10px; color:#6c757d; font-size:0.9rem;">В базе пока нет других пользователей. Зарегистрируйте второй аккаунт!</div>';
+            }
         }
     }
 
