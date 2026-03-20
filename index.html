@@ -900,15 +900,7 @@
             <div id="authError" style="color:#dc3545; margin-top:15px; text-align:center; font-size:0.9rem;"></div>
         </div>
 
-        <div class="backup-section" id="backupSection" style="display:none; margin:20px 0 0 0;">
-            <h4>💾 Восстановление данных</h4>
-            <p style="font-size:0.9rem; color:#6c757d; margin:10px 0;">
-                У вас есть сохраненные данные? Импортируйте их:
-            </p>
-            <div class="backup-buttons">
-                <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт из файла</button>
-            </div>
-        </div>
+        
     </div>
 
     <div class="container" id="mainContainer">
@@ -1208,17 +1200,7 @@
 
                 sb.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'PASSWORD_RECOVERY') {
-                        const newPassword = prompt('🔑 Восстановление пароля\n\nВведите новый пароль (минимум 6 символов):');
-                        if (newPassword && newPassword.length >= 6) {
-                            const { error } = await sb.auth.updateUser({ password: newPassword });
-                            if (error) {
-                                alert('Ошибка обновления пароля: ' + error.message);
-                            } else {
-                                alert('✅ Пароль успешно изменен!');
-                            }
-                        } else {
-                            alert('Сброс отменен. Пароль слишком короткий.');
-                        }
+                        document.getElementById('resetPasswordModal').style.display = 'flex';
                     } else if (event === 'SIGNED_IN' && session?.user) {
                         // Только если это новый вход (пользователь поменялся или еще не загружен)
                         if (!currentUser || currentUser.id !== session.user.id) {
@@ -2369,6 +2351,29 @@
 </script>
 
 
+    
+    <div class="modal" id="resetPasswordModal" style="display:none; z-index: 3000;">
+        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🔑</div>
+            <h2 style="color: #667eea; margin-bottom: 10px;">Восстановление пароля</h2>
+            <p style="color: #b0b0b0; margin-bottom: 20px; font-size: 0.95rem;">Введите новый пароль для вашего аккаунта</p>
+
+            <div class="form-group" style="text-align: left;">
+                <label for="newPasswordInput" style="color: #e0e0e0;">Новый пароль</label>
+                <input type="password" id="newPasswordInput" placeholder="Минимум 6 символов" style="background: #111; color: white; border: 1px solid #555;">
+            </div>
+
+            <div class="form-group" style="text-align: left;">
+                <label for="newPasswordConfirm" style="color: #e0e0e0;">Подтвердите пароль</label>
+                <input type="password" id="newPasswordConfirm" placeholder="Повторите пароль" style="background: #111; color: white; border: 1px solid #555;">
+            </div>
+
+            <div id="resetModalError" style="color: #fc9fa7; margin-bottom: 15px; font-size: 0.9rem; display: none;"></div>
+
+            <button onclick="submitNewPassword()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: background 0.2s;">Сохранить новый пароль</button>
+        </div>
+    </div>
+
     <!-- CHAT UI -->
     <div class="chat-fab" onclick="toggleChatSidebar()" id="chatFab" style="display:none;">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
@@ -2406,6 +2411,40 @@
 
 
 <script>
+    
+    async function submitNewPassword() {
+        const pass1 = document.getElementById('newPasswordInput').value;
+        const pass2 = document.getElementById('newPasswordConfirm').value;
+        const errorDiv = document.getElementById('resetModalError');
+
+        if (pass1.length < 6) {
+            errorDiv.textContent = 'Пароль должен быть минимум 6 символов';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (pass1 !== pass2) {
+            errorDiv.textContent = 'Пароли не совпадают';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        errorDiv.style.display = 'none';
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        try {
+            const { error } = await sb.auth.updateUser({ password: pass1 });
+            if (error) throw error;
+
+            document.getElementById('resetPasswordModal').style.display = 'none';
+            alert('✅ Пароль успешно изменен! Теперь вы можете пользоваться приложением.');
+        } catch (error) {
+            errorDiv.textContent = 'Ошибка сохранения: ' + error.message;
+            errorDiv.style.display = 'block';
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
     // === ЛОГИКА ЧАТА ===
     let chatSidebarOpen = false;
     let currentActiveChatId = null;
