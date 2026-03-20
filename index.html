@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.39
+        v1.0.40
     </div>
 
     
@@ -2783,6 +2783,20 @@
     </div>
 
     
+    
+    <!-- WEBRTC CALL MODAL -->
+    <div id="callModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:5000; flex-direction:column; align-items:center; justify-content:center; backdrop-filter: blur(10px);">
+        <h2 id="callStatus" style="color:white; margin-bottom: 20px; font-weight: 300;">Звонок...</h2>
+        <div style="position:relative; width: 90%; max-width: 900px; height: 70vh; background:#111; border-radius:20px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid #333;">
+            <video id="remoteVideo" autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>
+            <video id="localVideo" autoplay playsinline muted style="position:absolute; bottom:20px; right:20px; width:120px; height:160px; background:#000; border:2px solid #667eea; border-radius:15px; object-fit:cover; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: width 0.3s, height 0.3s;"></video>
+        </div>
+        <div style="margin-top:30px; display:flex; gap:20px;">
+            <button id="acceptCallBtn" onclick="acceptCall()" style="display:none; background:#28a745; color:white; border:none; padding:15px 40px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); transition: transform 0.2s;">Ответить</button>
+            <button id="endCallBtn" onclick="endCall()" style="background:#dc3545; color:white; border:none; padding:15px 40px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); transition: transform 0.2s;">Завершить</button>
+        </div>
+    </div>
+
     <!-- REACTION & EMOJI PICKERS -->
     <div id="reactionPicker">
         <div class="picker-btn" onclick="addReaction('👍')">👍</div>
@@ -2823,9 +2837,10 @@
 
         <!-- Окно активного чата -->
         <div class="active-chat-view" id="activeChatView">
-            <div class="active-chat-header">
+            <div class="active-chat-header" style="align-items: center;">
                 <button class="back-to-list-btn" onclick="closeActiveChat()">← Назад</button>
-                <div class="active-chat-title" id="activeChatTitle">user@example.com</div>
+                <div class="active-chat-title" id="activeChatTitle" style="flex:1;">user@example.com</div>
+                <button id="startCallBtn" onclick="startVideoCall()" class="chat-media-btn" style="width:35px; height:35px; font-size:1rem; display:none;" title="Видеозвонок">📞</button>
             </div>
             <div class="messages-container" id="messagesContainer"></div>
             <div class="chat-input-area" style="position: relative;">
@@ -3246,7 +3261,7 @@
         }
 
         // Подписка на новые сообщения в реальном времени
-        chatChannel = sb.channel('custom-all-channel')
+        chatChannel = sb.channel('custom-all-channel', { config: { broadcast: { ack: false } } })
             .on(
                 'postgres_changes', 
                 { event: 'INSERT', schema: 'public', table: 'messages' }, 
@@ -3279,6 +3294,14 @@
                         // Обновляем реакции конкретного сообщения
                         fetchAndUpdateReactions(msgId);
                     }
+                }
+            )
+
+            .on(
+                'broadcast',
+                { event: 'webrtc' },
+                (payload) => {
+                    handleIncomingSignal(payload.payload);
                 }
             )
             .subscribe((status) => {
@@ -3526,12 +3549,15 @@
 
         // Make header clickable to open profile
         const titleEl = document.getElementById('activeChatTitle');
+        const callBtn = document.getElementById('startCallBtn');
         titleEl.textContent = chatName;
         if (otherParticipantData && otherParticipantData.id) {
             titleEl.style.cursor = 'pointer';
             titleEl.style.textDecoration = 'underline';
             titleEl.onclick = () => showUserProfile(otherParticipantData.id);
+            callBtn.style.display = 'flex';
         } else {
+            callBtn.style.display = 'none';
             titleEl.style.cursor = 'default';
             titleEl.style.textDecoration = 'none';
             titleEl.onclick = null;
@@ -3610,6 +3636,170 @@
             console.error('Ошибка удаления:', e);
             alert('Ошибка при удалении сообщения');
         }
+    }
+
+    
+    // === WEBRTC ЗВОНКИ ===
+    const rtcServers = {
+        iceServers: [
+            { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
+        ]
+    };
+
+    let peerConnection = null;
+    let localCallStream = null;
+    let remoteCallStream = null;
+    let activeCallTargetId = null;
+
+    async function initWebRTC() {
+        peerConnection = new RTCPeerConnection(rtcServers);
+
+        peerConnection.onicecandidate = event => {
+            if(event.candidate) {
+                sendRTCSignal('ice-candidate', event.candidate);
+            }
+        };
+
+        peerConnection.ontrack = event => {
+            const remoteVid = document.getElementById('remoteVideo');
+            if(!remoteCallStream) {
+                remoteCallStream = new MediaStream();
+                remoteVid.srcObject = remoteCallStream;
+            }
+            remoteCallStream.addTrack(event.track);
+        };
+    }
+
+    async function setupCallMedia() {
+        try {
+            localCallStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+            document.getElementById('localVideo').srcObject = localCallStream;
+            localCallStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localCallStream);
+            });
+        } catch(e) {
+            alert('Ошибка доступа к камере/микрофону: ' + e.message);
+            throw e;
+        }
+    }
+
+    async function startVideoCall() {
+        if(!currentChatOtherParticipant || !currentChatOtherParticipant.id) return;
+        activeCallTargetId = currentChatOtherParticipant.id;
+
+        document.getElementById('callModal').style.display = 'flex';
+        const name = currentChatOtherParticipant.username || currentChatOtherParticipant.email.split('@')[0];
+        document.getElementById('callStatus').textContent = `Звоним ${name}...`;
+        document.getElementById('acceptCallBtn').style.display = 'none';
+
+        try {
+            await initWebRTC();
+            await setupCallMedia();
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            sendRTCSignal('offer', offer);
+        } catch(e) {
+            endCallUI();
+        }
+    }
+
+    async function handleIncomingSignal(payload) {
+        const { sender_id, sender_name, type, data, target_id } = payload;
+
+        // Игнорируем, если звонок не нам
+        if(target_id !== currentUser.id) return;
+
+        if(type === 'offer') {
+            // Если уже говорим, отклоняем
+            if(activeCallTargetId && activeCallTargetId !== sender_id) {
+                chatChannel.send({
+                    type: 'broadcast', event: 'webrtc',
+                    payload: { target_id: sender_id, sender_id: currentUser.id, type: 'reject', data: null }
+                });
+                return;
+            }
+
+            activeCallTargetId = sender_id;
+            document.getElementById('callModal').style.display = 'flex';
+            document.getElementById('callStatus').textContent = `Входящий звонок от ${sender_name}...`;
+            document.getElementById('acceptCallBtn').style.display = 'inline-block';
+
+            await initWebRTC();
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+        }
+        else if (type === 'answer') {
+            if(peerConnection && peerConnection.signalingState !== 'stable') {
+                document.getElementById('callStatus').textContent = 'Разговор';
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+            }
+        }
+        else if (type === 'ice-candidate') {
+            if(peerConnection) {
+                try { await peerConnection.addIceCandidate(new RTCIceCandidate(data)); } catch(e){}
+            }
+        }
+        else if (type === 'reject') {
+            alert('Собеседник отклонил звонок');
+            endCallUI();
+        }
+        else if (type === 'end') {
+            endCallUI();
+        }
+    }
+
+    async function acceptCall() {
+        document.getElementById('acceptCallBtn').style.display = 'none';
+        document.getElementById('callStatus').textContent = 'Подключение...';
+
+        try {
+            await setupCallMedia();
+
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            sendRTCSignal('answer', answer);
+            document.getElementById('callStatus').textContent = 'Разговор';
+        } catch(e) {
+            endCallUI();
+        }
+    }
+
+    function endCall() {
+        sendRTCSignal('end', null);
+        endCallUI();
+    }
+
+    function endCallUI() {
+        document.getElementById('callModal').style.display = 'none';
+        if(peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if(localCallStream) {
+            localCallStream.getTracks().forEach(t => t.stop());
+            localCallStream = null;
+        }
+        remoteCallStream = null;
+        document.getElementById('localVideo').srcObject = null;
+        document.getElementById('remoteVideo').srcObject = null;
+        activeCallTargetId = null;
+    }
+
+    function sendRTCSignal(type, data) {
+        if(!chatChannel) return;
+        chatChannel.send({
+            type: 'broadcast',
+            event: 'webrtc',
+            payload: {
+                target_id: activeCallTargetId,
+                sender_id: currentUser.id,
+                sender_name: userProfileData?.username || currentUser.email.split('@')[0],
+                type: type,
+                data: data
+            }
+        });
     }
 
     // === ЭМОДЗИ И РЕАКЦИИ ===
