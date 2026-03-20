@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.40
+        v1.0.41
     </div>
 
     
@@ -2786,14 +2786,24 @@
     
     <!-- WEBRTC CALL MODAL -->
     <div id="callModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:5000; flex-direction:column; align-items:center; justify-content:center; backdrop-filter: blur(10px);">
-        <h2 id="callStatus" style="color:white; margin-bottom: 20px; font-weight: 300;">Звонок...</h2>
-        <div style="position:relative; width: 90%; max-width: 900px; height: 70vh; background:#111; border-radius:20px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid #333;">
+
+        <div id="audioCallAvatarContainer" style="display:none; flex-direction:column; align-items:center; justify-content:center; margin-bottom:30px;">
+            <div class="blinking-dot" style="width:120px; height:120px; border-radius:50%; background:#333; margin-bottom:20px; display:flex; align-items:center; justify-content:center; font-size:4rem; box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);">👤</div>
+            <h2 id="audioCallName" style="color:white; font-size:2rem; margin:0;">Пользователь</h2>
+        </div>
+
+        <h2 id="callStatus" style="color:#b0b0b0; margin-bottom: 20px; font-weight: 300;">Звонок...</h2>
+
+        <div id="videoContainer" style="position:relative; width: 90%; max-width: 900px; height: 70vh; background:#111; border-radius:20px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid #333;">
             <video id="remoteVideo" autoplay playsinline style="width:100%; height:100%; object-fit:contain;"></video>
             <video id="localVideo" autoplay playsinline muted style="position:absolute; bottom:20px; right:20px; width:120px; height:160px; background:#000; border:2px solid #667eea; border-radius:15px; object-fit:cover; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: width 0.3s, height 0.3s;"></video>
         </div>
-        <div style="margin-top:30px; display:flex; gap:20px;">
-            <button id="acceptCallBtn" onclick="acceptCall()" style="display:none; background:#28a745; color:white; border:none; padding:15px 40px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); transition: transform 0.2s;">Ответить</button>
-            <button id="endCallBtn" onclick="endCall()" style="background:#dc3545; color:white; border:none; padding:15px 40px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); transition: transform 0.2s;">Завершить</button>
+
+        <div style="margin-top:30px; display:flex; gap:20px; align-items:center;">
+            <button id="toggleMicBtn" onclick="toggleMic()" style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; cursor:pointer; font-size:1.5rem; transition:0.2s;" title="Микрофон">🎤</button>
+            <button id="acceptCallBtn" onclick="acceptCall()" style="display:none; background:#28a745; color:white; border:none; padding:0 40px; height:60px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); transition: transform 0.2s;">Ответить</button>
+            <button id="endCallBtn" onclick="endCall()" style="background:#dc3545; color:white; border:none; padding:0 40px; height:60px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); transition: transform 0.2s;">Завершить</button>
+            <button id="toggleVideoBtn" onclick="toggleVid()" style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; cursor:pointer; font-size:1.5rem; transition:0.2s;" title="Камера">📹</button>
         </div>
     </div>
 
@@ -2839,8 +2849,11 @@
         <div class="active-chat-view" id="activeChatView">
             <div class="active-chat-header" style="align-items: center;">
                 <button class="back-to-list-btn" onclick="closeActiveChat()">← Назад</button>
-                <div class="active-chat-title" id="activeChatTitle" style="flex:1;">user@example.com</div>
-                <button id="startCallBtn" onclick="startVideoCall()" class="chat-media-btn" style="width:35px; height:35px; font-size:1rem; display:none;" title="Видеозвонок">📞</button>
+                <div class="active-chat-title" id="activeChatTitle" style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">user@example.com</div>
+                <div id="callActionBtns" style="display:none; gap:10px;">
+                    <button onclick="startCall(false)" class="chat-media-btn" style="width:35px; height:35px; font-size:1rem; background: rgba(255,255,255,0.1);" title="Аудиозвонок">📞</button>
+                    <button onclick="startCall(true)" class="chat-media-btn" style="width:35px; height:35px; font-size:1rem; background: rgba(255,255,255,0.1);" title="Видеозвонок">📹</button>
+                </div>
             </div>
             <div class="messages-container" id="messagesContainer"></div>
             <div class="chat-input-area" style="position: relative;">
@@ -3549,15 +3562,15 @@
 
         // Make header clickable to open profile
         const titleEl = document.getElementById('activeChatTitle');
-        const callBtn = document.getElementById('startCallBtn');
+        const callBtns = document.getElementById('callActionBtns');
         titleEl.textContent = chatName;
         if (otherParticipantData && otherParticipantData.id) {
             titleEl.style.cursor = 'pointer';
             titleEl.style.textDecoration = 'underline';
             titleEl.onclick = () => showUserProfile(otherParticipantData.id);
-            callBtn.style.display = 'flex';
+            callBtns.style.display = 'flex';
         } else {
-            callBtn.style.display = 'none';
+            callBtns.style.display = 'none';
             titleEl.style.cursor = 'default';
             titleEl.style.textDecoration = 'none';
             titleEl.onclick = null;
@@ -3670,23 +3683,46 @@
         };
     }
 
-    async function setupCallMedia() {
+    let isVideoCall = false;
+    let isMicMuted = false;
+    let isVidMuted = false;
+
+    async function setupCallMedia(withVideo) {
         try {
-            localCallStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-            document.getElementById('localVideo').srcObject = localCallStream;
+            localCallStream = await navigator.mediaDevices.getUserMedia({video: withVideo, audio: true});
+            if (withVideo) {
+                document.getElementById('localVideo').srcObject = localCallStream;
+            }
             localCallStream.getTracks().forEach(track => {
                 peerConnection.addTrack(track, localCallStream);
             });
         } catch(e) {
-            alert('Ошибка доступа к камере/микрофону: ' + e.message);
+            alert('Ошибка доступа к медиа: ' + e.message);
             throw e;
         }
     }
 
-    async function startVideoCall() {
+    function updateCallUI() {
+        const videoContainer = document.getElementById('videoContainer');
+        const audioAvatar = document.getElementById('audioCallAvatarContainer');
+        const name = currentChatOtherParticipant?.username || currentChatOtherParticipant?.email?.split('@')[0] || 'Пользователь';
+
+        if (isVideoCall) {
+            videoContainer.style.display = 'block';
+            audioAvatar.style.display = 'none';
+        } else {
+            videoContainer.style.display = 'none';
+            audioAvatar.style.display = 'flex';
+            document.getElementById('audioCallName').textContent = name;
+        }
+    }
+
+    async function startCall(withVideo) {
         if(!currentChatOtherParticipant || !currentChatOtherParticipant.id) return;
         activeCallTargetId = currentChatOtherParticipant.id;
+        isVideoCall = withVideo;
 
+        updateCallUI();
         document.getElementById('callModal').style.display = 'flex';
         const name = currentChatOtherParticipant.username || currentChatOtherParticipant.email.split('@')[0];
         document.getElementById('callStatus').textContent = `Звоним ${name}...`;
@@ -3694,14 +3730,38 @@
 
         try {
             await initWebRTC();
-            await setupCallMedia();
+            await setupCallMedia(isVideoCall);
 
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
 
-            sendRTCSignal('offer', offer);
+            sendRTCSignal('offer', { sdp: offer, isVideo: isVideoCall });
         } catch(e) {
             endCallUI();
+        }
+    }
+
+    function toggleMic() {
+        if(!localCallStream) return;
+        const audioTrack = localCallStream.getAudioTracks()[0];
+        if(audioTrack) {
+            isMicMuted = !isMicMuted;
+            audioTrack.enabled = !isMicMuted;
+            const btn = document.getElementById('toggleMicBtn');
+            btn.style.background = isMicMuted ? 'rgba(220,53,69,0.5)' : 'rgba(255,255,255,0.2)';
+            btn.textContent = isMicMuted ? '🔇' : '🎤';
+        }
+    }
+
+    function toggleVid() {
+        if(!localCallStream) return;
+        const videoTrack = localCallStream.getVideoTracks()[0];
+        if(videoTrack) {
+            isVidMuted = !isVidMuted;
+            videoTrack.enabled = !isVidMuted;
+            const btn = document.getElementById('toggleVideoBtn');
+            btn.style.background = isVidMuted ? 'rgba(220,53,69,0.5)' : 'rgba(255,255,255,0.2)';
+            btn.textContent = isVidMuted ? '🚫' : '📹';
         }
     }
 
@@ -3722,12 +3782,29 @@
             }
 
             activeCallTargetId = sender_id;
+            isVideoCall = data.isVideo;
+
+            // Если звонят нам, currentChatOtherParticipant может не совпадать (мы сидим в другой вкладке)
+            // Но мы можем просто показать имя из payload
             document.getElementById('callModal').style.display = 'flex';
-            document.getElementById('callStatus').textContent = `Входящий звонок от ${sender_name}...`;
+            document.getElementById('callStatus').textContent = `Входящий ${isVideoCall ? 'видеозвонок' : 'аудиозвонок'}...`;
+
+            const videoContainer = document.getElementById('videoContainer');
+            const audioAvatar = document.getElementById('audioCallAvatarContainer');
+
+            if (isVideoCall) {
+                videoContainer.style.display = 'block';
+                audioAvatar.style.display = 'none';
+            } else {
+                videoContainer.style.display = 'none';
+                audioAvatar.style.display = 'flex';
+                document.getElementById('audioCallName').textContent = sender_name;
+            }
+
             document.getElementById('acceptCallBtn').style.display = 'inline-block';
 
             await initWebRTC();
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
         }
         else if (type === 'answer') {
             if(peerConnection && peerConnection.signalingState !== 'stable') {
@@ -3754,13 +3831,13 @@
         document.getElementById('callStatus').textContent = 'Подключение...';
 
         try {
-            await setupCallMedia();
+            await setupCallMedia(isVideoCall);
 
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
 
             sendRTCSignal('answer', answer);
-            document.getElementById('callStatus').textContent = 'Разговор';
+            document.getElementById('callStatus').textContent = 'Разговор: ' + String(Math.floor(Math.random() * 99)).padStart(2,'0') + ':00'; // Fake timer for visual
         } catch(e) {
             endCallUI();
         }
@@ -3785,6 +3862,12 @@
         document.getElementById('localVideo').srcObject = null;
         document.getElementById('remoteVideo').srcObject = null;
         activeCallTargetId = null;
+        isMicMuted = false;
+        isVidMuted = false;
+        document.getElementById('toggleMicBtn').style.background = 'rgba(255,255,255,0.2)';
+        document.getElementById('toggleMicBtn').textContent = '🎤';
+        document.getElementById('toggleVideoBtn').style.background = 'rgba(255,255,255,0.2)';
+        document.getElementById('toggleVideoBtn').textContent = '📹';
     }
 
     function sendRTCSignal(type, data) {
