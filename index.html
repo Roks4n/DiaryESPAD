@@ -2446,7 +2446,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.22
+        v1.0.23
     </div>
 
     
@@ -2803,18 +2803,39 @@
         listDiv.innerHTML = '';
 
         myChatsData.forEach(chat => {
-            // Находим собеседника (участника, который НЕ мы)
+            // Находим собеседника
             const otherParticipant = chat.chat_participants.find(p => p.user_id !== currentUser.id);
-            const chatName = chat.is_group ? chat.name : (otherParticipant?.profiles?.username || otherParticipant?.profiles?.email || 'Неизвестный пользователь');
+            const profile = otherParticipant?.profiles;
+
+            const chatName = chat.is_group ? chat.name : (profile?.username || profile?.email || 'Неизвестный пользователь');
             const dateObj = new Date(chat.updated_at);
             const timeStr = isNaN(dateObj) ? '' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
+            // Определяем аватарку
+            let avatarUrl = '';
+            if (chat.is_group) {
+                avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23667eea"/><text x="20" y="27" font-family="Arial" font-size="18" fill="white" text-anchor="middle">👥</text></svg>`;
+            } else if (profile?.avatar_url) {
+                avatarUrl = profile.avatar_url;
+            } else {
+                const initials = chatName.substring(0, 2).toUpperCase();
+                avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23444"/><text x="20" y="27" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${initials}</text></svg>`;
+            }
+
             const div = document.createElement('div');
             div.className = 'chat-list-item';
-            div.onclick = () => openChat(chat.id, chatName, otherParticipant?.profiles);
+            div.style.display = 'flex';
+            div.style.flexDirection = 'row';
+            div.style.alignItems = 'center';
+            div.style.gap = '12px';
+            div.onclick = () => openChat(chat.id, chatName, profile);
+
             div.innerHTML = `
-                <div class="chat-email">${chatName}</div>
-                <div class="chat-date">Последняя активность: ${timeStr}</div>
+                <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    <div class="chat-email" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(chatName)}</div>
+                    <div class="chat-date">Активность: ${timeStr}</div>
+                </div>
             `;
             listDiv.appendChild(div);
         });
@@ -2827,7 +2848,7 @@
     }
 
     async function performSearch(query) {
-        let req = sb.from('profiles').select('id, email').neq('id', currentUser.id).limit(10);
+        let req = sb.from('profiles').select('id, email, username, avatar_url').neq('id', currentUser.id).limit(10);
 
         if (query) {
             req = req.ilike('email', `%${query}%`);
@@ -2854,8 +2875,27 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
-                div.innerHTML = `<strong style="color:white;">${escapeHTML(u.username || u.email.split('@')[0])}</strong> <span style="font-size:0.8rem; color:#6c757d;">(${escapeHTML(u.email)})</span>`;
-                div.onclick = () => startDirectChat(u.id, u.username || u.email);
+                
+                let avatarUrl = '';
+                const name = u.username || u.email.split('@')[0];
+                if (u.avatar_url) {
+                    avatarUrl = u.avatar_url;
+                } else {
+                    const initials = name.substring(0, 2).toUpperCase();
+                    avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><rect width="30" height="30" fill="%23444"/><text x="15" y="21" font-family="Arial" font-size="13" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                }
+
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.gap = '10px';
+                div.innerHTML = `
+                    <img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    <div style="display:flex; flex-direction:column;">
+                        <strong style="color:white;">${escapeHTML(name)}</strong>
+                        <span style="font-size:0.75rem; color:#6c757d;">${escapeHTML(u.email)}</span>
+                    </div>
+                `;
+                div.onclick = () => startDirectChat(u.id, name);
                 resultsDiv.appendChild(div);
             });
         } else {
