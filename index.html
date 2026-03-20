@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.44
+        v1.0.45
     </div>
 
     
@@ -3704,6 +3704,7 @@
     let activeCallTargetId = null;
 
     let isRenegotiating = false;
+    let isInitiatingCall = false;
 
     async function initWebRTC() {
         peerConnection = new RTCPeerConnection(rtcServers);
@@ -3734,12 +3735,21 @@
         };
 
         peerConnection.onnegotiationneeded = async () => {
+            // Если мы прямо сейчас в процессе ответа на звонок, игнорируем
+            if (peerConnection.signalingState === 'have-remote-offer') return;
+
             if (isRenegotiating) return;
             isRenegotiating = true;
             try {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-                sendRTCSignal('renegotiate-offer', { sdp: offer, isVideo: isVideoCall });
+
+                if (isInitiatingCall) {
+                    sendRTCSignal('offer', { sdp: offer, isVideo: isVideoCall });
+                    isInitiatingCall = false;
+                } else {
+                    sendRTCSignal('renegotiate-offer', { sdp: offer, isVideo: isVideoCall });
+                }
             } finally {
                 isRenegotiating = false;
             }
@@ -3898,6 +3908,7 @@
         if(!currentChatOtherParticipant || !currentChatOtherParticipant.id) return;
         activeCallTargetId = currentChatOtherParticipant.id;
         isVideoCall = withVideo;
+        isInitiatingCall = true;
 
         updateCallUI();
         document.getElementById('callModal').style.display = 'flex';
@@ -3907,12 +3918,8 @@
 
         try {
             await initWebRTC();
+            // onnegotiationneeded создаст и отправит 'offer' автоматически при добавлении треков
             await setupCallMedia(isVideoCall);
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-
-            sendRTCSignal('offer', { sdp: offer, isVideo: isVideoCall });
         } catch(e) {
             endCallUI();
         }
