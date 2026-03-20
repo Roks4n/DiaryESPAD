@@ -694,7 +694,10 @@
         .message-wrapper:hover .add-reaction-btn { opacity: 0.5; }
         .add-reaction-btn:hover { opacity: 1 !important; filter: grayscale(0%); transform: scale(1.2); }
 
+        
         .reactions-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .message-wrapper-mine .reactions-container { justify-content: flex-end; }
+
         .reaction-badge { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 2px 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid #444; transition: all 0.2s; color: #b0b0b0; user-select: none; }
         .reaction-badge:hover { background: rgba(255,255,255,0.1); border-color: #667eea; }
         .reaction-badge.active { background: rgba(102, 126, 234, 0.2); border-color: #667eea; color: white; }
@@ -796,6 +799,7 @@
 
         .chat-msg-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; background: #333; flex-shrink: 0; }
         .chat-msg-content { display: flex; flex-direction: column; }
+        .message-wrapper-mine .chat-msg-content { align-items: flex-end; }
         .chat-msg-sender-name { font-size: 0.75rem; color: #b0b0b0; margin-bottom: 3px; margin-left: 5px; }
         .message-wrapper-mine .chat-msg-sender-name { text-align: right; margin-right: 5px; margin-left: 0; }
 
@@ -860,6 +864,20 @@
         body.light-theme .chat-media-btn:hover { background: #dee2e6; }
         body.light-theme .message-theirs .circle-video { border-color: #dee2e6; }
 
+        
+        /* LIGHT THEME FOR CHAT */
+        body.light-theme .chat-sidebar { background: #f8f9fa; border-left: 1px solid #ced4da; }
+        body.light-theme .chat-header { background: #e9ecef; border-bottom: 1px solid #ced4da; }
+        body.light-theme .active-chat-header { background: #e9ecef; border-bottom: 1px solid #ced4da; }
+        body.light-theme .chat-input-area { background: #e9ecef; border-top: 1px solid #ced4da; }
+        body.light-theme .chat-input-wrapper { background: #fff; border-color: #ced4da; }
+        body.light-theme .message-theirs { background: #e2e3e5; color: #212529; }
+        body.light-theme .chat-list-item:hover { background: #e9ecef; }
+        body.light-theme .chat-search { border-bottom: 1px solid #ced4da; }
+        body.light-theme .chat-email, body.light-theme .chat-msg-sender-name, body.light-theme .message-time { color: #495057; }
+        body.light-theme #activeChatTitle { color: #212529; }
+        body.light-theme .message-mine .message-time { color: #fff; } /* Mine is still blue and white */
+
         /* CUSTOM THEME (GLASSMORPHISM) */
         #customBgContainer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -10; display: none; background: #000; }
         #customBgContainer img, #customBgContainer video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.5s; }
@@ -905,7 +923,10 @@
         .message-wrapper:hover .add-reaction-btn { opacity: 0.5; }
         .add-reaction-btn:hover { opacity: 1 !important; filter: grayscale(0%); transform: scale(1.2); }
 
+        
         .reactions-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .message-wrapper-mine .reactions-container { justify-content: flex-end; }
+
         .reaction-badge { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 2px 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid #444; transition: all 0.2s; color: #b0b0b0; user-select: none; }
         .reaction-badge:hover { background: rgba(255,255,255,0.1); border-color: #667eea; }
         .reaction-badge.active { background: rgba(102, 126, 234, 0.2); border-color: #667eea; color: white; }
@@ -1007,6 +1028,7 @@
 
         .chat-msg-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; background: #333; flex-shrink: 0; }
         .chat-msg-content { display: flex; flex-direction: column; }
+        .message-wrapper-mine .chat-msg-content { align-items: flex-end; }
         .chat-msg-sender-name { font-size: 0.75rem; color: #b0b0b0; margin-bottom: 3px; margin-left: 5px; }
         .message-wrapper-mine .chat-msg-sender-name { text-align: right; margin-right: 5px; margin-left: 0; }
 
@@ -2499,6 +2521,9 @@
             }
         }
 
+        // INITIALIZE THEME ON LOAD
+        setTimeout(() => applyTheme(currentThemeName), 0);
+
         function cycleTheme() {
             let index = themeList.indexOf(currentThemeName);
             if (index === -1) index = 0;
@@ -2700,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.36
+        v1.0.37
     </div>
 
     
