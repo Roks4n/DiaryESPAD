@@ -1200,11 +1200,19 @@
                     showLoginScreen();
                 }
 
+                let isRecoveryFlow = false;
+
                 sb.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'PASSWORD_RECOVERY') {
+                        isRecoveryFlow = true;
                         document.getElementById('resetPasswordModal').style.display = 'flex';
                     } else if (event === 'SIGNED_IN' && session?.user) {
-                        // Если пользователь вошел, но интерфейс еще не переключился (мы на экране логина)
+                        // Если мы находимся в процессе сброса пароля, не загружаем основной интерфейс!
+                        if (isRecoveryFlow) {
+                            return; 
+                        }
+
+                        // Если пользователь вошел в обычном режиме
                         const loginScreenVisible = document.getElementById('loginContainer').style.display !== 'none';
 
                         if (!currentUser || currentUser.id !== session.user.id || loginScreenVisible) {
@@ -2387,7 +2395,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.17
+        v1.0.18
     </div>
 
     <!-- CHAT UI -->
@@ -2453,6 +2461,16 @@
 
             document.getElementById('resetPasswordModal').style.display = 'none';
             alert('✅ Пароль успешно изменен! Теперь вы можете пользоваться приложением.');
+
+            // После успешного сброса сбрасываем флаг и запускаем загрузку интерфейса
+            isRecoveryFlow = false;
+            currentUser = (await sb.auth.getSession()).data.session?.user;
+            if(currentUser) {
+                await initUserSession();
+            } else {
+                location.reload();
+            }
+
         } catch (error) {
             errorDiv.textContent = 'Ошибка сохранения: ' + error.message;
             errorDiv.style.display = 'block';
