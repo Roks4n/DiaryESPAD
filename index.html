@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.43
+        v1.0.44
     </div>
 
     
@@ -3703,6 +3703,8 @@
     let remoteCallStream = null;
     let activeCallTargetId = null;
 
+    let isRenegotiating = false;
+
     async function initWebRTC() {
         peerConnection = new RTCPeerConnection(rtcServers);
 
@@ -3718,7 +3720,29 @@
                 remoteCallStream = new MediaStream();
                 remoteVid.srcObject = remoteCallStream;
             }
-            remoteCallStream.addTrack(event.track);
+
+            // Если трек уже есть, не добавляем дубликат
+            if (!remoteCallStream.getTracks().find(t => t.id === event.track.id)) {
+                remoteCallStream.addTrack(event.track);
+            }
+
+            // Если пришел видео трек, включаем отображение видео
+            if (event.track.kind === 'video') {
+                document.getElementById('videoContainer').style.display = 'block';
+                document.getElementById('audioCallAvatarContainer').style.display = 'none';
+            }
+        };
+
+        peerConnection.onnegotiationneeded = async () => {
+            if (isRenegotiating) return;
+            isRenegotiating = true;
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                sendRTCSignal('renegotiate-offer', { sdp: offer, isVideo: isVideoCall });
+            } finally {
+                isRenegotiating = false;
+            }
         };
     }
 
@@ -3911,13 +3935,16 @@
         let videoTrack = localCallStream.getVideoTracks()[0];
 
         // Если это был аудио-звонок, и мы хотим включить камеру
-        if (!videoTrack && !isVideoCall) {
+        if (!videoTrack) {
             try {
-                const vidStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const constraints = await getMediaConstraints(true);
+                const vidStream = await navigator.mediaDevices.getUserMedia(constraints);
                 const newVidTrack = vidStream.getVideoTracks()[0];
+
                 localCallStream.addTrack(newVidTrack);
 
                 if (peerConnection) {
+                    // Это вызовет onnegotiationneeded и отправит renegotiate-offer
                     peerConnection.addTrack(newVidTrack, localCallStream);
                 }
 
@@ -3946,13 +3973,29 @@
         // Игнорируем, если звонок не нам
         if(target_id !== currentUser.id) return;
 
+        if (type === 'renegotiate-offer') {
+            if (activeCallTargetId !== sender_id) return; // Игнорируем чужие ренегаты
+
+            isVideoCall = data.isVideo || isVideoCall;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            sendRTCSignal('answer', answer);
+            return;
+        }
+
         if(type === 'offer') {
-            // Если уже говорим, отклоняем
+            // Если уже говорим с другим, отклоняем
             if(activeCallTargetId && activeCallTargetId !== sender_id) {
                 chatChannel.send({
                     type: 'broadcast', event: 'webrtc',
                     payload: { target_id: sender_id, sender_id: currentUser.id, type: 'reject', data: null }
                 });
+                return;
+            }
+
+            // Если это повторный оффер от ТОГО ЖЕ человека (например, глитч сети), игнорируем, если уже в звонке
+            if (activeCallTargetId === sender_id && peerConnection && peerConnection.signalingState !== 'stable') {
                 return;
             }
 
