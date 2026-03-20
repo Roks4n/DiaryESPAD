@@ -2652,7 +2652,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.32
+        v1.0.33
     </div>
 
     
@@ -3069,15 +3069,21 @@
             const { data: { publicUrl } } = sb.storage.from('chat_media').getPublicUrl(filePath);
 
             // Отправляем сообщение в БД
-            const { error: dbError } = await sb.from('messages').insert([{
+            const { data: insertedMsg, error: dbError } = await sb.from('messages').insert([{
                 chat_id: currentActiveChatId,
                 sender_id: currentUser.id,
                 content: type === 'video' ? '📹 Видеосообщение' : '🎤 Голосовое сообщение',
                 media_url: publicUrl,
                 media_type: type
-            }]);
+            }]).select().single();
 
             if (dbError) throw dbError;
+
+            // Отрисовываем у себя
+            if (insertedMsg) {
+                appendMessageToUI(insertedMsg);
+                scrollToBottom();
+            }
 
         } catch (error) {
             console.error('Ошибка загрузки медиа:', error);
@@ -3122,10 +3128,21 @@
                 (payload) => {
                     const newMessage = payload.new;
                     if (currentActiveChatId === newMessage.chat_id && newMessage.sender_id !== currentUser.id) {
-                        appendMessageToUI(newMessage);
-                        scrollToBottom();
+                        // Для чужих сообщений нам нужен профиль отправителя
+                        fetchAndAppendNewMessage(newMessage.id);
                     }
                     if (chatSidebarOpen) loadChatList();
+                }
+            )
+            .on(
+                'postgres_changes', 
+                { event: 'DELETE', schema: 'public', table: 'messages' }, 
+                (payload) => {
+                    const deletedMsgId = payload.old.id;
+                    const el = document.getElementById(`msg-${deletedMsgId}`);
+                    if (el) {
+                        el.remove();
+                    }
                 }
             )
             .on(
@@ -3438,6 +3455,38 @@
 
     
     
+    
+    async function fetchAndAppendNewMessage(msgId) {
+        try {
+            const { data: messages } = await sb
+                .from('messages')
+                .select('*, profiles!messages_sender_id_fkey(username, avatar_url, email)')
+                .eq('id', msgId)
+                .single();
+
+            if (messages) {
+                appendMessageToUI(messages);
+                scrollToBottom();
+            }
+        } catch(e) {}
+    }
+
+    async function deleteMessage(msgId) {
+        if (!confirm('Вы уверены, что хотите удалить это сообщение? Оно удалится у всех.')) return;
+
+        try {
+            // Удаляем из UI сразу (оптимистично)
+            const el = document.getElementById(`msg-${msgId}`);
+            if (el) el.remove();
+
+            // Удаляем из БД
+            await sb.from('messages').delete().eq('id', msgId);
+        } catch (e) {
+            console.error('Ошибка удаления:', e);
+            alert('Ошибка при удалении сообщения');
+        }
+    }
+
     // === ЭМОДЗИ И РЕАКЦИИ ===
     const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🫣','🤭','🫢','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🫶','👍','👎','✌️','🤞','🫰','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐','🖖','👋','💪','🖕','✍️','🙏','🔥','✨','🌟','💫','💥','💢','💦','💧','💤','💨','👂','👀','🧠','🫀','🫁','🦷','🦴'];
 
@@ -3639,8 +3688,7 @@
             avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="${color}"/><text x="16" y="21" font-family="Arial" font-size="14" fill="white" text-anchor="middle">${initials}</text></svg>`;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.className = `message-wrapper ${isMine ? 'message-wrapper-mine' : 'message-wrapper-theirs'}`;
+        
 
         const dateObj = new Date(msg.created_at);
         const timeStr = isNaN(dateObj) ? '' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -3658,6 +3706,11 @@
         nameDiv.className = 'chat-msg-sender-name';
         nameDiv.textContent = senderName;
 
+        // ID for message container to easily remove it later
+        const wrapper = document.createElement('div');
+        wrapper.id = `msg-${msg.id}`;
+        wrapper.className = `message-wrapper ${isMine ? 'message-wrapper-mine' : 'message-wrapper-theirs'}`;
+
         const bubbleWrapper = document.createElement('div');
         bubbleWrapper.className = 'bubble-wrapper';
 
@@ -3666,6 +3719,15 @@
         reactBtn.innerHTML = '😀';
         reactBtn.title = 'Добавить реакцию';
         reactBtn.onclick = (e) => showReactionPicker(e, msg.id);
+
+        let deleteBtn = null;
+        if (isMine) {
+            deleteBtn = document.createElement('button');
+            deleteBtn.className = 'add-reaction-btn';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Удалить сообщение';
+            deleteBtn.onclick = (e) => deleteMessage(msg.id);
+        }
 
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = `message-bubble ${isMine ? 'message-mine' : 'message-theirs'} ${msg.media_type === 'video' ? 'message-video' : ''}`;
@@ -3688,6 +3750,7 @@
         bubbleDiv.appendChild(timeDiv);
 
         if (isMine) {
+            bubbleWrapper.appendChild(deleteBtn);
             bubbleWrapper.appendChild(reactBtn);
             bubbleWrapper.appendChild(bubbleDiv);
         } else {
