@@ -2446,7 +2446,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.23
+        v1.0.24
     </div>
 
     
@@ -2819,7 +2819,9 @@
                 avatarUrl = profile.avatar_url;
             } else {
                 const initials = chatName.substring(0, 2).toUpperCase();
-                avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23444"/><text x="20" y="27" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                // Instead of putting raw SVG in img src, let's create it safely or encode it properly.
+                const safeInitials = escapeHTML(initials);
+                avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23444"/><text x="20" y="27" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${safeInitials}</text></svg>`;
             }
 
             const div = document.createElement('div');
@@ -2830,13 +2832,38 @@
             div.style.gap = '12px';
             div.onclick = () => openChat(chat.id, chatName, profile);
 
-            div.innerHTML = `
-                <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
-                <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-                    <div class="chat-email" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(chatName)}</div>
-                    <div class="chat-date">Активность: ${timeStr}</div>
-                </div>
-            `;
+            // To fix the broken HTML issue, we will create the img element directly instead of string interpolation
+            const imgEl = document.createElement('img');
+            imgEl.src = avatarUrl;
+            imgEl.style.width = '40px';
+            imgEl.style.height = '40px';
+            imgEl.style.borderRadius = '50%';
+            imgEl.style.objectFit = 'cover';
+            imgEl.style.flexShrink = '0';
+
+            const textDiv = document.createElement('div');
+            textDiv.style.display = 'flex';
+            textDiv.style.flexDirection = 'column';
+            textDiv.style.flex = '1';
+            textDiv.style.overflow = 'hidden';
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'chat-email';
+            nameDiv.style.whiteSpace = 'nowrap';
+            nameDiv.style.overflow = 'hidden';
+            nameDiv.style.textOverflow = 'ellipsis';
+            nameDiv.textContent = chatName; // Safe from XSS and quotes breaking attributes
+
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'chat-date';
+            dateDiv.textContent = `Активность: ${timeStr}`;
+
+            textDiv.appendChild(nameDiv);
+            textDiv.appendChild(dateDiv);
+
+            div.appendChild(imgEl);
+            div.appendChild(textDiv);
+
             listDiv.appendChild(div);
         });
     }
@@ -3078,7 +3105,7 @@
 
         // Generate SVG placeholder if no avatar
         if (!avatarUrl) {
-            const initials = senderName.substring(0, 2).toUpperCase();
+            const initials = escapeHTML(senderName.substring(0, 2).toUpperCase());
             const color = isMine ? '%23667eea' : '%23555555';
             avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="${color}"/><text x="16" y="21" font-family="Arial" font-size="14" fill="white" text-anchor="middle">${initials}</text></svg>`;
         }
@@ -3089,16 +3116,38 @@
         const dateObj = new Date(msg.created_at);
         const timeStr = isNaN(dateObj) ? '' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        wrapper.innerHTML = `
-            <img src="${avatarUrl}" class="chat-msg-avatar" onclick="showUserProfile('${msg.sender_id}')" title="Профиль ${escapeHTML(senderName)}">
-            <div class="chat-msg-content">
-                <div class="chat-msg-sender-name">${escapeHTML(senderName)}</div>
-                <div class="message-bubble ${isMine ? 'message-mine' : 'message-theirs'}">
-                    <div>${escapeHTML(msg.content)}</div>
-                    <div class="message-time">${timeStr}</div>
-                </div>
-            </div>
-        `;
+        const imgEl = document.createElement('img');
+        imgEl.src = avatarUrl;
+        imgEl.className = 'chat-msg-avatar';
+        imgEl.title = `Профиль ${senderName}`;
+        imgEl.onclick = () => showUserProfile(msg.sender_id);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'chat-msg-content';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'chat-msg-sender-name';
+        nameDiv.textContent = senderName;
+
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = `message-bubble ${isMine ? 'message-mine' : 'message-theirs'}`;
+
+        const textDiv = document.createElement('div');
+        textDiv.innerHTML = escapeHTML(msg.content).replace(/\n/g, '<br>'); // Allow multiline
+
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.textContent = timeStr;
+
+        bubbleDiv.appendChild(textDiv);
+        bubbleDiv.appendChild(timeDiv);
+
+        contentDiv.appendChild(nameDiv);
+        contentDiv.appendChild(bubbleDiv);
+
+        wrapper.appendChild(imgEl);
+        wrapper.appendChild(contentDiv);
+
         container.appendChild(wrapper);
     }
 
