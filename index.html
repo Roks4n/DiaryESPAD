@@ -2446,7 +2446,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.24
+        v1.0.25
     </div>
 
     
@@ -2908,21 +2908,41 @@
                 if (u.avatar_url) {
                     avatarUrl = u.avatar_url;
                 } else {
-                    const initials = name.substring(0, 2).toUpperCase();
+                    const initials = escapeHTML(name.substring(0, 2).toUpperCase());
                     avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><rect width="30" height="30" fill="%23444"/><text x="15" y="21" font-family="Arial" font-size="13" fill="white" text-anchor="middle">${initials}</text></svg>`;
                 }
 
                 div.style.display = 'flex';
                 div.style.alignItems = 'center';
                 div.style.gap = '10px';
-                div.innerHTML = `
-                    <img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
-                    <div style="display:flex; flex-direction:column;">
-                        <strong style="color:white;">${escapeHTML(name)}</strong>
-                        <span style="font-size:0.75rem; color:#6c757d;">${escapeHTML(u.email)}</span>
-                    </div>
-                `;
                 div.onclick = () => startDirectChat(u.id, name);
+
+                // Using createElement to be absolutely safe from string interpolation breaking tags
+                const imgEl = document.createElement('img');
+                imgEl.src = avatarUrl;
+                imgEl.style.width = '30px';
+                imgEl.style.height = '30px';
+                imgEl.style.borderRadius = '50%';
+                imgEl.style.objectFit = 'cover';
+
+                const textDiv = document.createElement('div');
+                textDiv.style.display = 'flex';
+                textDiv.style.flexDirection = 'column';
+
+                const nameEl = document.createElement('strong');
+                nameEl.style.color = 'white';
+                nameEl.textContent = name;
+
+                const emailEl = document.createElement('span');
+                emailEl.style.fontSize = '0.75rem';
+                emailEl.style.color = '#6c757d';
+                emailEl.textContent = u.email;
+
+                textDiv.appendChild(nameEl);
+                textDiv.appendChild(emailEl);
+
+                div.appendChild(imgEl);
+                div.appendChild(textDiv);
                 resultsDiv.appendChild(div);
             });
         } else {
