@@ -1429,36 +1429,48 @@
             try {
                 const { data: authData, error } = await sb.auth.signUp({ email, password });
 
+                // Supabase API bug: sometimes error is null but authData is also empty if rate limit hit
                 if (error) {
-                    showError('Ошибка регистрации: ' + error.message);
+                    if (error.message.includes('rate limit')) {
+                        showError('Слишком много попыток. Подождите пару минут или смените почту.');
+                    } else {
+                        showError('Ошибка базы данных: ' + error.message);
+                    }
                     return;
                 }
 
-                if (authData?.user?.id) {
-                    // Ждем сохранения профиля
-                    await createInitialDbRecord(authData.user.id);
-
-                    // Если пользователь сразу получил сессию (Confirm email = OFF)
-                    if (authData.session) {
-                        currentUser = authData.user;
-                        showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
-                        await initUserSession(); 
-                    } else {
-                        // Если почему-то сессии нет, пробуем войти принудительно
-                        const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
-                        if (!signInError && signInData.session) {
-                            currentUser = signInData.user;
-                            showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
-                            await initUserSession();
-                        } else {
-                            // Если всё равно не пускает, просто переводим на вкладку входа
-                            switchAuthTab('login');
-                            document.getElementById('authEmail').value = email;
-                            document.getElementById('authPassword').value = '';
-                            showMessage('✅ Регистрация успешна! Пожалуйста, войдите в аккаунт.', 'success');
-                        }
-                    }
+                if (!authData || !authData.user) {
+                     showError('Неизвестная ошибка: Сервер не вернул данные пользователя.');
+                     return;
                 }
+
+                // Ждем сохранения профиля
+                await createInitialDbRecord(authData.user.id);
+
+                // Пробуем войти принудительно (даже если authData.session пустое)
+                const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
+
+                if (signInError) {
+                    // Если войти не удалось (например, Confirm Email всё еще включен)
+                    if (signInError.message.includes('Email not confirmed')) {
+                        showError('⚠️ Ошибка: В настройках Supabase всё еще включено подтверждение по почте (Confirm Email). Отключите его!');
+                    } else {
+                        showError('Аккаунт создан, но войти не удалось: ' + signInError.message);
+                        switchAuthTab('login');
+                    }
+                    return;
+                }
+
+                if (signInData && signInData.session) {
+                    currentUser = signInData.user;
+                    showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
+                    // Скрываем форму входа принудительно, чтобы не моргала
+                    document.getElementById('loginContainer').style.display = 'none';
+                    await initUserSession();
+                } else {
+                     showError('Ошибка сессии после входа.');
+                }
+
             } catch (error) {
                 showError('Ошибка регистрации: ' + error.message);
             } finally {
@@ -2829,5 +2841,6 @@
     }
 </script>
 
+<div style="position: fixed; bottom: 10px; right: 10px; color: #6c757d; font-size: 0.75rem; z-index: 1000; pointer-events: none; font-family: monospace;">v19.0 (No-Email)</div>
 </body>
 </html>
