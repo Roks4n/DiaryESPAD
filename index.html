@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.42
+        v1.0.43
     </div>
 
     
@@ -3672,6 +3672,26 @@
 
     
     // === WEBRTC ЗВОНКИ ===
+
+    let callTimerInterval = null;
+    let callSeconds = 0;
+
+    function startCallTimer() {
+        clearInterval(callTimerInterval);
+        callSeconds = 0;
+        updateCallTimerDisplay();
+        callTimerInterval = setInterval(() => {
+            callSeconds++;
+            updateCallTimerDisplay();
+        }, 1000);
+    }
+
+    function updateCallTimerDisplay() {
+        const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+        const s = String(callSeconds % 60).padStart(2, '0');
+        document.getElementById('callStatus').textContent = `Разговор: ${m}:${s}`;
+    }
+
     const rtcServers = {
         iceServers: [
             { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
@@ -3722,10 +3742,24 @@
 
     async function setupCallMedia(withVideo) {
         try {
-            const constraints = await getMediaConstraints(withVideo);
-            localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
+            let constraints = await getMediaConstraints(withVideo);
+            try {
+                localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch(mediaErr) {
+                // Если просили видео, но его нет или отказано в доступе - пробуем только аудио
+                if (withVideo) {
+                    console.warn("Не удалось получить доступ к камере, пробуем только микрофон");
+                    constraints = await getMediaConstraints(false);
+                    localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    // Меняем UI на аудио-звонок у себя, чтобы не показывать пустой квадрат
+                    isVideoCall = false;
+                    updateCallUI();
+                } else {
+                    throw mediaErr;
+                }
+            }
 
-            if (withVideo) {
+            if (isVideoCall) {
                 document.getElementById('localVideo').srcObject = localCallStream;
             }
 
@@ -3872,16 +3906,38 @@
         }
     }
 
-    function toggleVid() {
+    async function toggleVid() {
         if(!localCallStream) return;
-        const videoTrack = localCallStream.getVideoTracks()[0];
-        if(videoTrack) {
+        let videoTrack = localCallStream.getVideoTracks()[0];
+
+        // Если это был аудио-звонок, и мы хотим включить камеру
+        if (!videoTrack && !isVideoCall) {
+            try {
+                const vidStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const newVidTrack = vidStream.getVideoTracks()[0];
+                localCallStream.addTrack(newVidTrack);
+
+                if (peerConnection) {
+                    peerConnection.addTrack(newVidTrack, localCallStream);
+                }
+
+                isVideoCall = true;
+                updateCallUI();
+                document.getElementById('localVideo').srcObject = localCallStream;
+                videoTrack = newVidTrack;
+                isVidMuted = false;
+            } catch (e) {
+                alert('Не удалось включить камеру: ' + e.message);
+                return;
+            }
+        } else if (videoTrack) {
             isVidMuted = !isVidMuted;
             videoTrack.enabled = !isVidMuted;
-            const btn = document.getElementById('toggleVideoBtn');
-            btn.style.background = isVidMuted ? 'rgba(220,53,69,0.5)' : 'rgba(255,255,255,0.2)';
-            btn.textContent = isVidMuted ? '🚫' : '📹';
         }
+
+        const btn = document.getElementById('toggleVideoBtn');
+        btn.style.background = isVidMuted ? 'rgba(220,53,69,0.5)' : 'rgba(255,255,255,0.2)';
+        btn.textContent = isVidMuted ? '🚫' : '📹';
     }
 
     async function handleIncomingSignal(payload) {
@@ -3927,8 +3983,8 @@
         }
         else if (type === 'answer') {
             if(peerConnection && peerConnection.signalingState !== 'stable') {
-                document.getElementById('callStatus').textContent = 'Разговор';
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+                startCallTimer();
             }
         }
         else if (type === 'ice-candidate') {
@@ -3956,7 +4012,7 @@
             await peerConnection.setLocalDescription(answer);
 
             sendRTCSignal('answer', answer);
-            document.getElementById('callStatus').textContent = 'Разговор: ' + String(Math.floor(Math.random() * 99)).padStart(2,'0') + ':00'; // Fake timer for visual
+            startCallTimer();
         } catch(e) {
             endCallUI();
         }
@@ -3968,6 +4024,7 @@
     }
 
     function endCallUI() {
+        clearInterval(callTimerInterval);
         document.getElementById('callModal').style.display = 'none';
         if(peerConnection) {
             peerConnection.close();
