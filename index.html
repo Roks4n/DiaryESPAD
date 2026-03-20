@@ -2725,7 +2725,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.41
+        v1.0.42
     </div>
 
     
@@ -2799,11 +2799,30 @@
             <video id="localVideo" autoplay playsinline muted style="position:absolute; bottom:20px; right:20px; width:120px; height:160px; background:#000; border:2px solid #667eea; border-radius:15px; object-fit:cover; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: width 0.3s, height 0.3s;"></video>
         </div>
 
+        <!-- Settings Panel -->
+        <div id="callSettingsPanel" style="display:none; background:#1e1e1e; padding:20px; border-radius:15px; border:1px solid #444; width:300px; margin-bottom:20px; flex-direction:column; gap:15px; position:absolute; z-index:5010;">
+            <h3 style="margin:0; color:white; font-size:1.1rem; border-bottom:1px solid #333; padding-bottom:10px;">Настройки устройств</h3>
+            <div>
+                <label style="color:#b0b0b0; font-size:0.85rem; display:block; margin-bottom:5px;">Микрофон</label>
+                <select id="audioInputSelect" onchange="changeDevice('audioinput')" style="width:100%; padding:8px; border-radius:5px; background:#111; color:white; border:1px solid #444; outline:none;"></select>
+            </div>
+            <div>
+                <label style="color:#b0b0b0; font-size:0.85rem; display:block; margin-bottom:5px;">Камера</label>
+                <select id="videoInputSelect" onchange="changeDevice('videoinput')" style="width:100%; padding:8px; border-radius:5px; background:#111; color:white; border:1px solid #444; outline:none;"></select>
+            </div>
+            <div>
+                <label style="color:#b0b0b0; font-size:0.85rem; display:block; margin-bottom:5px;">Динамики</label>
+                <select id="audioOutputSelect" onchange="changeDevice('audiooutput')" style="width:100%; padding:8px; border-radius:5px; background:#111; color:white; border:1px solid #444; outline:none;"></select>
+            </div>
+            <button onclick="document.getElementById('callSettingsPanel').style.display='none'" style="margin-top:10px; padding:8px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer;">Закрыть</button>
+        </div>
+
         <div style="margin-top:30px; display:flex; gap:20px; align-items:center;">
             <button id="toggleMicBtn" onclick="toggleMic()" style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; cursor:pointer; font-size:1.5rem; transition:0.2s;" title="Микрофон">🎤</button>
-            <button id="acceptCallBtn" onclick="acceptCall()" style="display:none; background:#28a745; color:white; border:none; padding:0 40px; height:60px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); transition: transform 0.2s;">Ответить</button>
-            <button id="endCallBtn" onclick="endCall()" style="background:#dc3545; color:white; border:none; padding:0 40px; height:60px; border-radius:40px; cursor:pointer; font-size:1.2rem; font-weight:bold; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); transition: transform 0.2s;">Завершить</button>
             <button id="toggleVideoBtn" onclick="toggleVid()" style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; cursor:pointer; font-size:1.5rem; transition:0.2s;" title="Камера">📹</button>
+            <button id="acceptCallBtn" onclick="acceptCall()" style="display:none; background:#28a745; color:white; border:none; padding:0 30px; height:60px; border-radius:40px; cursor:pointer; font-size:1.1rem; font-weight:bold; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); transition: transform 0.2s;">Ответить</button>
+            <button id="endCallBtn" onclick="endCall()" style="background:#dc3545; color:white; border:none; padding:0 30px; height:60px; border-radius:40px; cursor:pointer; font-size:1.1rem; font-weight:bold; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); transition: transform 0.2s;">Завершить</button>
+            <button id="settingsCallBtn" onclick="toggleCallSettings()" style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; cursor:pointer; font-size:1.5rem; transition:0.2s;" title="Настройки устройств">⚙️</button>
         </div>
     </div>
 
@@ -3687,18 +3706,118 @@
     let isMicMuted = false;
     let isVidMuted = false;
 
+    let selectedAudioInput = null;
+    let selectedVideoInput = null;
+    let selectedAudioOutput = null;
+
+    async function getMediaConstraints(withVideo) {
+        const constraints = { audio: selectedAudioInput ? { deviceId: { exact: selectedAudioInput } } : true };
+        if (withVideo) {
+            constraints.video = selectedVideoInput ? { deviceId: { exact: selectedVideoInput } } : true;
+        } else {
+            constraints.video = false;
+        }
+        return constraints;
+    }
+
     async function setupCallMedia(withVideo) {
         try {
-            localCallStream = await navigator.mediaDevices.getUserMedia({video: withVideo, audio: true});
+            const constraints = await getMediaConstraints(withVideo);
+            localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
+
             if (withVideo) {
                 document.getElementById('localVideo').srcObject = localCallStream;
             }
-            localCallStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localCallStream);
-            });
+
+            // Если мы переключаем девайс во время звонка (peerConnection уже есть)
+            if (peerConnection) {
+                const senders = peerConnection.getSenders();
+                localCallStream.getTracks().forEach(track => {
+                    const sender = senders.find(s => s.track && s.track.kind === track.kind);
+                    if (sender) {
+                        sender.replaceTrack(track); // Динамическая подмена трека без разрыва соединения
+                    } else if (peerConnection.signalingState !== 'closed') {
+                        try { peerConnection.addTrack(track, localCallStream); } catch(e){}
+                    }
+                });
+            }
+
+            // Восстанавливаем состояние мута
+            const audioTrack = localCallStream.getAudioTracks()[0];
+            if(audioTrack) audioTrack.enabled = !isMicMuted;
+            const videoTrack = localCallStream.getVideoTracks()[0];
+            if(videoTrack) videoTrack.enabled = !isVidMuted;
+
+            await updateDeviceList();
         } catch(e) {
-            alert('Ошибка доступа к медиа: ' + e.message);
+            console.error(e);
+            alert('Ошибка доступа к устройствам: ' + e.message);
             throw e;
+        }
+    }
+
+    async function updateDeviceList() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+
+            const aIn = document.getElementById('audioInputSelect');
+            const vIn = document.getElementById('videoInputSelect');
+            const aOut = document.getElementById('audioOutputSelect');
+
+            aIn.innerHTML = ''; vIn.innerHTML = ''; aOut.innerHTML = '';
+
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `${device.kind} (id: ${device.deviceId.substring(0,5)}...)`;
+
+                if (device.kind === 'audioinput') {
+                    if(device.deviceId === selectedAudioInput) option.selected = true;
+                    aIn.appendChild(option);
+                } else if (device.kind === 'videoinput') {
+                    if(device.deviceId === selectedVideoInput) option.selected = true;
+                    vIn.appendChild(option);
+                } else if (device.kind === 'audiooutput') {
+                    if(device.deviceId === selectedAudioOutput) option.selected = true;
+                    aOut.appendChild(option);
+                }
+            });
+
+            // Если нет вывода (браузер не поддерживает), скрываем
+            if(aOut.options.length === 0) {
+                aOut.parentElement.style.display = 'none';
+            }
+        } catch(e) {
+            console.error('Не удалось получить список устройств', e);
+        }
+    }
+
+    function toggleCallSettings() {
+        const panel = document.getElementById('callSettingsPanel');
+        panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+        updateDeviceList(); // Обновляем список при открытии
+    }
+
+    async function changeDevice(kind) {
+        if (kind === 'audioinput') selectedAudioInput = document.getElementById('audioInputSelect').value;
+        if (kind === 'videoinput') selectedVideoInput = document.getElementById('videoInputSelect').value;
+
+        if (kind === 'audiooutput') {
+            selectedAudioOutput = document.getElementById('audioOutputSelect').value;
+            const remoteVid = document.getElementById('remoteVideo');
+            // Поддержка смены динамика (Chrome/Edge)
+            if (typeof remoteVid.setSinkId !== 'undefined') {
+                try {
+                    await remoteVid.setSinkId(selectedAudioOutput);
+                } catch(e) { console.warn('Ошибка смены динамика', e); }
+            }
+            return; // Смена динамика не требует перезапуска stream
+        }
+
+        // Если сменили микрофон или камеру, переподключаем поток
+        if (localCallStream) {
+            localCallStream.getTracks().forEach(t => t.stop());
+            await setupCallMedia(isVideoCall);
         }
     }
 
@@ -3868,6 +3987,7 @@
         document.getElementById('toggleMicBtn').textContent = '🎤';
         document.getElementById('toggleVideoBtn').style.background = 'rgba(255,255,255,0.2)';
         document.getElementById('toggleVideoBtn').textContent = '📹';
+        document.getElementById('callSettingsPanel').style.display = 'none';
     }
 
     function sendRTCSignal(type, data) {
