@@ -769,7 +769,7 @@
             width: 100px; height: 100px; margin: 0 auto 20px auto; position: relative; cursor: pointer;
         }
         .profile-avatar-container img {
-            width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #667eea;
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #667eea; background: #333;
         }
         .profile-avatar-container .overlay {
             position: absolute; inset: 0; background: rgba(0,0,0,0.6); border-radius: 50%;
@@ -1188,6 +1188,28 @@
         // ==========================================
         // ИНИЦИАЛИЗАЦИЯ И SUPABASE
         // ==========================================
+        let userProfileData = null;
+
+        function updateUserHeader() {
+            const displayName = document.getElementById('displayName');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const avatar = document.getElementById('userAvatar');
+
+            const name = userProfileData?.username || (currentUser?.email ? currentUser.email.split('@')[0] : 'Пользователь');
+
+            displayName.textContent = name;
+            welcomeMessage.textContent = `Добро пожаловать, ${name}!`;
+
+            if (userProfileData?.avatar_url) {
+                avatar.src = userProfileData.avatar_url;
+                avatar.style.display = 'block';
+            } else {
+                const initials = name.substring(0, 2).toUpperCase();
+                avatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="11" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                avatar.style.display = 'block';
+            }
+        }
+
         async function initApp() {
             document.getElementById('loadingOverlay').style.display = 'flex';
 
@@ -1277,7 +1299,7 @@
                 
                 
                 showMainInterface();
-                await loadUserProfile(); // Загружаем профиль
+                await loadUserProfile();
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
@@ -1297,7 +1319,7 @@
                 
                 
                 showMainInterface();
-                await loadUserProfile(); // Загружаем профиль
+                await loadUserProfile();
                 initEducationSelector();
                 renderSubjectsTable();
                 updateStats();
@@ -2406,13 +2428,13 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.20
+        v1.0.21
     </div>
 
     
     <!-- PROFILE SETTINGS MODAL -->
     <div class="modal" id="profileSettingsModal" style="display:none; z-index: 2500;">
-        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; max-width: 400px;">
+        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; max-width: 400px; text-align:center;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="color: #667eea; margin: 0;">Профиль</h2>
                 <button onclick="document.getElementById('profileSettingsModal').style.display='none'" style="background:none; border:none; color:#b0b0b0; font-size:1.5rem; cursor:pointer;">×</button>
@@ -2426,12 +2448,12 @@
 
             <div class="profile-quote-display" id="profileModalQuoteDisplay"></div>
 
-            <div class="form-group">
+            <div class="form-group" style="text-align: left;">
                 <label style="color: #e0e0e0; font-size: 0.9rem;">Отображаемое имя (Никнейм)</label>
                 <input type="text" id="profileUsername" style="background: #111; color: white; border: 1px solid #555;">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="text-align: left;">
                 <label style="color: #e0e0e0; font-size: 0.9rem;">Любимая цитата или статус</label>
                 <input type="text" id="profileQuote" placeholder="Например: Люблю кодить по ночам" style="background: #111; color: white; border: 1px solid #555;">
             </div>
@@ -2520,6 +2542,133 @@
             errorDiv.style.display = 'block';
         } finally {
             document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
+    
+    async function loadUserProfile() {
+        if (!currentUser) return;
+        try {
+            const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (!error && data) {
+                userProfileData = data;
+                updateUserHeader();
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки профиля:', e);
+        }
+    }
+
+    function openProfileSettings() {
+        if (!userProfileData) {
+            userProfileData = { username: currentUser.email.split('@')[0], quote: '' };
+        }
+
+        document.getElementById('profileUsername').value = userProfileData.username || '';
+        document.getElementById('profileQuote').value = userProfileData.quote || '';
+
+        const modalAvatar = document.getElementById('profileModalAvatar');
+        if (userProfileData.avatar_url) {
+            modalAvatar.src = userProfileData.avatar_url;
+        } else {
+            const name = userProfileData.username || currentUser.email.split('@')[0];
+            const initials = name.substring(0, 2).toUpperCase();
+            modalAvatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23333"/><text x="50" y="65" font-family="Arial" font-size="40" fill="white" text-anchor="middle">${initials}</text></svg>`;
+        }
+
+        const quoteDisplay = document.getElementById('profileModalQuoteDisplay');
+        quoteDisplay.textContent = userProfileData.quote ? `«${userProfileData.quote}»` : '';
+
+        document.getElementById('profileSaveStatus').style.display = 'none';
+        document.getElementById('profileSettingsModal').style.display = 'flex';
+    }
+
+    async function handleAvatarUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Файл слишком большой! Максимальный размер 2 МБ.');
+            return;
+        }
+
+        const statusDiv = document.getElementById('profileSaveStatus');
+        statusDiv.style.color = '#e0e0e0';
+        statusDiv.textContent = '⏳ Загрузка изображения...';
+        statusDiv.style.display = 'block';
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+            const filePath = `public/${fileName}`;
+
+            const { error: uploadError } = await sb.storage
+                .from('avatars')
+                .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(filePath);
+
+            const { error: dbError } = await sb.from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', currentUser.id);
+
+            if (dbError) throw dbError;
+
+            userProfileData.avatar_url = publicUrl;
+            document.getElementById('profileModalAvatar').src = publicUrl;
+            updateUserHeader();
+
+            statusDiv.style.color = '#28a745';
+            statusDiv.textContent = '✅ Фото обновлено!';
+
+        } catch (error) {
+            console.error('Ошибка загрузки аватара:', error);
+            statusDiv.style.color = '#fc9fa7';
+            statusDiv.textContent = '❌ Ошибка: ' + error.message;
+        }
+        event.target.value = '';
+    }
+
+    async function saveProfileSettings() {
+        const username = document.getElementById('profileUsername').value.trim();
+        const quote = document.getElementById('profileQuote').value.trim();
+
+        if (!username) {
+            alert('Никнейм не может быть пустым');
+            return;
+        }
+
+        const statusDiv = document.getElementById('profileSaveStatus');
+        statusDiv.style.color = '#e0e0e0';
+        statusDiv.textContent = '⏳ Сохранение...';
+        statusDiv.style.display = 'block';
+
+        try {
+            const { error } = await sb.from('profiles')
+                .update({ username, quote })
+                .eq('id', currentUser.id);
+
+            if (error) throw error;
+
+            userProfileData.username = username;
+            userProfileData.quote = quote;
+
+            updateUserHeader();
+            document.getElementById('profileModalQuoteDisplay').textContent = quote ? `«${quote}»` : '';
+
+            statusDiv.style.color = '#28a745';
+            statusDiv.textContent = '✅ Профиль сохранен!';
+
+            setTimeout(() => {
+                document.getElementById('profileSettingsModal').style.display = 'none';
+            }, 1000);
+
+        } catch (error) {
+            console.error('Ошибка сохранения профиля:', error);
+            statusDiv.style.color = '#fc9fa7';
+            statusDiv.textContent = '❌ Ошибка: ' + error.message;
         }
     }
 
@@ -2666,7 +2815,7 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
-                div.innerHTML = `<strong>${escapeHTML(u.username || u.email.split('@')[0])}</strong> <span style="font-size:0.8rem; color:#6c757d;">(${escapeHTML(u.email)})</span>`;
+                div.innerHTML = `<strong style="color:white;">${escapeHTML(u.username || u.email.split('@')[0])}</strong> <span style="font-size:0.8rem; color:#6c757d;">(${escapeHTML(u.email)})</span>`;
                 div.onclick = () => startDirectChat(u.id, u.username || u.email);
                 resultsDiv.appendChild(div);
             });
