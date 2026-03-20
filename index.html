@@ -1435,12 +1435,30 @@
                 }
 
                 if (authData?.user?.id) {
+                    // Ждем сохранения профиля
                     await createInitialDbRecord(authData.user.id);
-                }
 
-                switchAuthTab('login');
-                document.getElementById('authEmail').value = email;
-                showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
+                    // Если пользователь сразу получил сессию (Confirm email = OFF)
+                    if (authData.session) {
+                        currentUser = authData.user;
+                        showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
+                        await initUserSession(); 
+                    } else {
+                        // Если почему-то сессии нет, пробуем войти принудительно
+                        const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
+                        if (!signInError && signInData.session) {
+                            currentUser = signInData.user;
+                            showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
+                            await initUserSession();
+                        } else {
+                            // Если всё равно не пускает, просто переводим на вкладку входа
+                            switchAuthTab('login');
+                            document.getElementById('authEmail').value = email;
+                            document.getElementById('authPassword').value = '';
+                            showMessage('✅ Регистрация успешна! Пожалуйста, войдите в аккаунт.', 'success');
+                        }
+                    }
+                }
             } catch (error) {
                 showError('Ошибка регистрации: ' + error.message);
             } finally {
