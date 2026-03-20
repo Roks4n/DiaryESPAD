@@ -737,10 +737,19 @@
         .back-to-list-btn { background: none; border: none; color: #667eea; cursor: pointer; font-weight: bold; }
         .active-chat-title { color: #e0e0e0; font-weight: bold; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .messages-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; color: white; font-size: 0.95rem; word-wrap: break-word;}
-        .message-mine { background: #667eea; align-self: flex-end; border-bottom-right-radius: 5px; }
-        .message-theirs { background: #333; align-self: flex-start; border-bottom-left-radius: 5px; }
+        .messages-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message-wrapper { display: flex; max-width: 80%; gap: 10px; align-items: flex-end; }
+        .message-wrapper-mine { align-self: flex-end; flex-direction: row-reverse; }
+        .message-wrapper-theirs { align-self: flex-start; }
+
+        .chat-msg-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; background: #333; flex-shrink: 0; }
+        .chat-msg-content { display: flex; flex-direction: column; }
+        .chat-msg-sender-name { font-size: 0.75rem; color: #b0b0b0; margin-bottom: 3px; margin-left: 5px; }
+        .message-wrapper-mine .chat-msg-sender-name { text-align: right; margin-right: 5px; margin-left: 0; }
+
+        .message-bubble { padding: 10px 15px; border-radius: 15px; color: white; font-size: 0.95rem; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .message-mine { background: #667eea; border-bottom-right-radius: 5px; }
+        .message-theirs { background: #333; border-bottom-left-radius: 5px; }
         .message-time { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; text-align: right; }
 
         .chat-input-area { padding: 15px; background: #111; border-top: 1px solid #444; display: flex; gap: 10px; }
@@ -854,10 +863,19 @@
         .back-to-list-btn { background: none; border: none; color: #667eea; cursor: pointer; font-weight: bold; }
         .active-chat-title { color: #e0e0e0; font-weight: bold; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .messages-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; color: white; font-size: 0.95rem; word-wrap: break-word;}
-        .message-mine { background: #667eea; align-self: flex-end; border-bottom-right-radius: 5px; }
-        .message-theirs { background: #333; align-self: flex-start; border-bottom-left-radius: 5px; }
+        .messages-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message-wrapper { display: flex; max-width: 80%; gap: 10px; align-items: flex-end; }
+        .message-wrapper-mine { align-self: flex-end; flex-direction: row-reverse; }
+        .message-wrapper-theirs { align-self: flex-start; }
+
+        .chat-msg-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; background: #333; flex-shrink: 0; }
+        .chat-msg-content { display: flex; flex-direction: column; }
+        .chat-msg-sender-name { font-size: 0.75rem; color: #b0b0b0; margin-bottom: 3px; margin-left: 5px; }
+        .message-wrapper-mine .chat-msg-sender-name { text-align: right; margin-right: 5px; margin-left: 0; }
+
+        .message-bubble { padding: 10px 15px; border-radius: 15px; color: white; font-size: 0.95rem; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .message-mine { background: #667eea; border-bottom-right-radius: 5px; }
+        .message-theirs { background: #333; border-bottom-left-radius: 5px; }
         .message-time { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; text-align: right; }
 
         .chat-input-area { padding: 15px; background: #111; border-top: 1px solid #444; display: flex; gap: 10px; }
@@ -2428,10 +2446,31 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.21
+        v1.0.22
     </div>
 
     
+    
+    <!-- OTHER USER PROFILE VIEW MODAL -->
+    <div class="modal" id="viewProfileModal" style="display:none; z-index: 3500;">
+        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; max-width: 350px; text-align:center;">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                <button onclick="document.getElementById('viewProfileModal').style.display='none'" style="background:none; border:none; color:#b0b0b0; font-size:1.5rem; cursor:pointer;">×</button>
+            </div>
+
+            <div style="width: 120px; height: 120px; margin: 0 auto 20px auto;">
+                <img id="viewProfileAvatar" src="" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #667eea; background: #333;">
+            </div>
+
+            <h2 id="viewProfileUsername" style="color: #e0e0e0; margin-bottom: 5px;">Username</h2>
+            <div id="viewProfileEmail" style="color: #6c757d; font-size: 0.9rem; margin-bottom: 15px;">user@example.com</div>
+
+            <div id="viewProfileQuote" style="font-style: italic; color: #b0b0b0; font-size: 1rem; padding: 15px; background: #111; border-radius: 10px; margin-bottom: 20px;"></div>
+
+            <button id="viewProfileMessageBtn" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Написать сообщение</button>
+        </div>
+    </div>
+
     <!-- PROFILE SETTINGS MODAL -->
     <div class="modal" id="profileSettingsModal" style="display:none; z-index: 2500;">
         <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; max-width: 400px; text-align:center;">
@@ -2748,7 +2787,7 @@
             // Получаем инфу о чатах и других участниках
             const { data: chatsData } = await sb
                 .from('chats')
-                .select('id, updated_at, is_group, name, chat_participants(user_id, profiles(email))')
+                .select('id, updated_at, is_group, name, chat_participants(user_id, profiles(id, email, username, avatar_url))')
                 .in('id', chatIds)
                 .order('updated_at', { ascending: false });
 
@@ -2772,7 +2811,7 @@
 
             const div = document.createElement('div');
             div.className = 'chat-list-item';
-            div.onclick = () => openChat(chat.id, chatName);
+            div.onclick = () => openChat(chat.id, chatName, otherParticipant?.profiles);
             div.innerHTML = `
                 <div class="chat-email">${chatName}</div>
                 <div class="chat-date">Последняя активность: ${timeStr}</div>
@@ -2858,17 +2897,42 @@
     }
 
     // Открыть окно конкретного диалога
-    async function openChat(chatId, chatName) {
+    let currentChatOtherParticipant = null;
+
+    async function openChat(chatId, chatName, otherParticipantData = null) {
         currentActiveChatId = chatId;
+
+        // Find other participant data if not explicitly provided
+        if (!otherParticipantData && myChatsData) {
+            const chat = myChatsData.find(c => c.id === chatId);
+            if (chat) {
+                otherParticipantData = chat.chat_participants.find(p => p.user_id !== currentUser.id)?.profiles;
+            }
+        }
+        currentChatOtherParticipant = otherParticipantData;
+
         document.getElementById('chatListView').style.display = 'none';
         document.getElementById('activeChatView').style.display = 'flex';
-        document.getElementById('activeChatTitle').textContent = chatName;
+
+        // Make header clickable to open profile
+        const titleEl = document.getElementById('activeChatTitle');
+        titleEl.textContent = chatName;
+        if (otherParticipantData && otherParticipantData.id) {
+            titleEl.style.cursor = 'pointer';
+            titleEl.style.textDecoration = 'underline';
+            titleEl.onclick = () => showUserProfile(otherParticipantData.id);
+        } else {
+            titleEl.style.cursor = 'default';
+            titleEl.style.textDecoration = 'none';
+            titleEl.onclick = null;
+        }
+
         document.getElementById('messagesContainer').innerHTML = '<div style="text-align:center; color:#6c757d;">Загрузка...</div>';
 
-        // Загружаем сообщения
+        // Загружаем сообщения вместе с данными профиля отправителя
         const { data: messages } = await sb
             .from('messages')
-            .select('*')
+            .select('*, profiles!messages_sender_id_fkey(username, avatar_url, email)')
             .eq('chat_id', chatId)
             .order('created_at', { ascending: true });
 
@@ -2883,6 +2947,57 @@
         }
     }
 
+    
+    // === ПРОСМОТР ЧУЖИХ ПРОФИЛЕЙ ===
+    async function showUserProfile(userId) {
+        if (userId === currentUser.id) {
+            openProfileSettings();
+            return;
+        }
+
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        try {
+            const { data: profile, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+
+            if (error || !profile) throw new Error('Профиль не найден');
+
+            const name = profile.username || profile.email.split('@')[0];
+            document.getElementById('viewProfileUsername').textContent = name;
+            document.getElementById('viewProfileEmail').textContent = profile.email;
+
+            const quoteEl = document.getElementById('viewProfileQuote');
+            if (profile.quote) {
+                quoteEl.textContent = `«${profile.quote}»`;
+                quoteEl.style.display = 'block';
+            } else {
+                quoteEl.style.display = 'none';
+            }
+
+            const avatarEl = document.getElementById('viewProfileAvatar');
+            if (profile.avatar_url) {
+                avatarEl.src = profile.avatar_url;
+            } else {
+                const initials = name.substring(0, 2).toUpperCase();
+                avatarEl.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="%23555"/><text x="60" y="78" font-family="Arial" font-size="45" fill="white" text-anchor="middle">${initials}</text></svg>`;
+            }
+
+            const btn = document.getElementById('viewProfileMessageBtn');
+            btn.onclick = () => {
+                document.getElementById('viewProfileModal').style.display = 'none';
+                if (!chatSidebarOpen) toggleChatSidebar();
+                startDirectChat(profile.id, name);
+            };
+
+            document.getElementById('viewProfileModal').style.display = 'flex';
+
+        } catch (e) {
+            alert('Ошибка: ' + e.message);
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
     function closeActiveChat() {
         currentActiveChatId = null;
         document.getElementById('activeChatView').style.display = 'none';
@@ -2894,23 +3009,57 @@
     function appendMessageToUI(msg) {
         const container = document.getElementById('messagesContainer');
 
-        // Убираем надпись "Нет сообщений", если она есть
         if (container.innerHTML.includes('Нет сообщений')) {
             container.innerHTML = '';
         }
 
         const isMine = msg.sender_id === currentUser.id;
-        const div = document.createElement('div');
-        div.className = `message-bubble ${isMine ? 'message-mine' : 'message-theirs'}`;
+
+        // Determine avatar and name
+        let avatarUrl = '';
+        let senderName = '';
+
+        if (isMine) {
+            avatarUrl = userProfileData?.avatar_url || '';
+            senderName = userProfileData?.username || currentUser.email.split('@')[0];
+        } else {
+            // Check if msg contains joined profile data
+            if (msg.profiles) {
+                avatarUrl = msg.profiles.avatar_url || '';
+                senderName = msg.profiles.username || msg.profiles.email.split('@')[0];
+            } else if (currentChatOtherParticipant) {
+                // Fallback to chat participant data
+                avatarUrl = currentChatOtherParticipant.avatar_url || '';
+                senderName = currentChatOtherParticipant.username || currentChatOtherParticipant.email.split('@')[0];
+            } else {
+                senderName = 'Собеседник';
+            }
+        }
+
+        // Generate SVG placeholder if no avatar
+        if (!avatarUrl) {
+            const initials = senderName.substring(0, 2).toUpperCase();
+            const color = isMine ? '%23667eea' : '%23555555';
+            avatarUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="${color}"/><text x="16" y="21" font-family="Arial" font-size="14" fill="white" text-anchor="middle">${initials}</text></svg>`;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `message-wrapper ${isMine ? 'message-wrapper-mine' : 'message-wrapper-theirs'}`;
 
         const dateObj = new Date(msg.created_at);
         const timeStr = isNaN(dateObj) ? '' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        div.innerHTML = `
-            <div>${escapeHTML(msg.content)}</div>
-            <div class="message-time">${timeStr}</div>
+        wrapper.innerHTML = `
+            <img src="${avatarUrl}" class="chat-msg-avatar" onclick="showUserProfile('${msg.sender_id}')" title="Профиль ${escapeHTML(senderName)}">
+            <div class="chat-msg-content">
+                <div class="chat-msg-sender-name">${escapeHTML(senderName)}</div>
+                <div class="message-bubble ${isMine ? 'message-mine' : 'message-theirs'}">
+                    <div>${escapeHTML(msg.content)}</div>
+                    <div class="message-time">${timeStr}</div>
+                </div>
+            </div>
         `;
-        container.appendChild(div);
+        container.appendChild(wrapper);
     }
 
     function scrollToBottom() {
