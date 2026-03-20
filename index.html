@@ -871,6 +871,13 @@
         <p class="login-subtitle">Версия для работы без VPN в России</p>
 
         
+        <div id="authSuccessMessage" style="display:none; margin-top: 20px; background: rgba(40, 167, 69, 0.1); border: 2px solid #28a745; padding: 25px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">✉️</div>
+            <h3 style="color: #28a745; margin-bottom: 10px; font-size: 1.3rem;">Почти готово!</h3>
+            <p id="authSuccessText" style="color: #e0e0e0; font-size: 1rem; line-height: 1.5; margin-bottom: 15px;">Мы отправили письмо с подтверждением на вашу почту. Пожалуйста, перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
+            <button onclick="document.getElementById('authSuccessMessage').style.display='none'; document.getElementById('auth-form').style.display='block';" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:600; cursor:pointer;">Понятно, иду проверять</button>
+        </div>
+
         <div id="auth-form" style="margin-top: 20px; text-align: left;">
             <div style="margin-bottom: 15px;">
                 <label style="display:block; margin-bottom:5px; color:#495057; font-weight:600;">Email</label>
@@ -893,7 +900,15 @@
             <div id="authError" style="color:#dc3545; margin-top:15px; text-align:center; font-size:0.9rem;"></div>
         </div>
 
-        
+        <div class="backup-section" id="backupSection" style="display:none; margin:20px 0 0 0;">
+            <h4>💾 Восстановление данных</h4>
+            <p style="font-size:0.9rem; color:#6c757d; margin:10px 0;">
+                У вас есть сохраненные данные? Импортируйте их:
+            </p>
+            <div class="backup-buttons">
+                <button class="backup-btn import-btn" onclick="importBackupFile()">📤 Импорт из файла</button>
+            </div>
+        </div>
     </div>
 
     <div class="container" id="mainContainer">
@@ -1154,96 +1169,6 @@
             }
         }
 
-        
-        let currentAuthMode = 'login';
-
-        function switchAuthTab(mode) {
-            currentAuthMode = mode;
-            const btnLogin = document.getElementById('tabLogin');
-            const btnSignup = document.getElementById('tabSignup');
-            const pinBlock = document.getElementById('pinBlock');
-            const mainBtn = document.getElementById('mainAuthBtn');
-            const forgotLink = document.getElementById('forgotPasswordLink');
-
-            document.getElementById('authError').textContent = '';
-
-            if (mode === 'login') {
-                btnLogin.style.color = '#667eea';
-                btnLogin.style.borderColor = '#667eea';
-                btnSignup.style.color = '#b0b0b0';
-                btnSignup.style.borderColor = '#444';
-
-                pinBlock.style.display = 'none';
-                forgotLink.style.display = 'block';
-                mainBtn.textContent = 'Войти';
-                mainBtn.style.background = '#667eea';
-                mainBtn.onclick = handleLogin;
-            } else {
-                btnSignup.style.color = '#28a745';
-                btnSignup.style.borderColor = '#28a745';
-                btnLogin.style.color = '#b0b0b0';
-                btnLogin.style.borderColor = '#444';
-
-                pinBlock.style.display = 'block';
-                forgotLink.style.display = 'none';
-                mainBtn.textContent = 'Зарегистрироваться';
-                mainBtn.style.background = '#28a745';
-                mainBtn.onclick = handleSignup;
-            }
-        }
-
-        function openResetPinModal() {
-            document.getElementById('resetEmail').value = document.getElementById('authEmail').value;
-            document.getElementById('resetPinError').style.display = 'none';
-            document.getElementById('resetPinModal').style.display = 'flex';
-        }
-
-        async function submitPinReset() {
-            const email = document.getElementById('resetEmail').value.trim();
-            const pin = document.getElementById('resetPin').value.trim();
-            const newPass = document.getElementById('resetNewPass').value;
-            const errorDiv = document.getElementById('resetPinError');
-
-            if (!email || !pin || !newPass) {
-                errorDiv.textContent = 'Заполните все поля';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            if (newPass.length < 6) {
-                errorDiv.textContent = 'Пароль должен быть минимум 6 символов';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            document.getElementById('loadingOverlay').style.display = 'flex';
-            errorDiv.style.display = 'none';
-
-            try {
-                // Вызываем нашу SQL функцию
-                const { data, error } = await sb.rpc('reset_password_with_pin', {
-                    target_email: email,
-                    provided_pin: pin,
-                    new_password: newPass
-                });
-
-                if (error) throw error;
-
-                if (data === true) {
-                    document.getElementById('resetPinModal').style.display = 'none';
-                    alert('✅ Пароль успешно изменен! Теперь вы можете войти с новым паролем.');
-                    document.getElementById('authPassword').value = '';
-                } else {
-                    errorDiv.textContent = '❌ Неверный Email или ПИН-код';
-                    errorDiv.style.display = 'block';
-                }
-            } catch (err) {
-                errorDiv.textContent = 'Ошибка сервера: ' + err.message;
-                errorDiv.style.display = 'block';
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
         // ==========================================
         // ИНИЦИАЛИЗАЦИЯ И SUPABASE
         // ==========================================
@@ -1283,7 +1208,17 @@
 
                 sb.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'PASSWORD_RECOVERY') {
-                        document.getElementById('resetPasswordModal').style.display = 'flex';
+                        const newPassword = prompt('🔑 Восстановление пароля\n\nВведите новый пароль (минимум 6 символов):');
+                        if (newPassword && newPassword.length >= 6) {
+                            const { error } = await sb.auth.updateUser({ password: newPassword });
+                            if (error) {
+                                alert('Ошибка обновления пароля: ' + error.message);
+                            } else {
+                                alert('✅ Пароль успешно изменен!');
+                            }
+                        } else {
+                            alert('Сброс отменен. Пароль слишком короткий.');
+                        }
                     } else if (event === 'SIGNED_IN' && session?.user) {
                         // Только если это новый вход (пользователь поменялся или еще не загружен)
                         if (!currentUser || currentUser.id !== session.user.id) {
@@ -1376,7 +1311,32 @@
         }
 
         
-        
+        async function handleResetPassword() {
+            const email = document.getElementById('authEmail').value.trim();
+            if (!email) {
+                showError('Пожалуйста, введите ваш Email в поле выше для сброса пароля');
+                return;
+            }
+
+            showError('');
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            try {
+                const { error } = await sb.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+
+                if (error) throw error;
+
+                document.getElementById('auth-form').style.display = 'none';
+                document.getElementById('authSuccessText').innerHTML = `Инструкция по восстановлению пароля отправлена на <b>${email}</b>.<br><br>Пожалуйста, проверьте папку <b>«Входящие»</b> и <b>«Спам»</b>, и перейдите по ссылке в письме!`;
+                document.getElementById('authSuccessMessage').style.display = 'block';
+
+            } catch (error) {
+                showError('Ошибка сброса: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
 
         async function handleLogin() {
             const email = document.getElementById('authEmail').value.trim();
@@ -1412,14 +1372,8 @@
                 return;
             }
 
-            const pin = document.getElementById('authPin').value.trim();
-
             if (password.length < 6) {
                 showError('Пароль должен быть минимум 6 символов');
-                return;
-            }
-            if (pin.length < 4) {
-                showError('Введите 4 цифры ПИН-кода');
                 return;
             }
 
@@ -1429,48 +1383,18 @@
             try {
                 const { data: authData, error } = await sb.auth.signUp({ email, password });
 
-                // Supabase API bug: sometimes error is null but authData is also empty if rate limit hit
                 if (error) {
-                    if (error.message.includes('rate limit')) {
-                        showError('Слишком много попыток. Подождите пару минут или смените почту.');
-                    } else {
-                        showError('Ошибка базы данных: ' + error.message);
-                    }
+                    showError('Ошибка регистрации: ' + error.message);
                     return;
                 }
 
-                if (!authData || !authData.user) {
-                     showError('Неизвестная ошибка: Сервер не вернул данные пользователя.');
-                     return;
+                if (authData?.user?.id) {
+                    await createInitialDbRecord(authData.user.id);
                 }
 
-                // Ждем сохранения профиля
-                await createInitialDbRecord(authData.user.id);
-
-                // Пробуем войти принудительно (даже если authData.session пустое)
-                const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
-
-                if (signInError) {
-                    // Если войти не удалось (например, Confirm Email всё еще включен)
-                    if (signInError.message.includes('Email not confirmed')) {
-                        showError('⚠️ Ошибка: В настройках Supabase всё еще включено подтверждение по почте (Confirm Email). Отключите его!');
-                    } else {
-                        showError('Аккаунт создан, но войти не удалось: ' + signInError.message);
-                        switchAuthTab('login');
-                    }
-                    return;
-                }
-
-                if (signInData && signInData.session) {
-                    currentUser = signInData.user;
-                    showMessage('✅ Регистрация успешна! Выполнен автоматический вход.', 'success');
-                    // Скрываем форму входа принудительно, чтобы не моргала
-                    document.getElementById('loginContainer').style.display = 'none';
-                    await initUserSession();
-                } else {
-                     showError('Ошибка сессии после входа.');
-                }
-
+                document.getElementById('auth-form').style.display = 'none';
+                document.getElementById('authSuccessText').innerHTML = `Мы отправили письмо с подтверждением на <b>${email}</b>.<br><br>Пожалуйста, проверьте папку <b>«Входящие»</b> и <b>«Спам»</b>, и перейдите по ссылке в письме для активации аккаунта!`;
+                document.getElementById('authSuccessMessage').style.display = 'block';
             } catch (error) {
                 showError('Ошибка регистрации: ' + error.message);
             } finally {
@@ -1504,12 +1428,6 @@
                     .insert([{ id: userId, state_json: JSON.stringify(data) }])
                     .select('id')
                     .maybeSingle();
-
-                // Сохраняем ПИН-код в профиль, если это регистрация
-                const pinInput = document.getElementById('authPin');
-                if (pinInput && pinInput.value.trim() !== '') {
-                    await sb.from('profiles').update({ secret_pin: pinInput.value.trim() }).eq('id', userId);
-                }
 
                 if (error) {
                     console.error('Ошибка создания записи БД:', error);
@@ -2451,34 +2369,6 @@
 </script>
 
 
-    
-    <div class="modal" id="resetPinModal" style="display:none; z-index: 3000;">
-        <div class="modal-content" style="background: #1e1e1e; border: 1px solid #444; text-align: center; max-width: 400px;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">🛡️</div>
-            <h2 style="color: #667eea; margin-bottom: 10px;">Сброс пароля</h2>
-            <p style="color: #b0b0b0; margin-bottom: 20px; font-size: 0.95rem;">Введите почту, ваш ПИН-код и новый пароль</p>
-
-            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                <input type="email" id="resetEmail" placeholder="Ваш Email" style="background: #111; color: white; border: 1px solid #555; width: 100%; padding: 12px; border-radius: 5px;">
-            </div>
-
-            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                <input type="text" id="resetPin" placeholder="Секретный ПИН-код (4 цифры)" maxlength="4" style="background: #111; color: white; border: 1px solid #555; width: 100%; padding: 12px; border-radius: 5px; letter-spacing: 2px; font-weight:bold;">
-            </div>
-
-            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                <input type="password" id="resetNewPass" placeholder="Новый пароль" style="background: #111; color: white; border: 1px solid #555; width: 100%; padding: 12px; border-radius: 5px;">
-            </div>
-
-            <div id="resetPinError" style="color: #fc9fa7; margin-bottom: 15px; font-size: 0.9rem; display: none;"></div>
-
-            <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('resetPinModal').style.display='none'" style="flex: 1; padding: 12px; background: #444; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Отмена</button>
-                <button onclick="submitPinReset()" style="flex: 2; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer;">Сбросить пароль</button>
-            </div>
-        </div>
-    </div>
-
     <!-- CHAT UI -->
     <div class="chat-fab" onclick="toggleChatSidebar()" id="chatFab" style="display:none;">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
@@ -2516,40 +2406,6 @@
 
 
 <script>
-    
-    async function submitNewPassword() {
-        const pass1 = document.getElementById('newPasswordInput').value;
-        const pass2 = document.getElementById('newPasswordConfirm').value;
-        const errorDiv = document.getElementById('resetModalError');
-
-        if (pass1.length < 6) {
-            errorDiv.textContent = 'Пароль должен быть минимум 6 символов';
-            errorDiv.style.display = 'block';
-            return;
-        }
-        if (pass1 !== pass2) {
-            errorDiv.textContent = 'Пароли не совпадают';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        errorDiv.style.display = 'none';
-        document.getElementById('loadingOverlay').style.display = 'flex';
-
-        try {
-            const { error } = await sb.auth.updateUser({ password: pass1 });
-            if (error) throw error;
-
-            document.getElementById('resetPasswordModal').style.display = 'none';
-            alert('✅ Пароль успешно изменен! Теперь вы можете пользоваться приложением.');
-        } catch (error) {
-            errorDiv.textContent = 'Ошибка сохранения: ' + error.message;
-            errorDiv.style.display = 'block';
-        } finally {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
-    }
-
     // === ЛОГИКА ЧАТА ===
     let chatSidebarOpen = false;
     let currentActiveChatId = null;
@@ -2841,6 +2697,5 @@
     }
 </script>
 
-<div style="position: fixed; bottom: 10px; right: 10px; color: #6c757d; font-size: 0.75rem; z-index: 1000; pointer-events: none; font-family: monospace;">v19.0 (No-Email)</div>
 </body>
 </html>
