@@ -2652,7 +2652,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.33
+        v1.0.34
     </div>
 
     
@@ -2964,6 +2964,59 @@
     }
 
     
+    
+    // === ЛОГИКА РЕСТАЙЗИНГА ЧАТА ===
+    const chatSidebarEl = document.getElementById('chatSidebar');
+    const chatResizerEl = document.getElementById('chatResizer');
+
+    let isResizing = false;
+    let startX, startWidth;
+
+    chatResizerEl.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        // Получаем текущую ширину в пикселях
+        startWidth = parseInt(document.defaultView.getComputedStyle(chatSidebarEl).width, 10);
+
+        chatResizerEl.classList.add('active');
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none'; // Запрет выделения текста при тяге
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+
+        // Разница в пикселях (тянем влево -> e.clientX меньше -> разница отрицательная -> ширина больше)
+        const dx = startX - e.clientX;
+        let newWidth = startWidth + dx;
+
+        // Ограничения ширины
+        if (newWidth < 300) newWidth = 300;
+        if (newWidth > window.innerWidth * 0.8) newWidth = window.innerWidth * 0.8;
+
+        chatSidebarEl.style.setProperty('--chat-width', newWidth + 'px');
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        if (!isResizing) return;
+        isResizing = false;
+        chatResizerEl.classList.remove('active');
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = '';
+
+        // Сохраняем ширину
+        const currentWidth = chatSidebarEl.style.getPropertyValue('--chat-width');
+        localStorage.setItem('tracker_chat_width', currentWidth);
+    });
+
+    // Восстановление ширины при загрузке
+    (function restoreChatWidth() {
+        const savedWidth = localStorage.getItem('tracker_chat_width');
+        if (savedWidth) {
+            chatSidebarEl.style.setProperty('--chat-width', savedWidth);
+        }
+    })();
+
     // === ЗАПИСЬ АУДИО И ВИДЕО ===
     let mediaRecorder = null;
     let recordedChunks = [];
