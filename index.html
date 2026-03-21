@@ -3716,13 +3716,20 @@
             }
         };
 
-        peerConnection.ontrack = event => {
+                peerConnection.ontrack = event => {
             const remoteVid = document.getElementById('remoteVideo');
             if(!remoteCallStream) {
                 remoteCallStream = new MediaStream();
                 remoteVid.srcObject = remoteCallStream;
             }
             remoteCallStream.addTrack(event.track);
+
+            // Гарантируем переключение UI, если внезапно пришло видео
+            if (event.track.kind === 'video' && !isVideoCall) {
+                isVideoCall = true;
+                updateCallUI();
+            }
+            remoteVid.play().catch(e => console.warn('Autoplay prevented:', e));
         };
     }
 
@@ -3910,7 +3917,7 @@
         }
     }
 
-    async function toggleVid() {
+        async function toggleVid() {
         if(!localCallStream) return;
         let videoTrack = localCallStream.getVideoTracks()[0];
 
@@ -3930,6 +3937,14 @@
                 document.getElementById('localVideo').srcObject = localCallStream;
                 videoTrack = newVidTrack;
                 isVidMuted = false;
+
+                // --- НОВОЕ: Ренегоциация (сообщаем второму, что добавили видео) ---
+                if (peerConnection && peerConnection.signalingState === 'stable') {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    sendRTCSignal('renegotiate-offer', { sdp: offer, isVideo: true });
+                }
+                // -------------------------------------------------------------------
             } catch (e) {
                 alert('Не удалось включить камеру: ' + e.message);
                 return;
@@ -3937,6 +3952,9 @@
         } else if (videoTrack) {
             isVidMuted = !isVidMuted;
             videoTrack.enabled = !isVidMuted;
+
+            // Если мы выключили камеру, не отключаем поток (он просто черный кадр)
+            // Но чтобы у второго не лагало, можно ничего не делать.
         }
 
         const btn = document.getElementById('toggleVideoBtn');
@@ -3989,6 +4007,23 @@
             if(peerConnection && peerConnection.signalingState !== 'stable') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
                 startCallTimer();
+            }
+        }
+                else if (type === 'renegotiate-offer') {
+            if (!peerConnection) return;
+            // Если собеседник включил камеру, у нас тоже обновляется UI на видео-режим
+            if (data.isVideo) {
+                isVideoCall = true;
+                updateCallUI();
+            }
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            sendRTCSignal('renegotiate-answer', answer);
+        }
+        else if (type === 'renegotiate-answer') {
+            if (peerConnection && peerConnection.signalingState !== 'stable') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
             }
         }
         else if (type === 'ice-candidate') {
