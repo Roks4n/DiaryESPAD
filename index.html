@@ -2730,7 +2730,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.50
+        v1.0.51
     </div>
 
     
@@ -3721,15 +3721,17 @@
             const remoteVid = document.getElementById('remoteVideo');
 
             if (event.streams && event.streams[0]) {
-                remoteCallStream = event.streams[0];
+                if (remoteVid.srcObject !== event.streams[0]) {
+                    remoteCallStream = event.streams[0];
+                    remoteVid.srcObject = remoteCallStream;
+                }
             } else {
                 if(!remoteCallStream) {
                     remoteCallStream = new MediaStream();
+                    remoteVid.srcObject = remoteCallStream;
                 }
                 remoteCallStream.addTrack(event.track);
             }
-
-            remoteVid.srcObject = remoteCallStream;
 
             // Гарантируем переключение UI, если внезапно пришло видео
             if (event.track.kind === 'video' && !isVideoCall) {
@@ -3886,9 +3888,16 @@
 
         if (isVideoCall) {
             videoContainer.style.display = 'block';
+            videoContainer.style.position = 'relative';
+            videoContainer.style.opacity = '1';
+            videoContainer.style.pointerEvents = 'auto';
             audioAvatar.style.display = 'none';
         } else {
-            videoContainer.style.display = 'none';
+            // Не используем display:none для видео, так как это глушит аудио в некоторых браузерах!
+            videoContainer.style.display = 'block';
+            videoContainer.style.position = 'absolute';
+            videoContainer.style.opacity = '0';
+            videoContainer.style.pointerEvents = 'none';
             audioAvatar.style.display = 'flex';
             document.getElementById('audioCallName').textContent = name;
         }
