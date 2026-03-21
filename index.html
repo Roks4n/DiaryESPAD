@@ -2794,7 +2794,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.59
+        v1.0.60
     </div>
 
     
@@ -3813,7 +3813,14 @@
             }
         };
 
-                peerConnection.ontrack = event => {
+                peerConnection.onconnectionstatechange = () => {
+            if (peerConnection && (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'closed')) {
+                console.log('WebRTC connection lost/closed');
+                endCallUI();
+            }
+        };
+
+        peerConnection.ontrack = event => {
             const remoteVid = document.getElementById('remoteVideo');
 
             if (event.streams && event.streams[0]) {
@@ -3846,12 +3853,24 @@
     let isMicMuted = false;
     let isVidMuted = false;
 
-    let selectedAudioInput = null;
-    let selectedVideoInput = null;
-    let selectedAudioOutput = null;
+    let selectedAudioInput = localStorage.getItem('ps_audio_in') || null;
+    let selectedVideoInput = localStorage.getItem('ps_video_in') || null;
+    let selectedAudioOutput = localStorage.getItem('ps_audio_out') || null;
 
     async function getMediaConstraints(withVideo) {
-        const constraints = { audio: selectedAudioInput ? { deviceId: { exact: selectedAudioInput } } : true };
+        // Проверяем, существует ли вообще сохраненное устройство, иначе сбрасываем на дефолт
+        let constraints = { audio: true };
+        if (selectedAudioInput) {
+            try {
+                const devs = await navigator.mediaDevices.enumerateDevices();
+                if (devs.some(d => d.deviceId === selectedAudioInput)) {
+                    constraints.audio = { deviceId: { exact: selectedAudioInput } };
+                } else {
+                    selectedAudioInput = null;
+                    localStorage.removeItem('ps_audio_in');
+                }
+            } catch(e) {}
+        }
         if (withVideo) {
             constraints.video = selectedVideoInput ? { deviceId: { exact: selectedVideoInput } } : true;
         } else {
@@ -3942,6 +3961,11 @@
             // Если нет вывода (браузер не поддерживает), скрываем
             if(aOut.options.length === 0) {
                 aOut.parentElement.style.display = 'none';
+            } else if (selectedAudioOutput) {
+                const remoteVid = document.getElementById('remoteVideo');
+                if (typeof remoteVid.setSinkId !== 'undefined') {
+                    try { await remoteVid.setSinkId(selectedAudioOutput); } catch(e){}
+                }
             }
         } catch(e) {
             console.error('Не удалось получить список устройств', e);
@@ -3955,11 +3979,18 @@
     }
 
     async function changeDevice(kind) {
-        if (kind === 'audioinput') selectedAudioInput = document.getElementById('audioInputSelect').value;
-        if (kind === 'videoinput') selectedVideoInput = document.getElementById('videoInputSelect').value;
+        if (kind === 'audioinput') {
+            selectedAudioInput = document.getElementById('audioInputSelect').value;
+            localStorage.setItem('ps_audio_in', selectedAudioInput);
+        }
+        if (kind === 'videoinput') {
+            selectedVideoInput = document.getElementById('videoInputSelect').value;
+            localStorage.setItem('ps_video_in', selectedVideoInput);
+        }
 
         if (kind === 'audiooutput') {
             selectedAudioOutput = document.getElementById('audioOutputSelect').value;
+            localStorage.setItem('ps_audio_out', selectedAudioOutput);
             const remoteVid = document.getElementById('remoteVideo');
             // Поддержка смены динамика (Chrome/Edge)
             if (typeof remoteVid.setSinkId !== 'undefined') {
