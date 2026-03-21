@@ -81,8 +81,10 @@
         }
 
         .user-avatar {
-            width: 24px;
-            height: 24px;
+            width: 24px !important;
+            height: 24px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
             border-radius: 50%;
             object-fit: cover;
             background: #1e1e1e; color: #fff;
@@ -669,20 +671,38 @@
 
         
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { border-radius: 10px; }
-            header { padding: 20px 15px; }
-            header h1 { font-size: 1.8rem !important; white-space: normal !important; text-align: center; }
-            .user-info { flex-direction: column; gap: 10px; align-items: flex-end; }
+            body { padding: 5px; }
+            .container { border-radius: 10px; margin-bottom: 70px; /* Space for chat button */ }
+            header { padding: 15px 10px; }
+
+            /* Fix header grid for mobile */
+            header > div[style*="display: grid"] { 
+                display: flex !important; 
+                flex-direction: column !important; 
+                gap: 10px !important; 
+                margin-top: 15px !important; 
+            }
+            header img[alt="Логотип Espad"] { height: 70px !important; margin: 0 auto; }
+            header h1 { font-size: 1.5rem !important; white-space: normal !important; text-align: center; line-height: 1.2; }
+
+            .user-info { flex-direction: row !important; flex-wrap: wrap; justify-content: center !important; gap: 10px; position: static !important; margin-bottom: 15px; }
+
             .controls { flex-direction: column; align-items: stretch; padding: 15px; gap: 10px; }
-            .controls select, .controls .add-btn { width: 100%; text-align: center; }
+            .controls select, .controls .add-btn { width: 100%; text-align: center; font-size: 1rem; padding: 12px; }
+
+            /* Chat button padding fix so it doesn't cover "Действия" completely */
+            .table-container { padding: 10px; padding-bottom: 30px; }
+
 
             /* Скрываем ненужные элементы в шапке таблицы */
             table th:nth-child(2), table th:nth-child(3), table th:nth-child(4) { display: none; }
             table td:nth-child(2), table td:nth-child(3), table td:nth-child(4) { display: none; }
 
             table { min-width: 100%; }
-            th, td { padding: 10px; font-size: 0.9rem; }
+            th, td { padding: 10px 5px; font-size: 0.85rem; vertical-align: middle; }
+            table th:last-child { text-align: right; padding-right: 15px; } /* Pull "Действия" inward slightly */
+            table td:last-child { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+
 
             .modal-content { width: 95%; padding: 20px; }
             .subject-actions { flex-direction: column; }
@@ -1429,7 +1449,9 @@
                 avatar.style.display = 'block';
             } else {
                 const initials = name.substring(0, 2).toUpperCase();
-                avatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="%23667eea"/><text x="12" y="16" font-family="Arial" font-size="11" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                // Используем SVG data URI корректно с encodeURIComponent
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#667eea"/><text x="12" y="16" font-family="Arial" font-size="11" fill="white" text-anchor="middle">${initials}</text></svg>`;
+                avatar.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
                 avatar.style.display = 'block';
             }
         }
@@ -2767,7 +2789,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.52
+        v1.0.53
     </div>
 
     
