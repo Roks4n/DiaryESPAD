@@ -3719,18 +3719,28 @@
 
                 peerConnection.ontrack = event => {
             const remoteVid = document.getElementById('remoteVideo');
-            if(!remoteCallStream) {
-                remoteCallStream = new MediaStream();
-                remoteVid.srcObject = remoteCallStream;
+
+            if (event.streams && event.streams[0]) {
+                remoteCallStream = event.streams[0];
+            } else {
+                if(!remoteCallStream) {
+                    remoteCallStream = new MediaStream();
+                }
+                remoteCallStream.addTrack(event.track);
             }
-            remoteCallStream.addTrack(event.track);
+
+            remoteVid.srcObject = remoteCallStream;
 
             // Гарантируем переключение UI, если внезапно пришло видео
             if (event.track.kind === 'video' && !isVideoCall) {
                 isVideoCall = true;
                 updateCallUI();
             }
-            remoteVid.play().catch(e => console.warn('Autoplay prevented:', e));
+
+            // Пытаемся запустить
+            setTimeout(() => {
+                remoteVid.play().catch(e => console.warn('Autoplay prevented:', e));
+            }, 100);
         };
     }
 
@@ -4031,7 +4041,18 @@
         }
         else if (type === 'ice-candidate') {
             if(peerConnection) {
-                try { await peerConnection.addIceCandidate(new RTCIceCandidate(data)); } catch(e){}
+                try { 
+                    if (peerConnection.remoteDescription) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data)); 
+                    } else {
+                        // Если описания еще нет, задерживаем добавление кандидата
+                        setTimeout(async () => {
+                            if (peerConnection.remoteDescription) {
+                                try { await peerConnection.addIceCandidate(new RTCIceCandidate(data)); } catch(e){}
+                            }
+                        }, 500);
+                    }
+                } catch(e){}
             }
         }
         else if (type === 'reject') {
