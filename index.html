@@ -608,20 +608,24 @@
 
         .sync-status {
             position: fixed;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 20px;
+            left: 20px;
+            top: auto;
+            transform: none;
             background: rgba(30, 30, 30, 0.95);
-            color: #e0e0e0;
-            padding: 10px 16px;
-            border-radius: 30px;
+            padding: 10px;
+            border-radius: 50%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
             display: none;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
             z-index: 1500;
-            font-size: 0.95rem;
-            font-weight: 600;
+            width: 30px;
+            height: 30px;
+            box-sizing: border-box;
+        }
+        #syncText {
+            display: none;
         }
 
         .sync-icon {
@@ -821,35 +825,6 @@
         body.light-theme .search-result-item { color: #495057; border-bottom: 1px solid #e9ecef;}
         body.light-theme .search-result-item:hover { background: #e9ecef; color: #000; }
     body.light-theme div[style*="bottom: 10px"] { color: rgba(0, 0, 0, 0.4) !important; }
-
-        
-
-
-    
-#syncStatus {
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #10B981; /* Soft modern green */
-    z-index: 1000;
-    transition: all 0.4s ease;
-    box-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
-    color: transparent;
-    overflow: hidden;
-    pointer-events: none; /* Make sure it doesn't interfere with clicks */
-    opacity: 0.8;
-}
-#syncStatus.offline {
-    background-color: #EF4444; /* Soft modern red */
-    box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
-}
-#syncStatus.syncing {
-    background-color: #F59E0B; /* Soft modern amber */
-    box-shadow: 0 0 4px rgba(245, 158, 11, 0.3);
-}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2754,7 +2729,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.45
+        v1.0.44
     </div>
 
     
