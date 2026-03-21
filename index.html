@@ -667,10 +667,47 @@
             border: 1px solid #756525;
         }
 
+        
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
+            body { padding: 10px; }
+            .container { border-radius: 10px; }
+            header { padding: 20px 15px; }
+            header h1 { font-size: 1.8rem !important; white-space: normal !important; text-align: center; }
+            .user-info { flex-direction: column; gap: 10px; align-items: flex-end; }
+            .controls { flex-direction: column; align-items: stretch; padding: 15px; gap: 10px; }
+            .controls select, .controls .add-btn { width: 100%; text-align: center; }
+
+            /* Скрываем ненужные элементы в шапке таблицы */
+            table th:nth-child(2), table th:nth-child(3), table th:nth-child(4) { display: none; }
+            table td:nth-child(2), table td:nth-child(3), table td:nth-child(4) { display: none; }
+
+            table { min-width: 100%; }
+            th, td { padding: 10px; font-size: 0.9rem; }
+
+            .modal-content { width: 95%; padding: 20px; }
+            .subject-actions { flex-direction: column; }
+            .subject-actions button { width: 100%; }
+
+            .chat-list-sidebar { width: 100%; max-width: none; border-right: none; border-bottom: 1px solid #444; }
+            .chat-area { width: 100%; }
+            .chat-container { flex-direction: column; }
+
+            #callModal { padding: 10px; }
+            #videoContainer { height: 50vh; width: 100%; }
+            #localVideo { width: 80px; height: 120px; bottom: 10px; right: 10px; }
+        }
+
+        @media (max-width: 480px) {
+            header img { height: 80px !important; }
+            header h1 { font-size: 1.5rem !important; }
+            .sync-status { bottom: 10px; left: 10px; }
+
+            .stats { grid-template-columns: 1fr; }
+
+            .login-container { width: 95%; padding: 20px; }
+            .login-container img { height: 60px !important; }
+        }
+
 
             .controls {
                 flex-direction: column;
@@ -2730,7 +2767,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.51
+        v1.0.52
     </div>
 
     
