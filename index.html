@@ -2791,7 +2791,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.54
+        v1.0.55
     </div>
 
     
@@ -3124,11 +3124,28 @@
         statusDiv.style.display = 'block';
 
         try {
+            const newPassword = document.getElementById('profileNewPassword')?.value;
+            if (newPassword && newPassword.length >= 6) {
+                const { error: pwdError } = await sb.auth.updateUser({
+                    password: newPassword
+                });
+                if (pwdError) throw pwdError;
+            } else if (newPassword && newPassword.length < 6) {
+                alert('Пароль должен содержать минимум 6 символов');
+                statusDiv.style.display = 'none';
+                return;
+            }
+
             const { error } = await sb.from('profiles')
                 .update({ username, quote })
                 .eq('id', currentUser.id);
 
             if (error) throw error;
+
+            // Очищаем поле пароля после успешного сохранения
+            if (document.getElementById('profileNewPassword')) {
+                document.getElementById('profileNewPassword').value = '';
+            }
 
             userProfileData.username = username;
             userProfileData.quote = quote;
