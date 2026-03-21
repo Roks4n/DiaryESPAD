@@ -233,7 +233,10 @@
         }
 
         tr.completed {
-            background-color: #f8f9fa;
+            background-color: rgba(40, 167, 69, 0.1) !important;
+        }
+        body.light-theme tr.completed {
+            background-color: rgba(40, 167, 69, 0.15) !important;
         }
 
         .subject-name {
@@ -968,7 +971,7 @@
 
         body.light-theme { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #333; }
         body.light-theme .container, body.light-theme .login-container, body.light-theme .modal-content, body.light-theme .lab-item { background: white; color: #495057; }
-        body.light-theme .controls, body.light-theme .stats, body.light-theme .backup-section, body.light-theme thead, body.light-theme .subject-info-header, body.light-theme tr.completed { background: #f8f9fa; }
+        body.light-theme .controls, body.light-theme .stats, body.light-theme .backup-section, body.light-theme thead, body.light-theme .subject-info-header { background: #f8f9fa; }
         body.light-theme .chart-section { background: #f8f9fa !important; border-top: 1px solid #e0e0e0 !important; }
         body.light-theme #chartTitle { color: #495057 !important; }
         body.light-theme input { background: white !important; color: #495057 !important; border: 1px solid #ced4da !important; }
@@ -2791,7 +2794,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.58
+        v1.0.59
     </div>
 
     
