@@ -2794,7 +2794,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.61
+        v1.0.62
     </div>
 
     
@@ -3830,10 +3830,19 @@
                 peerConnection.onconnectionstatechange = () => {
             if (!peerConnection) return;
             if (peerConnection.connectionState === 'connected') {
-                if (callSeconds === 0) startCallTimer(); // Запускаем таймер только когда физически пошел трафик
+                if (callSeconds === 0) startCallTimer(); 
             }
             else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'closed') {
-                console.log('WebRTC connection lost/closed');
+                endCallUI();
+            }
+        };
+
+        peerConnection.oniceconnectionstatechange = () => {
+            if (!peerConnection) return;
+            if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+                if (callSeconds === 0) startCallTimer();
+            }
+            else if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'closed') {
                 endCallUI();
             }
         };
