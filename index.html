@@ -2730,7 +2730,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.52
+        v1.0.51
     </div>
 
     
@@ -3951,13 +3951,7 @@
                 localCallStream.addTrack(newVidTrack);
 
                 if (peerConnection) {
-                    const senders = peerConnection.getSenders();
-                    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-                    if (videoSender) {
-                        videoSender.replaceTrack(newVidTrack);
-                    } else {
-                        peerConnection.addTrack(newVidTrack, localCallStream);
-                    }
+                    peerConnection.addTrack(newVidTrack, localCallStream);
                 }
 
                 isVideoCall = true;
