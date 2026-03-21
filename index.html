@@ -3763,16 +3763,18 @@
                     console.warn("Не удалось получить доступ к камере, пробуем только микрофон");
                     constraints = await getMediaConstraints(false);
                     localCallStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    // Меняем UI на аудио-звонок у себя, чтобы не показывать пустой квадрат
-                    isVideoCall = false;
-                    updateCallUI();
+                    // Мы не меняем isVideoCall=false, потому что хотим видеть видео собеседника!
+                    // Просто скроем наш локальный квадратик
+                    document.getElementById('localVideo').style.display = 'none';
                 } else {
                     throw mediaErr;
                 }
             }
 
             if (isVideoCall) {
-                document.getElementById('localVideo').srcObject = localCallStream;
+                const localVid = document.getElementById('localVideo');
+                localVid.style.display = 'block';
+                localVid.srcObject = localCallStream;
             }
 
             // Если мы переключаем девайс во время звонка (peerConnection уже есть)
