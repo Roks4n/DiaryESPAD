@@ -2794,7 +2794,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.62
+        v1.0.63
     </div>
 
     
@@ -3814,6 +3814,7 @@
     };
 
     let peerConnection = null;
+    let iceCandidateQueue = [];
     let localCallStream = null;
     let remoteCallStream = null;
     let activeCallTargetId = null;
@@ -4182,7 +4183,11 @@
         else if (type === 'answer') {
             if(peerConnection && peerConnection.signalingState !== 'stable') {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-                // Таймер запустится после физического соединения (iceConnectionState === 'connected'), чтобы не считать время, если связь не прошла.
+                // Применяем все кандидаты, которые пришли до ответа
+                while (iceCandidateQueue.length > 0) {
+                    const cand = iceCandidateQueue.shift();
+                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){}
+                }
             }
         }
                 else if (type === 'renegotiate-offer') {
@@ -4204,18 +4209,11 @@
         }
         else if (type === 'ice-candidate') {
             if(peerConnection) {
-                try { 
-                    if (peerConnection.remoteDescription) {
-                        await peerConnection.addIceCandidate(new RTCIceCandidate(data)); 
-                    } else {
-                        // Если описания еще нет, задерживаем добавление кандидата
-                        setTimeout(async () => {
-                            if (peerConnection.remoteDescription) {
-                                try { await peerConnection.addIceCandidate(new RTCIceCandidate(data)); } catch(e){}
-                            }
-                        }, 500);
-                    }
-                } catch(e){}
+                if (peerConnection.remoteDescription) {
+                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data)); } catch(e){}
+                } else {
+                    iceCandidateQueue.push(data);
+                }
             }
         }
         else if (type === 'reject') {
