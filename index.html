@@ -2791,7 +2791,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.55
+        v1.0.56
     </div>
 
     
@@ -3048,10 +3048,13 @@
         const modalAvatar = document.getElementById('profileModalAvatar');
         if (userProfileData.avatar_url) {
             modalAvatar.src = userProfileData.avatar_url;
+            modalAvatar.style.objectFit = 'cover';
         } else {
             const name = userProfileData.username || currentUser.email.split('@')[0];
             const initials = name.substring(0, 2).toUpperCase();
-            modalAvatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23333"/><text x="50" y="65" font-family="Arial" font-size="40" fill="white" text-anchor="middle">${initials}</text></svg>`;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="#333"/><text x="50" y="65" font-family="Arial" font-size="40" fill="white" text-anchor="middle">${initials}</text></svg>`;
+            modalAvatar.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+            modalAvatar.style.objectFit = 'cover';
         }
 
         const quoteDisplay = document.getElementById('profileModalQuoteDisplay');
