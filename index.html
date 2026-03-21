@@ -2794,7 +2794,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.63
+        v1.0.64
     </div>
 
     
@@ -3868,6 +3868,12 @@
             if (event.track.kind === 'video' && !isVideoCall) {
                 isVideoCall = true;
                 updateCallUI();
+            }
+
+            // Если звук или видео уже пошли (ontrack сработал), значит связь по факту установлена,
+            // даже если статусы браузера еще висят в 'checking'. Запускаем таймер!
+            if (callSeconds === 0) {
+                startCallTimer();
             }
 
             // Пытаемся запустить
