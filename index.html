@@ -2791,7 +2791,7 @@
 
     
     <div style="position: fixed; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.3); font-size: 0.75rem; font-family: monospace; z-index: 999; pointer-events: none;">
-        v1.0.57
+        v1.0.58
     </div>
 
     
@@ -3651,7 +3651,10 @@
                     { chat_id: newChat.id, user_id: currentUser.id },
                     { chat_id: newChat.id, user_id: otherUserId }
                 ]);
-                openChat(newChat.id, otherUserEmail);
+                // Чтобы появились кнопки звонка, нам нужно передать ID собеседника,
+                // даже если чата еще нет в локальном myChatsData
+                openChat(newChat.id, otherUserEmail, { id: otherUserId, username: otherUserEmail });
+                loadChatList(); // Обновляем список чатов на фоне
             }
         }
     }
